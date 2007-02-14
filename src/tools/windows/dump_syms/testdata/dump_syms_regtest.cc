@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2007, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,27 +27,39 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// pathname_stripper.h: Manipulates pathnames into their component parts.
-//
-// Author: Mark Mentovai
-
-#ifndef PROCESSOR_PATHNAME_STRIPPER_H__
-#define PROCESSOR_PATHNAME_STRIPPER_H__
-
-#include <string>
+// cl /Zi dump_syms_regtest.cc
+// dump_syms dump_syms_regtest.pdb | tr -d '\015' > dump_syms_regtest.sym
 
 namespace google_breakpad {
 
-using std::string;
-
-class PathnameStripper {
+class C {
  public:
-  // Given path, a pathname with components separated by slashes (/) or
-  // backslashes (\), returns the trailing component, without any separator.
-  // If path ends in a separator character, returns an empty string.
-  static string File(const string &path);
+  C() : member_(1) {}
+  virtual ~C() {}
+
+  void set_member(int value) { member_ = value; }
+  int member() const { return member_; }
+
+  void f() { member_ = g(); }
+  virtual int g() { return 2; }
+  static char* h(const C &that) { return 0; }
+
+ private:
+  int member_;
 };
+
+static int i() {
+  return 3;
+}
 
 }  // namespace google_breakpad
 
-#endif  // PROCESSOR_PATHNAME_STRIPPER_H__
+int main(int argc, char **argv) {
+  google_breakpad::C object;
+  object.set_member(google_breakpad::i());
+  object.f();
+  int value = object.g();
+  char *nothing = object.h(object);
+
+  return 0;
+}

@@ -27,56 +27,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// stackwalker_x86.h: x86-specific stackwalker.
-//
-// Provides stack frames given x86 register context and a memory region
-// corresponding to an x86 stack.
-//
-// Author: Mark Mentovai
+// The caller may implement the SymbolSupplier abstract base class
+// to provide symbols for a given module.
 
+#ifndef GOOGLE_BREAKPAD_PROCESSOR_SYMBOL_SUPPLIER_H__
+#define GOOGLE_BREAKPAD_PROCESSOR_SYMBOL_SUPPLIER_H__
 
-#ifndef PROCESSOR_STACKWALKER_X86_H__
-#define PROCESSOR_STACKWALKER_X86_H__
-
-
-#include "google_breakpad/common/breakpad_types.h"
-#include "google_breakpad/common/minidump_format.h"
-#include "google_breakpad/processor/stackwalker.h"
+#include <string>
 
 namespace google_breakpad {
 
-class CodeModules;
+using std::string;
+class CodeModule;
+class SystemInfo;
 
-
-class StackwalkerX86 : public Stackwalker {
+class SymbolSupplier {
  public:
-  // context is an x86 context object that gives access to x86-specific
-  // register state corresponding to the innermost called frame to be
-  // included in the stack.  The other arguments are passed directly through
-  // to the base Stackwalker constructor.
-  StackwalkerX86(const SystemInfo *system_info,
-                 const MDRawContextX86 *context,
-                 MemoryRegion *memory,
-                 const CodeModules *modules,
-                 SymbolSupplier *supplier,
-                 SourceLineResolverInterface *resolver);
+  // Result type for GetSymbolFile
+  enum SymbolResult {
+    // no symbols were found, but continue processing
+    NOT_FOUND,
 
- private:
-  // Implementation of Stackwalker, using x86 context (%ebp, %esp, %eip) and
-  // stack conventions (saved %ebp at [%ebp], saved %eip at 4[%ebp], or
-  // alternate conventions as guided by stack_frame_info_).
-  virtual StackFrame* GetContextFrame();
-  virtual StackFrame* GetCallerFrame(
-      const CallStack *stack,
-      const vector< linked_ptr<StackFrameInfo> > &stack_frame_info);
+    // symbols were found, and the path has been placed in symbol_file
+    FOUND,
 
-  // Stores the CPU context corresponding to the innermost stack frame to
-  // be returned by GetContextFrame.
-  const MDRawContextX86 *context_;
+    // stops processing the minidump immediately
+    INTERRUPT,
+  };
+
+  virtual ~SymbolSupplier() {}
+
+  // Retrieves the symbol file for the given CodeModule, placing the
+  // path in symbol_file if successful.  system_info contains strings
+  // identifying the operating system and CPU; SymbolSupplier may use to help
+  // locate the symbol file.  system_info may be NULL or its fields may be
+  // empty if these values are unknown.
+  virtual SymbolResult GetSymbolFile(const CodeModule *module,
+                                     const SystemInfo *system_info,
+                                     string *symbol_file) = 0;
 };
-
 
 }  // namespace google_breakpad
 
-
-#endif  // PROCESSOR_STACKWALKER_X86_H__
+#endif  // GOOGLE_BREAKPAD_PROCESSOR_SYMBOL_SUPPLIER_H__
