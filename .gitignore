@@ -68,11 +68,15 @@ stamp-h1
 
 # Ignore GYP generated Visual Studio artifacts.
 *.filters
+*.opendb
+*.opensdf
 *.sdf
 *.sln
 *.suo
 *.vcproj
+*.vcproj.user
 *.vcxproj
+*.vcxproj.user
 
 # Ignore GYP generated Makefiles
 src/Makefile
@@ -87,3 +91,43 @@ src/testing
 src/third_party/lss
 src/third_party/protobuf
 src/tools/gyp
+
+# Ignore autotoools files
+*.Makefile
+*.a
+*.mk
+*.o
+*.pc
+.deps
+.dirstamp
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+autotools/ar-lib
+autotools/compile
+autotools/config.guess
+autotools/config.sub
+autotools/depcomp
+autotools/install-sh
+autotools/missing
+autotools/test-driver
+config.h
+config.h.in
+config.log
+config.status
+configure
+stamp-h1
+
+# Ignore gyp artifacts
+gyp-win-tool
+src/out/
+
+# Ignore 'make check' artifacts
+*.log
+*.trs
+*_unittest*
+
+# Ignore Visual Studio artifacts
+src/tools/windows/dump_syms/Debug
+src/client/windows/Debug
