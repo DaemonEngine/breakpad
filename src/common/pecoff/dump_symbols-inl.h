@@ -39,7 +39,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include <windows.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -111,13 +115,37 @@ class MmapWrapper {
   ~MmapWrapper() {
     if (is_set_ && base_ != NULL) {
       assert(size_ > 0);
+#ifndef _WIN32
       munmap(base_, size_);
+#else
+      UnmapViewOfFile(base_);
+      CloseHandle(hMap_);
+#endif
     }
   }
-  void set(void *mapped_address, size_t mapped_size) {
+  void *set(int obj_fd, size_t mapped_size) {
+#ifndef _WIN32
+    void *mapped_address = mmap(NULL, mapped_size,
+          PROT_READ | PROT_WRITE, MAP_PRIVATE, obj_fd, 0);
+    if (mapped_address == MAP_FAILED)
+      return NULL;
+#else
+    HANDLE h = (HANDLE)_get_osfhandle(obj_fd);
+    hMap_ = CreateFileMapping(h, NULL, PAGE_READONLY,0, 0, NULL);
+    // XXX: should also use SEC_IMAGE_NO_EXECUTE on Windows 6.2 or later
+    if (!hMap_) {
+      return NULL;
+    }
+    void *mapped_address = MapViewOfFile(hMap_, FILE_MAP_READ, 0, 0, 0);
+    if (!mapped_address) {
+      CloseHandle(hMap_);
+      return NULL;
+    }
+#endif
     is_set_ = true;
     base_ = mapped_address;
     size_ = mapped_size;
+    return mapped_address;
   }
   void release() {
     assert(is_set_);
@@ -130,6 +158,9 @@ class MmapWrapper {
   bool is_set_;
   void *base_;
   size_t size_;
+#ifdef _WIN32
+  HANDLE hMap_;
+#endif
 };
 
 #ifndef NO_STABS_SUPPORT
@@ -330,15 +361,12 @@ bool LoadFile(const string& obj_file, MmapWrapper* map_wrapper,
             obj_file.c_str(), strerror(errno));
     return false;
   }
-  void *obj_base = mmap(NULL, st.st_size,
-                        PROT_READ | PROT_WRITE, MAP_PRIVATE, obj_fd, 0);
-  if (obj_base == MAP_FAILED) {
+  *header = map_wrapper->set(obj_fd, st.st_size);
+  if (!(*header)) {
     fprintf(stderr, "Failed to mmap file '%s': %s\n",
             obj_file.c_str(), strerror(errno));
     return false;
   }
-  map_wrapper->set(obj_base, st.st_size);
-  *header = obj_base;
   return true;
 }
 
