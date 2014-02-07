@@ -100,7 +100,7 @@ TEST_F(MinidumpTest, TestMinidumpFromFile) {
   const MinidumpModule *md_module = md_module_list->GetModuleAtIndex(0);
   ASSERT_TRUE(md_module != NULL);
   ASSERT_EQ("c:\\test_app.exe", md_module->code_file());
-  ASSERT_EQ("c:\\test_app.pdb", md_module->debug_file());
+  ASSERT_EQ("test_app.pdb", md_module->debug_file());
   ASSERT_EQ("45D35F6C2d000", md_module->code_identifier());
   ASSERT_EQ("5A9832E5287241C1838ED98914E9B7FF1", md_module->debug_identifier());
 }
@@ -519,7 +519,7 @@ TEST(Dump, OneModule) {
   ASSERT_EQ(0xa90206ca83eb2852ULL, md_module->base_address());
   ASSERT_EQ(0xada542bd, md_module->size());
   ASSERT_EQ("single module", md_module->code_file());
-  ASSERT_EQ("c:\\foo\\file.pdb", md_module->debug_file());
+  ASSERT_EQ("file.pdb", md_module->debug_file());
   // time_date_stamp and size_of_image concatenated
   ASSERT_EQ("B1054D2Aada542bd", md_module->code_identifier());
   ASSERT_EQ("ABCD1234F00DBEEF01020304050607081", md_module->debug_identifier());

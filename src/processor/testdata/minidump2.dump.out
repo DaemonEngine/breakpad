@@ -207,7 +207,7 @@ MDRawModule
   (cv_record).age                 = 1
   (cv_record).pdb_file_name       = "c:\test_app.pdb"
   (misc_record)                   = (null)
-  (debug_file)                    = "c:\test_app.pdb"
+  (debug_file)                    = "test_app.pdb"
   (debug_identifier)              = "5A9832E5287241C1838ED98914E9B7FF1"
   (version)                       = ""
 
