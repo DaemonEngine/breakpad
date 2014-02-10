@@ -38,7 +38,7 @@ IDI_SMALL               ICON                    "small.ico"
 // Menu
 //
 
-IDC_CRASHGENERATIONAPP MENU 
+IDC_CRASHGENERATIONAPP MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -64,7 +64,7 @@ END
 // Accelerator
 //
 
-IDC_CRASHGENERATIONAPP ACCELERATORS 
+IDC_CRASHGENERATIONAPP ACCELERATORS
 BEGIN
     "?",            IDM_ABOUT,              ASCII,  ALT
     "/",            IDM_ABOUT,              ASCII,  ALT
@@ -94,12 +94,12 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
     "#include ""windows.h""\r\n"
@@ -107,7 +107,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
@@ -121,7 +121,7 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_APP_TITLE           "CrashGenerationApp"
     IDC_CRASHGENERATIONAPP  "CRASHGENERATIONAPP"
@@ -141,4 +141,3 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

@@ -51,8 +51,16 @@
         '../crash_generation/crash_generation.gyp:crash_generation_server',
         '../crash_generation/crash_generation.gyp:crash_generation_client',
         '../handler/exception_handler.gyp:exception_handler',
-	'processor_bits',
-      ]
+        'processor_bits',
+      ],
+      'conditions': [
+          [ '"<(GENERATOR)" == "make"', {
+              'libraries': [
+                  '-ldbghelp', '-lversion', '-lpthread',
+              ],
+            },
+          ],
+      ],
     },
     {
       'target_name': 'processor_bits',
