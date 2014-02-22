@@ -2233,6 +2233,14 @@ string MinidumpModule::debug_identifier() const {
 
   // TODO(mmentovai): on the Mac, provide fallbacks as in code_identifier().
 
+  // XXX: PE generated with gcc don't currently have CV records, so the Windows
+  // minidumper can't record any identifier information, so there's no useful
+  // identifier for us to match with.  Fallback to a default debug_identifier.
+  if (identifier.empty())
+  {
+    identifier = "000000000000000000000000000000000";
+  }
+
   // Relatively common case
   BPLOG_IF(INFO, identifier.empty()) << "MinidumpModule could not determine "
                                         "debug_identifier for " << *name_;

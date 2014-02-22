@@ -32,6 +32,7 @@
 
 #include "common/pecoff/pecoff_file_id.h"
 
+#include <string.h>
 #include "common/pecoff/pecoffutils.h"
 
 namespace google_breakpad {
@@ -73,11 +74,18 @@ bool PeCoffFileID::PeCoffFileIdentifierFromMappedFile(const void* base,
                         age))
     return true;
 
+#if 1
+  // XXX: Fallback to a default debug_identifier.
+  memset(identifier, 0, kMDGUIDSize);
+  *age = 0;
+  return true;
+#else
   // Fall back on hashing the first page of the text section.
   // (This is of questionable value as the Windows Minidump writer doesn't have
   // this feature)
   return HashPeCoffTextSection(reinterpret_cast<const uint8_t *>(base),
                                identifier);
+#endif
 }
 
 }  // namespace google_breakpad
