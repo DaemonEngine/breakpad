@@ -41,11 +41,15 @@
 #include "common/scoped_ptr.h"
 #include "processor/postfix_evaluator-inl.h"
 
-namespace google_breakpad {
+#ifndef HAVE_STRTOK_R
+extern "C" char *strtok_r(char *, const char *, char **);
+#endif
 
 #ifdef _MSC_VER
 #define strtok_r strtok_s
 #endif
+
+namespace google_breakpad {
 
 template<typename V>
 bool CFIFrameInfo::FindCallerRegs(const RegisterValueMap<V> &registers,
