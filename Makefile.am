@@ -59,6 +59,7 @@ endif
 if MINGW_HOST
 SOCKET_LIBS = -lws2_32
 AM_CPPFLAGS += -D_POSIX_C_SOURCE
+AM_CPPFLAGS += -D__USE_MINGW_ANSI_STDIO
 endif
 
 # Specify include paths for ac macros
