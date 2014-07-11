@@ -53,7 +53,7 @@ LogStream::LogStream(std::ostream &stream, Severity severity,
   time_t clock;
   time(&clock);
   struct tm tm_struct;
-#ifdef _WIN32
+#ifdef _MSC_VER
   localtime_s(&tm_struct, &clock);
 #else
   localtime_r(&clock, &tm_struct);

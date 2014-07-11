@@ -113,10 +113,16 @@ case $host in
   *-*-cygwin* )
     WINDOWS_HOST=true
     ;;
+  *-*-mingw* )
+    WINDOWS_HOST=true
+    MINGW_HOST=true
+    ;;
 esac
 
 AM_CONDITIONAL(LINUX_HOST, test x$LINUX_HOST = xtrue)
+# WINDOWS_HOST means MINGW or CYGWIN
 AM_CONDITIONAL(WINDOWS_HOST, test x$WINDOWS_HOST = xtrue)
+AM_CONDITIONAL(MINGW_HOST, test x$MINGW_HOST = xtrue)
 
 # Only use Android support headers when compiling for Android
 case $host in
