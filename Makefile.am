@@ -1502,17 +1502,6 @@ EXTRA_DIST = \
 	src/testing/googlemock/src/gmock-matchers.cc \
 	src/testing/googlemock/src/gmock-spec-builders.cc \
 	src/testing/googlemock/src/gmock_main.cc \
-	src/third_party/curl/COPYING \
-	src/third_party/curl/curlbuild.h \
-	src/third_party/curl/curl.h \
-	src/third_party/curl/curlrules.h \
-	src/third_party/curl/curlver.h \
-	src/third_party/curl/easy.h \
-	src/third_party/curl/mprintf.h \
-	src/third_party/curl/multi.h \
-	src/third_party/curl/stdcheaders.h \
-	src/third_party/curl/typecheck-gcc.h \
-	src/third_party/curl/types.h \
 	src/third_party/mac_headers/architecture/byte_order.h \
 	src/third_party/mac_headers/i386/_types.h \
 	src/third_party/mac_headers/mach/boolean.h \

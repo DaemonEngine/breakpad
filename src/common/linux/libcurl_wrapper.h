@@ -32,12 +32,12 @@
 
 #ifndef COMMON_LINUX_LIBCURL_WRAPPER_H_
 #define COMMON_LINUX_LIBCURL_WRAPPER_H_
+#include <curl/curl.h>
 
 #include <string>
 #include <map>
 
 #include "common/using_std_string.h"
-#include "third_party/curl/curl.h"
 
 namespace google_breakpad {
 class LibcurlWrapper {
