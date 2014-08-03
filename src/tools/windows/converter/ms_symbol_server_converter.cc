@@ -478,7 +478,7 @@ BOOL CALLBACK MSSymbolServerConverter::SymCallback(HANDLE process,
 
 // static
 BOOL CALLBACK MSSymbolServerConverter::SymFindFileInPathCallback(
-    const char *filename, void *context) {
+    PCSTR filename, PVOID context) {
   // FALSE ends the search, indicating that the located symbol file is
   // satisfactory.
   return FALSE;

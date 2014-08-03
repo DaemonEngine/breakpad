@@ -215,8 +215,8 @@ class MSSymbolServerConverter {
   // SymFindFileInPath actually seems to accept NULL for a callback function
   // and behave properly for our needs in that case, but the documentation
   // doesn't mention it, so this little callback is provided.
-  static BOOL CALLBACK SymFindFileInPathCallback(const char *filename,
-                                                 void *context);
+  static BOOL CALLBACK SymFindFileInPathCallback(PCSTR filename,
+                                                 PVOID context);
 
   // The search path used by SymSrv, built based on the arguments to the
   // constructor.

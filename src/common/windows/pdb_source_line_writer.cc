@@ -27,6 +27,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// We don't want windows.h to define the macro max() which collides with
+// std::numeric_limits::max()
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "common/windows/pdb_source_line_writer.h"
 
 #include <windows.h>

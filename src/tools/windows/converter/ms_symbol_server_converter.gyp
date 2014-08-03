@@ -42,5 +42,18 @@
         '../../../common/windows/common_windows.gyp:common_windows_lib',
       ],
     },
+    {
+      'target_name': 'symsrv_convert',
+      'type': 'executable',
+      'dependencies': [
+        'ms_symbol_server_converter'
+      ],
+      'sources' : [
+        'symsrv_convert.cc',
+      ],
+      'include_dirs': [
+        '<(DEPTH)',
+      ],
+    }
   ],
 }

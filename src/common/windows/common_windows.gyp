@@ -37,7 +37,7 @@
       'all_dependent_settings': {
         'include_dirs': [
           '<(DEPTH)',
-          '$(VSInstallDir)/DIA SDK/include',
+          '"$(VSInstallDir)/DIA SDK/include"',
         ],
         'msvs_settings': {
           'VCLinkerTool': {
