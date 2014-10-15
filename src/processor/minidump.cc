@@ -2233,9 +2233,35 @@ string MinidumpModule::debug_identifier() const {
 
   // TODO(mmentovai): on the Mac, provide fallbacks as in code_identifier().
 
-  // XXX: PE generated with gcc don't currently have CV records, so the Windows
-  // minidumper can't record any identifier information, so there's no useful
-  // identifier for us to match with.  Fallback to a default debug_identifier.
+  // If possible, synthesize a debug_identifier from the version and
+  // architecture.
+  if (identifier.empty()) {
+    std::string ver = version();
+    if (ver.compare("") != 0) {
+      identifier = "";
+      for (std::string::const_iterator i = ver.begin(); i != ver.end(); i++) {
+        if (isxdigit(*i)) {
+          identifier += *i;
+        }
+      }
+
+      MinidumpSystemInfo *minidump_system_info = minidump_->GetSystemInfo();
+      if (minidump_system_info) {
+        std::string cpu = minidump_system_info->GetCPU();
+        for (std::string::const_iterator i = cpu.begin(); i != cpu.end(); i++) {
+          char ashex[4];
+          snprintf(ashex, sizeof(ashex), "%02x", *i);
+          identifier += ashex;
+        }
+      }
+
+      while (identifier.size() < 33) {
+        identifier += "0";
+      }
+    }
+  }
+
+  // Fallback to a default debug_identifier
   if (identifier.empty())
   {
     identifier = "000000000000000000000000000000000";
