@@ -8,6 +8,13 @@ google-breakpad with added support for Cygwin/MinGW:
 
 ### Preparation
 
+Run the fetch-externals script to fetch submodules in the DEPS file (e.g the gyp and gtest dependencies).
+(The upsteam repository is meant to be checked out using Chromium's `depot_tools`, which does this for you)
+
+```
+./fetch-externals
+```
+
 Run autoreconf to generate ./configure
 
 ````
@@ -24,9 +31,6 @@ See README.orig.md
 
 will produce `dump_syms.exe`, `minidump_dump.exe`, `minidump_stackwalk.exe`, `libbreakpad.a`,
 and for MinGW `libcrash_generation_client.a`, `libcrash_generation_server.a`, `crash_generation_app.exe`
-
-Note that since git-svn ignores svn externals, this repository is missing the
-gyp and gtest dependencies.
 
 ## Using
 

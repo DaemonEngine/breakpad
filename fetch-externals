@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+#
+# Read a depot_tools style DEPS file and recursively checkout the repos
+# listed
+#
+
+from __future__ import print_function
+
+import os
+
+# required to make some DEPS files syntactically valid
+def Var(var_name):
+    return '%s'
+
+def system(cmd):
+    print(cmd)
+    os.system(cmd)
+
+def systemCaptureOutput(cmd):
+    return os.popen(cmd).read()
+
+def checkout_deps(basepath):
+    depsfile = os.path.join(basepath, 'DEPS')
+
+    if not os.path.exists(depsfile):
+        print('Nothing to do for', depsfile)
+        return
+    print('Processing deps in', depsfile)
+
+    # evaluate contents of DEPS file
+    f = open(depsfile, 'r')
+    exec(f.read())
+
+    # process the path:url pairs in deps
+    for path in sorted(deps.keys()):
+        src = deps[path]
+
+        (url, rev) = src.split('@')
+        if path.startswith('src/'):
+            path = path[4:]
+        print('%s %s %s' % (url, path, rev))
+
+        if not os.path.exists(os.path.join(path, '.git')):
+            if url.find('svn') >= 0:
+                system('git svn clone -q %s %s -r %s' % (url, path, rev))
+            else:
+                system('git clone -n %s %s' % (url, path))
+                system('cd %s && git reset --hard %s' % (path, rev))
+        else:
+            if url.find('svn') >= 0:
+                system('cd %s && git svn fetch -q -r %s' % (path, rev))
+                gitRev = systemCaptureOutput('cd %s && git svn find-rev r%s' % (path, rev))
+                system('cd %s && git reset --hard %s' % (path, gitRev))
+            else:
+                system('cd %s && git fetch %s' % (path, url))
+                system('cd %s && git reset --hard %s' % (path, rev))
+
+        # and recurse
+        checkout_deps(os.path.join(basepath, path))
+
+    print('Done processing of', depsfile)
+
+checkout_deps('.')
