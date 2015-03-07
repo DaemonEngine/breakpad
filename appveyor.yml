@@ -1,7 +1,20 @@
 version: '{build}'
 
+skip_tags: true
+
 environment:
   GYP_MSVS_VERSION: 2013
+  CACHE: C:\cache
+  matrix:
+  - toolchain: msvs
+  - toolchain: gcc
+    HOST: i686-w64-mingw32
+  - toolchain: gcc
+    HOST: x86_64-w64-mingw32
+  - toolchain: gcc
+    HOST: i686-pc-cygwin
+  - toolchain: gcc
+    HOST: x86_64-pc-cygwin
 
 platform:
   - Win32
@@ -10,33 +23,31 @@ configuration:
   - Debug
   - Release
 
+matrix:
+  exclude:
+  - configuration: Release
+    HOST: i686-pc-cygwin
+  - configuration: Release
+    HOST: x86_64-pc-cygwin
+
 # Use the source dir expected by gclient.
 clone_folder: c:\projects\breakpad\src
 
-# Before checkout.
-init:
-  - cd %APPVEYOR_BUILD_FOLDER%\..\..
-  - appveyor DownloadFile https://storage.googleapis.com/chrome-infra/depot_tools.zip
-  - 7z -bd x depot_tools.zip -odepot_tools
-  - depot_tools\update_depot_tools
-  - cd %APPVEYOR_BUILD_FOLDER%
-
-# After checkout.
 install:
-  - PATH C:\projects\depot_tools;%PATH%
-  - cd %APPVEYOR_BUILD_FOLDER%\..
-  - gclient config https://%APPVEYOR_REPO_PROVIDER%.com/%APPVEYOR_REPO_NAME% --unmanaged --name=src
-  - gclient sync
+  - call scripts\appveyor-%toolchain%.bat install
 
 build_script:
-  - cd %APPVEYOR_BUILD_FOLDER%
-  - msbuild src\client\windows\breakpad_client.sln /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /m /verbosity:normal
-  - msbuild src\tools\windows\tools_windows.sln    /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /m /verbosity:normal
+  - call scripts\appveyor-%toolchain%.bat build_script
 
 test_script:
-  - src\client\windows\%CONFIGURATION%\client_tests.exe
-  - src\tools\windows\%CONFIGURATION%\dump_syms_unittest.exe
+  - call scripts\appveyor-%toolchain%.bat test_script
+
+cache:
+- C:\cache
 
 artifacts:
   - path: '**\*.exe'
   - path: '**\*.lib'
+  - path: staging
+
+deploy: off

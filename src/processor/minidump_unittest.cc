@@ -116,7 +116,6 @@ TEST_F(MinidumpTest, TestMinidumpFromStream) {
   file_stream.seekg(0, std::ios_base::beg);
   ASSERT_TRUE(file_stream.good());
   file_stream.read(&bytes[0], bytes.size());
-  ASSERT_TRUE(file_stream.good());
   string str(&bytes[0], bytes.size());
   istringstream stream(str);
   ASSERT_TRUE(stream.good());

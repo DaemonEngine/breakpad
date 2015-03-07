@@ -148,8 +148,13 @@ TEST(ContextDeathTest, X86BadFlags) {
   Dump dump(0, kLittleEndian);
   MDRawContextX86 raw;
   raw.context_flags = MD_CONTEXT_AMD64;
+#ifdef GTEST_USES_POSIX_RE
   ASSERT_DEATH(Context context(dump, raw);,
                "context\\.context_flags & (0x[0-9a-f]+|MD_CONTEXT_X86)");
+#else
+  ASSERT_DEATH(Context context(dump, raw);,
+               "context\\.context_flags & MD_CONTEXT_X86");
+#endif
 }
 
 TEST(ContextDeathTest, X86BadEndianness) {

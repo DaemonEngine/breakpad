@@ -1,5 +1,7 @@
 # Breakpad for Cygwin/MinGW
 
+[![Build status](https://ci.appveyor.com/api/projects/status/xp2os1r0m569a470/branch/pecoff-dwarf-on-git-20160304?svg=true)](https://ci.appveyor.com/project/jon-turney/google-breakpad)
+
 google-breakpad with added support for Cygwin/MinGW:
 - A `dump_syms` tool which can read DWARF debugging information from PE/COFF executables.
 - The breakpad crash-reporting client libraries built using Makefiles rather than MSVC solutions.
