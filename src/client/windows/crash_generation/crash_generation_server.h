@@ -199,8 +199,10 @@ class CrashGenerationServer {
   // Adds the given client to the list of registered clients.
   bool AddClient(ClientInfo* client_info);
 
+public:
   // Generates dump for the given client.
   bool GenerateDump(const ClientInfo& client, std::wstring* dump_path);
+private:
 
   // Puts the server in a permanent error state and sets a signal such that
   // the state will be immediately entered after the current state transition
