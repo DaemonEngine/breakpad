@@ -42,6 +42,10 @@
 
 #include "client/windows/tests/crash_generation_app/abstract_class.h"
 
+#ifndef _MSC_VER
+#define swprintf_s swprintf
+#endif
+
 namespace google_breakpad {
 
 const int kMaxLoadString = 100;
@@ -480,9 +484,11 @@ int APIENTRY _tWinMain(HINSTANCE instance,
   CustomClientInfo custom_info = {kCustomInfoEntries, kCustomInfoCount};
 
   CrashServerStart();
+#ifdef _MSC_VER
   // This is needed for CRT to not show dialog for invalid param
   // failures and instead let the code handle it.
   _CrtSetReportMode(_CRT_ASSERT, 0);
+#endif
   handler = new ExceptionHandler(L"C:\\dumps\\",
                                  NULL,
                                  google_breakpad::ShowDumpResults,
