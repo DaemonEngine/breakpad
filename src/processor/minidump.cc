@@ -1949,10 +1949,10 @@ string MinidumpModule::debug_file() const {
     }
   }
 
-  // Relatively common case
-  BPLOG_IF(INFO, file.empty()) << "MinidumpModule could not determine "
-                                  "debug_file for " << *name_;
-
+  if (file.empty()) {
+    file = code_file();
+    BPLOG(INFO) << "Generated debug_file '" << file << "' from code_file '" << *name_ << "'";
+  }
   return file;
 }
 
