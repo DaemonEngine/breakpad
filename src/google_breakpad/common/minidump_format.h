@@ -682,7 +682,7 @@ typedef struct {
   uint16_t standard_name[32];  /* UTF-16-encoded, 0-terminated */
   /* A MDSystemTime structure that contains a date and local time when the
    * transition from daylight saving time to standard time occurs on this
-   * operating system.  If the time zone does not support daylight saving time, 
+   * operating system.  If the time zone does not support daylight saving time,
    * the month member in the MDSystemTime structure is zero. */
   MDSystemTime standard_date;
   /* The bias value to be used during local time translations that occur during
@@ -694,7 +694,7 @@ typedef struct {
   uint16_t daylight_name[32];  /* UTF-16-encoded, 0-terminated */
   /* A MDSystemTime structure that contains a date and local time when the
    * transition from standard time to daylight saving time occurs on this
-   * operating system.  If the time zone does not support daylight saving time, 
+   * operating system.  If the time zone does not support daylight saving time,
    * the month member in the MDSystemTime structure is zero.*/
   MDSystemTime daylight_date;
   /* The bias value to be used during local time translations that occur during
@@ -738,7 +738,7 @@ typedef struct {
    * in MINIDUMP_MISC_INFO_3.  When this struct is populated, these values
    * may not be set.  Use flags1 and size_of_info to determine whether these
    * values are present. */
-   
+
   /* The following field is only valid if flags1 contains
    * MD_MISCINFO_FLAGS1_PROCESS_INTEGRITY. */
   uint32_t process_integrity_level;

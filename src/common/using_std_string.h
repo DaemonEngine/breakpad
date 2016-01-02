@@ -58,7 +58,9 @@
   using std::string;
   typedef std::string google_breakpad_string;
 #endif
-
+#ifdef __MINGW32__
+char *strtok_r(char *str, const char *delim, char **saveptr);
+#endif
 // Inicates that type google_breakpad_string is defined
 #define HAS_GOOGLE_BREAKPAD_STRING
 

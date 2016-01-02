@@ -276,7 +276,8 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/symbolic_constants_win.cc \
 	src/processor/symbolic_constants_win.h \
 	src/processor/tokenize.cc \
-	src/processor/tokenize.h
+	src/processor/tokenize.h \
+	src/common/strtok.c
 
 src_third_party_libdisasm_libdisasm_a_SOURCES = \
 	src/third_party/libdisasm/ia32_implicit.c \
@@ -721,7 +722,9 @@ src_processor_address_map_unittest_LDADD = \
 src_processor_basic_source_line_resolver_unittest_SOURCES = \
 	src/processor/basic_source_line_resolver_unittest.cc \
 	src/testing/gtest/src/gtest-all.cc \
-	src/testing/src/gmock-all.cc
+	src/testing/src/gmock-all.cc \
+	src/common/strtok.c
+
 src_processor_basic_source_line_resolver_unittest_CPPFLAGS = \
 	-I$(top_srcdir)/src \
 	-I$(top_srcdir)/src/testing/include \
@@ -1234,6 +1237,7 @@ src_processor_minidump_dump_LDADD = \
 	src/processor/dump_object.o \
 	src/processor/logging.o \
 	src/processor/minidump.o \
+	src/common/strtok.c \
 	src/processor/pathname_stripper.o \
 	src/processor/proc_maps_linux.o
 
@@ -1268,6 +1272,7 @@ src_processor_microdump_stackwalk_LDADD = \
 	src/processor/stackwalker_sparc.o \
 	src/processor/stackwalker_x86.o \
 	src/processor/tokenize.o \
+	src/common/strtok.c \
 	src/third_party/libdisasm/libdisasm.a
 
 src_processor_minidump_stackwalk_SOURCES = \
@@ -1306,6 +1311,7 @@ src_processor_minidump_stackwalk_LDADD = \
 	src/processor/stackwalker_x86.o \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o \
+	src/common/strtok.c \
 	src/third_party/libdisasm/libdisasm.a
 
 endif !DISABLE_PROCESSOR

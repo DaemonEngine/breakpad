@@ -24,11 +24,11 @@
 //
 // Author: Cris Neckar
 
-#include "processor/disassembler_x86.h"
 
 #include <string.h>
 #include <unistd.h>
 
+#include "processor/disassembler_x86.h"
 namespace google_breakpad {
 
 DisassemblerX86::DisassemblerX86(const uint8_t *bytecode,
