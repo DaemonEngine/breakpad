@@ -174,7 +174,7 @@ class DumpSymsRegressionTest : public testing::TestWithParam<const wchar_t *> {
     dump_syms_exe = self_dir + L"\\dump_syms.exe";
 
     TrimLastComponent(self_dir, &testdata_dir, NULL);
-    testdata_dir += L"\\testdata";
+    testdata_dir += L"\\dump_syms\\testdata";
   }
 
   std::wstring dump_syms_exe;
