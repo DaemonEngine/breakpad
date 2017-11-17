@@ -29,7 +29,3 @@ matrix:
 
 before_install: ./scripts/travis-checkout.sh
 script: ./scripts/travis-build.sh
-
-notifications:
-  email:
-    - google-breakpad-dev@googlegroups.com
