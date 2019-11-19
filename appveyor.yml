@@ -1,9 +1,11 @@
 version: '{build}'
 
+os: Visual Studio 2015
+
 skip_tags: true
 
 environment:
-  GYP_MSVS_VERSION: 2013
+  GYP_MSVS_VERSION: 2015
   CACHE: C:\cache
   matrix:
   - toolchain: msvs
