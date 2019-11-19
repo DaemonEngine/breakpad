@@ -813,6 +813,7 @@ src_tools_windows_dump_syms_dwarf_dump_syms_SOURCES = \
 	src/common/dwarf_cfi_to_module.cc \
 	src/common/dwarf_cu_to_module.cc \
 	src/common/dwarf_line_to_module.cc \
+	src/common/dwarf_range_list_handler.cc \
 	src/common/language.cc \
 	src/common/module.cc \
 	src/common/dwarf/bytereader.cc \
