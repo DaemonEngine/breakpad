@@ -41,6 +41,15 @@
       'dependencies': [
         '../../../common/windows/common_windows.gyp:common_windows_lib',
       ],
+      'all_dependent_settings': {
+        'msvs_settings': {
+          'VCLinkerTool': {
+            'AdditionalDependencies': [
+              'Pathcch.lib',
+            ],
+          },
+        },
+      },
     },
     {
       'target_name': 'symsrv_convert',
