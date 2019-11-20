@@ -109,7 +109,7 @@ class CrashGenerationServerTest : public ::testing::Test {
                              NULL);
 
     if (pipe == INVALID_HANDLE_VALUE) {
-      ASSERT_EQ(ERROR_PIPE_BUSY, GetLastError());
+      ASSERT_EQ(static_cast<DWORD>(ERROR_PIPE_BUSY), GetLastError());
 
       // Cannot continue retrying if wait on pipe fails.
       ASSERT_TRUE(WaitNamedPipe(kPipeName, 500));
