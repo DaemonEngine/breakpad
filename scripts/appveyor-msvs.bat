@@ -16,7 +16,7 @@ goto :eof
 
 :build_script
 cd %APPVEYOR_BUILD_FOLDER%
-msbuild src\client\windows\breakpad_client.sln /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /m /verbosity:normal
+msbuild src\client\windows\breakpad_client.sln /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /m /verbosity:normal && ^
 msbuild src\tools\windows\tools_windows.sln    /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /m /verbosity:normal
 goto :eof
 
