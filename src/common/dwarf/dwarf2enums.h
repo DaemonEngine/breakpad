@@ -149,7 +149,21 @@ enum DwarfForm {
   DW_FORM_sec_offset = 0x17,
   DW_FORM_exprloc = 0x18,
   DW_FORM_flag_present = 0x19,
+
+  // Added in DWARF 5:
+  DW_FORM_strx = 0x1a,
+  DW_FORM_strp_sup = 0x1d,
+  DW_FORM_line_strp = 0x1f,
+
+  // DWARF 4, but value out of order.
   DW_FORM_ref_sig8 = 0x20,
+
+  // Added in DWARF 5:
+  DW_FORM_strx1 = 0x25,
+  DW_FORM_strx2 = 0x26,
+  DW_FORM_strx3 = 0x27,
+  DW_FORM_strx4 = 0x28,
+
   // Extensions for Fission.  See http://gcc.gnu.org/wiki/DebugFission.
   DW_FORM_GNU_addr_index = 0x1f01,
   DW_FORM_GNU_str_index = 0x1f02

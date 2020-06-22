@@ -40,6 +40,7 @@
 #ifndef COMMON_DWARF_DWARF2READER_H__
 #define COMMON_DWARF_DWARF2READER_H__
 
+#include <assert.h>
 #include <stdint.h>
 
 #include <list>
@@ -475,6 +476,14 @@ class CompilationUnit {
     handler_->ProcessAttributeBuffer(offset, attr, form, data, len);
   }
 
+  // Handles the common parts of DW_FORM_GNU_str_index, DW_FORM_strx,
+  // DW_FORM_strx1, DW_FORM_strx2, DW_FORM_strx3, and DW_FORM_strx4.
+  // Retrieves the data and calls through to ProcessAttributeString.
+  void ProcessFormStringIndex(uint64_t offset,
+                              enum DwarfAttribute attr,
+                              enum DwarfForm form,
+                              uint64_t str_index);
+
   // Called when we have an attribute with string data to give to
   // our handler.  The attribute is for the DIE at OFFSET from the
   // beginning of compilation unit, has a name of ATTR, a form of
@@ -507,6 +516,20 @@ class CompilationUnit {
   // Read the debug sections from a .dwo file.
   void ReadDebugSectionsFromDwo(ElfReader* elf_reader,
                                 SectionMap* sections);
+
+  // Abstract away the difference between elf, mach-o, and Mac OS section names.
+  // Elf-names use ".section_name, others use "__section_name".  Pass "name" in
+  // the elf form, ".section_name".
+  const SectionMap::const_iterator GetSectionByName(const char *name) {
+    assert(name[0] == '.');
+    auto iter = sections_.find(name);
+    if (iter != sections_.end())
+      return iter;
+    std::string macho_name("__");
+    macho_name += name + 1;
+    iter = sections_.find(macho_name);
+    return iter;
+  }
 
   // Path of the file containing the debug information.
   const string path_;
@@ -541,6 +564,10 @@ class CompilationUnit {
   // ProcessAttribute, which is in the hot path for DWARF2 reading.
   const uint8_t *string_buffer_;
   uint64_t string_buffer_length_;
+
+  // Similarly for .debug_line_string.
+  const uint8_t* line_string_buffer_;
+  uint64_t line_string_buffer_length_;
 
   // String offsets section buffer and length, if we have a string offsets
   // section (.debug_str_offsets or .debug_str_offsets.dwo).
