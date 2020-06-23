@@ -499,6 +499,18 @@ class CompilationUnit {
     handler_->ProcessAttributeString(offset, attr, form, data);
   }
 
+  // Called to handle common portions of DW_FORM_addrx and variations, as well
+  // as DW_FORM_GNU_addr_index.
+  void ProcessAttributeAddrIndex(uint64_t offset,
+                                 enum DwarfAttribute attr,
+                                 enum DwarfForm form,
+                                 uint64_t addr_index) {
+    const uint8_t* addr_ptr =
+        addr_buffer_ + addr_base_ + addr_index * reader_->AddressSize();
+    ProcessAttributeUnsigned(
+        offset, attr, form, reader_->ReadAddress(addr_ptr));
+  }
+
   // Processes all DIEs for this compilation unit
   void ProcessDIEs();
 

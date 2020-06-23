@@ -50,6 +50,17 @@ inline uint16_t ByteReader::ReadTwoBytes(const uint8_t *buffer) const {
   }
 }
 
+inline uint64_t ByteReader::ReadThreeBytes(const uint8_t* buffer) const {
+  const uint32_t buffer0 = buffer[0];
+  const uint32_t buffer1 = buffer[1];
+  const uint32_t buffer2 = buffer[2];
+  if (endian_ == ENDIANNESS_LITTLE) {
+    return buffer0 | buffer1 << 8 | buffer2 << 16;
+  } else {
+    return buffer2 | buffer1 << 8 | buffer0 << 16;
+  }
+}
+
 inline uint64_t ByteReader::ReadFourBytes(const uint8_t *buffer) const {
   const uint32_t buffer0 = buffer[0];
   const uint32_t buffer1 = buffer[1];

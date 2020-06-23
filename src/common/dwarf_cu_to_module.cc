@@ -593,7 +593,12 @@ void DwarfCUToModule::FuncHandler::Finish() {
   if (!ranges_) {
     // Make high_pc_ an address, if it isn't already.
     if (high_pc_form_ != dwarf2reader::DW_FORM_addr &&
-        high_pc_form_ != dwarf2reader::DW_FORM_GNU_addr_index) {
+        high_pc_form_ != dwarf2reader::DW_FORM_GNU_addr_index &&
+        high_pc_form_ != dwarf2reader::DW_FORM_addrx &&
+        high_pc_form_ != dwarf2reader::DW_FORM_addrx1 &&
+        high_pc_form_ != dwarf2reader::DW_FORM_addrx2 &&
+        high_pc_form_ != dwarf2reader::DW_FORM_addrx3 &&
+        high_pc_form_ != dwarf2reader::DW_FORM_addrx4) {
       high_pc_ += low_pc_;
     }
 

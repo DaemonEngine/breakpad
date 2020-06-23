@@ -68,6 +68,11 @@ class ByteReader {
   // number, using this ByteReader's endianness.
   uint16_t ReadTwoBytes(const uint8_t *buffer) const;
 
+  // Read three bytes from BUFFER and return them as an unsigned 64 bit
+  // number, using this ByteReader's endianness. DWARF 5 uses this encoding
+  // for various index-related DW_FORMs.
+  uint64_t ReadThreeBytes(const uint8_t* buffer) const;
+
   // Read four bytes from BUFFER and return them as an unsigned 32 bit
   // number, using this ByteReader's endianness. This function returns
   // a uint64_t so that it is compatible with ReadAddress and

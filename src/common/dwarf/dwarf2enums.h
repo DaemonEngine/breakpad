@@ -164,6 +164,12 @@ enum DwarfForm {
   DW_FORM_strx3 = 0x27,
   DW_FORM_strx4 = 0x28,
 
+  DW_FORM_addrx = 0x1b,
+  DW_FORM_addrx1 = 0x29,
+  DW_FORM_addrx2 = 0x2a,
+  DW_FORM_addrx3 = 0x2b,
+  DW_FORM_addrx4 = 0x2c,
+
   // Extensions for Fission.  See http://gcc.gnu.org/wiki/DebugFission.
   DW_FORM_GNU_addr_index = 0x1f01,
   DW_FORM_GNU_str_index = 0x1f02
