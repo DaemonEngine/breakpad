@@ -122,9 +122,9 @@ void CompilationUnit::ReadAbbrevs() {
   // The only way to check whether we are reading over the end of the
   // buffer would be to first compute the size of the leb128 data by
   // reading it, then go back and read it again.
-  const uint8_t *abbrev_start = iter->second.first +
+  const uint8_t* abbrev_start = iter->second.first +
                                       header_.abbrev_offset;
-  const uint8_t *abbrevptr = abbrev_start;
+  const uint8_t* abbrevptr = abbrev_start;
 #ifndef NDEBUG
   const uint64_t abbrev_length = iter->second.second - header_.abbrev_offset;
 #endif
@@ -171,7 +171,7 @@ void CompilationUnit::ReadAbbrevs() {
 }
 
 // Skips a single DIE's attributes.
-const uint8_t *CompilationUnit::SkipDIE(const uint8_t* start,
+const uint8_t* CompilationUnit::SkipDIE(const uint8_t* start,
                                         const Abbrev& abbrev) {
   for (AttributeList::const_iterator i = abbrev.attributes.begin();
        i != abbrev.attributes.end();
@@ -182,7 +182,7 @@ const uint8_t *CompilationUnit::SkipDIE(const uint8_t* start,
 }
 
 // Skips a single attribute form's data.
-const uint8_t *CompilationUnit::SkipAttribute(const uint8_t *start,
+const uint8_t* CompilationUnit::SkipAttribute(const uint8_t* start,
                                               enum DwarfForm form) {
   size_t len;
 
@@ -219,7 +219,7 @@ const uint8_t *CompilationUnit::SkipAttribute(const uint8_t *start,
     case DW_FORM_ref_sig8:
       return start + 8;
     case DW_FORM_string:
-      return start + strlen(reinterpret_cast<const char *>(start)) + 1;
+      return start + strlen(reinterpret_cast<const char*>(start)) + 1;
     case DW_FORM_udata:
     case DW_FORM_ref_udata:
     case DW_FORM_strx:
@@ -311,7 +311,7 @@ size_t CompilationUnit::ReadTypeOffset(const uint8_t* headerptr) {
 // abbrevs, and an address size. DWARF5 adds a unit_type to distinguish
 // between partial-, full-, skeleton-, split-, and type- compilation units.
 void CompilationUnit::ReadHeader() {
-  const uint8_t *headerptr = buffer_;
+  const uint8_t* headerptr = buffer_;
   size_t initial_length_size;
 
   assert(headerptr + 4 < buffer_ + buffer_length_);
@@ -455,8 +455,8 @@ void CompilationUnit::ProcessFormStringIndex(
 // If one really wanted, you could merge SkipAttribute and
 // ProcessAttribute
 // This is all boring data manipulation and calling of the handler.
-const uint8_t *CompilationUnit::ProcessAttribute(
-    uint64_t dieoffset, const uint8_t *start, enum DwarfAttribute attr,
+const uint8_t* CompilationUnit::ProcessAttribute(
+    uint64_t dieoffset, const uint8_t* start, enum DwarfAttribute attr,
     enum DwarfForm form) {
   size_t len;
 
@@ -490,7 +490,7 @@ const uint8_t *CompilationUnit::ProcessAttribute(
                                reader_->ReadEightBytes(start));
       return start + 8;
     case DW_FORM_string: {
-      const char *str = reinterpret_cast<const char *>(start);
+      const char* str = reinterpret_cast<const char*>(start);
       ProcessAttributeString(dieoffset, attr, form, str);
       return start + strlen(str) + 1;
     }
@@ -588,7 +588,7 @@ const uint8_t *CompilationUnit::ProcessAttribute(
       const uint64_t offset = reader_->ReadOffset(start);
       assert(string_buffer_ + offset < string_buffer_ + string_buffer_length_);
 
-      const char *str = reinterpret_cast<const char *>(string_buffer_ + offset);
+      const char* str = reinterpret_cast<const char*>(string_buffer_ + offset);
       ProcessAttributeString(dieoffset, attr, form, str);
       return start + reader_->OffsetSize();
     }
@@ -662,8 +662,8 @@ const uint8_t *CompilationUnit::ProcessAttribute(
   return NULL;
 }
 
-const uint8_t *CompilationUnit::ProcessDIE(uint64_t dieoffset,
-                                           const uint8_t *start,
+const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
+                                           const uint8_t* start,
                                            const Abbrev& abbrev) {
   for (AttributeList::const_iterator i = abbrev.attributes.begin();
        i != abbrev.attributes.end();
@@ -684,12 +684,12 @@ const uint8_t *CompilationUnit::ProcessDIE(uint64_t dieoffset,
 }
 
 void CompilationUnit::ProcessDIEs() {
-  const uint8_t *dieptr = after_header_;
+  const uint8_t* dieptr = after_header_;
   size_t len;
 
   // lengthstart is the place the length field is based on.
   // It is the point in the header after the initial length field
-  const uint8_t *lengthstart = buffer_;
+  const uint8_t* lengthstart = buffer_;
 
   // In 64 bit dwarf, the initial length is 12 bytes, because of the
   // 0xffffffff at the start.
@@ -827,7 +827,7 @@ void CompilationUnit::ReadDebugSectionsFromDwo(ElfReader* elf_reader,
     if (section_data != NULL)
       sections->insert(std::make_pair(
           base_name, std::make_pair(
-             reinterpret_cast<const uint8_t *>(section_data),
+             reinterpret_cast<const uint8_t*>(section_data),
              section_size)));
   }
 }
@@ -856,11 +856,11 @@ void DwpReader::Initialize() {
                                                  &string_buffer_size_);
 
   version_ = byte_reader_.ReadFourBytes(
-      reinterpret_cast<const uint8_t *>(cu_index_));
+      reinterpret_cast<const uint8_t*>(cu_index_));
 
   if (version_ == 1) {
     nslots_ = byte_reader_.ReadFourBytes(
-        reinterpret_cast<const uint8_t *>(cu_index_)
+        reinterpret_cast<const uint8_t*>(cu_index_)
         + 3 * sizeof(uint32_t));
     phash_ = cu_index_ + 4 * sizeof(uint32_t);
     pindex_ = phash_ + nslots_ * sizeof(uint64_t);
@@ -870,11 +870,11 @@ void DwpReader::Initialize() {
     }
   } else if (version_ == 2) {
     ncolumns_ = byte_reader_.ReadFourBytes(
-        reinterpret_cast<const uint8_t *>(cu_index_) + sizeof(uint32_t));
+        reinterpret_cast<const uint8_t*>(cu_index_) + sizeof(uint32_t));
     nunits_ = byte_reader_.ReadFourBytes(
-        reinterpret_cast<const uint8_t *>(cu_index_) + 2 * sizeof(uint32_t));
+        reinterpret_cast<const uint8_t*>(cu_index_) + 2 * sizeof(uint32_t));
     nslots_ = byte_reader_.ReadFourBytes(
-        reinterpret_cast<const uint8_t *>(cu_index_) + 3 * sizeof(uint32_t));
+        reinterpret_cast<const uint8_t*>(cu_index_) + 3 * sizeof(uint32_t));
     phash_ = cu_index_ + 4 * sizeof(uint32_t);
     pindex_ = phash_ + nslots_ * sizeof(uint64_t);
     offset_table_ = pindex_ + nslots_ * sizeof(uint32_t);
@@ -902,7 +902,7 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
     // can read a list of section indexes for the debug sections
     // for the CU whose dwo_id we are looking for.
     int index = byte_reader_.ReadFourBytes(
-        reinterpret_cast<const uint8_t *>(pindex_)
+        reinterpret_cast<const uint8_t*>(pindex_)
         + slot * sizeof(uint32_t));
     const char* shndx_list = shndx_pool_ + index * sizeof(uint32_t);
     for (;;) {
@@ -911,7 +911,7 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
         return;
       }
       unsigned int shndx = byte_reader_.ReadFourBytes(
-          reinterpret_cast<const uint8_t *>(shndx_list));
+          reinterpret_cast<const uint8_t*>(shndx_list));
       shndx_list += sizeof(uint32_t);
       if (shndx == 0)
         break;
@@ -925,26 +925,26 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
         section_data = elf_reader_->GetSectionByIndex(shndx, &section_size);
         sections->insert(std::make_pair(
             ".debug_abbrev",
-            std::make_pair(reinterpret_cast<const uint8_t *> (section_data),
+            std::make_pair(reinterpret_cast<const uint8_t*> (section_data),
                                                               section_size)));
       } else if (!strncmp(section_name, ".debug_info", strlen(".debug_info"))) {
         section_data = elf_reader_->GetSectionByIndex(shndx, &section_size);
         sections->insert(std::make_pair(
             ".debug_info",
-            std::make_pair(reinterpret_cast<const uint8_t *> (section_data),
+            std::make_pair(reinterpret_cast<const uint8_t*> (section_data),
                            section_size)));
       } else if (!strncmp(section_name, ".debug_str_offsets",
                           strlen(".debug_str_offsets"))) {
         section_data = elf_reader_->GetSectionByIndex(shndx, &section_size);
         sections->insert(std::make_pair(
             ".debug_str_offsets",
-            std::make_pair(reinterpret_cast<const uint8_t *> (section_data),
+            std::make_pair(reinterpret_cast<const uint8_t*> (section_data),
                            section_size)));
       }
     }
     sections->insert(std::make_pair(
         ".debug_str",
-        std::make_pair(reinterpret_cast<const uint8_t *> (string_buffer_),
+        std::make_pair(reinterpret_cast<const uint8_t*> (string_buffer_),
                        string_buffer_size_)));
   } else if (version_ == 2) {
     uint32_t index = LookupCUv2(dwo_id);
@@ -969,33 +969,33 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
     }
     for (unsigned int col = 0u; col < ncolumns_; ++col) {
       uint32_t section_id =
-          byte_reader_.ReadFourBytes(reinterpret_cast<const uint8_t *>(id_row)
+          byte_reader_.ReadFourBytes(reinterpret_cast<const uint8_t*>(id_row)
                                      + col * sizeof(uint32_t));
       uint32_t offset = byte_reader_.ReadFourBytes(
-          reinterpret_cast<const uint8_t *>(offset_row)
+          reinterpret_cast<const uint8_t*>(offset_row)
           + col * sizeof(uint32_t));
       uint32_t size = byte_reader_.ReadFourBytes(
-          reinterpret_cast<const uint8_t *>(size_row) + col * sizeof(uint32_t));
+          reinterpret_cast<const uint8_t*>(size_row) + col * sizeof(uint32_t));
       if (section_id == DW_SECT_ABBREV) {
         sections->insert(std::make_pair(
             ".debug_abbrev",
-            std::make_pair(reinterpret_cast<const uint8_t *> (abbrev_data_)
+            std::make_pair(reinterpret_cast<const uint8_t*> (abbrev_data_)
                            + offset, size)));
       } else if (section_id == DW_SECT_INFO) {
         sections->insert(std::make_pair(
             ".debug_info",
-            std::make_pair(reinterpret_cast<const uint8_t *> (info_data_)
+            std::make_pair(reinterpret_cast<const uint8_t*> (info_data_)
                            + offset, size)));
       } else if (section_id == DW_SECT_STR_OFFSETS) {
         sections->insert(std::make_pair(
             ".debug_str_offsets",
-            std::make_pair(reinterpret_cast<const uint8_t *> (str_offsets_data_)
+            std::make_pair(reinterpret_cast<const uint8_t*> (str_offsets_data_)
                            + offset, size)));
       }
     }
     sections->insert(std::make_pair(
         ".debug_str",
-        std::make_pair(reinterpret_cast<const uint8_t *> (string_buffer_),
+        std::make_pair(reinterpret_cast<const uint8_t*> (string_buffer_),
                        string_buffer_size_)));
   }
 }
@@ -1003,14 +1003,14 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
 int DwpReader::LookupCU(uint64_t dwo_id) {
   uint32_t slot = static_cast<uint32_t>(dwo_id) & (nslots_ - 1);
   uint64_t probe = byte_reader_.ReadEightBytes(
-      reinterpret_cast<const uint8_t *>(phash_) + slot * sizeof(uint64_t));
+      reinterpret_cast<const uint8_t*>(phash_) + slot * sizeof(uint64_t));
   if (probe != 0 && probe != dwo_id) {
     uint32_t secondary_hash =
         (static_cast<uint32_t>(dwo_id >> 32) & (nslots_ - 1)) | 1;
     do {
       slot = (slot + secondary_hash) & (nslots_ - 1);
       probe = byte_reader_.ReadEightBytes(
-          reinterpret_cast<const uint8_t *>(phash_) + slot * sizeof(uint64_t));
+          reinterpret_cast<const uint8_t*>(phash_) + slot * sizeof(uint64_t));
     } while (probe != 0 && probe != dwo_id);
   }
   if (probe == 0)
@@ -1021,24 +1021,24 @@ int DwpReader::LookupCU(uint64_t dwo_id) {
 uint32_t DwpReader::LookupCUv2(uint64_t dwo_id) {
   uint32_t slot = static_cast<uint32_t>(dwo_id) & (nslots_ - 1);
   uint64_t probe = byte_reader_.ReadEightBytes(
-      reinterpret_cast<const uint8_t *>(phash_) + slot * sizeof(uint64_t));
+      reinterpret_cast<const uint8_t*>(phash_) + slot * sizeof(uint64_t));
   uint32_t index = byte_reader_.ReadFourBytes(
-      reinterpret_cast<const uint8_t *>(pindex_) + slot * sizeof(uint32_t));
+      reinterpret_cast<const uint8_t*>(pindex_) + slot * sizeof(uint32_t));
   if (index != 0 && probe != dwo_id) {
     uint32_t secondary_hash =
         (static_cast<uint32_t>(dwo_id >> 32) & (nslots_ - 1)) | 1;
     do {
       slot = (slot + secondary_hash) & (nslots_ - 1);
       probe = byte_reader_.ReadEightBytes(
-          reinterpret_cast<const uint8_t *>(phash_) + slot * sizeof(uint64_t));
+          reinterpret_cast<const uint8_t*>(phash_) + slot * sizeof(uint64_t));
       index = byte_reader_.ReadFourBytes(
-          reinterpret_cast<const uint8_t *>(pindex_) + slot * sizeof(uint32_t));
+          reinterpret_cast<const uint8_t*>(pindex_) + slot * sizeof(uint32_t));
     } while (index != 0 && probe != dwo_id);
   }
   return index;
 }
 
-LineInfo::LineInfo(const uint8_t *buffer, uint64_t buffer_length,
+LineInfo::LineInfo(const uint8_t* buffer, uint64_t buffer_length,
                    ByteReader* reader, const uint8_t* string_buffer,
                    size_t string_buffer_length,
                    const uint8_t* line_string_buffer,
@@ -1185,7 +1185,7 @@ void LineInfo::ReadFileRow(const uint8_t** lineptr,
 // The header for a debug_line section is mildly complicated, because
 // the line info is very tightly encoded.
 void LineInfo::ReadHeader() {
-  const uint8_t *lineptr = buffer_;
+  const uint8_t* lineptr = buffer_;
   size_t initial_length_size;
 
   const uint64_t initial_length
@@ -1331,12 +1331,12 @@ void LineInfo::ReadHeader() {
 /* static */
 bool LineInfo::ProcessOneOpcode(ByteReader* reader,
                                 LineInfoHandler* handler,
-                                const struct LineInfoHeader &header,
-                                const uint8_t *start,
+                                const struct LineInfoHeader& header,
+                                const uint8_t* start,
                                 struct LineStateMachine* lsm,
                                 size_t* len,
                                 uintptr pc,
-                                bool *lsm_passes_pc) {
+                                bool* lsm_passes_pc) {
   size_t oplen = 0;
   size_t templen;
   uint8_t opcode = reader->ReadOneByte(start);
@@ -1473,7 +1473,7 @@ bool LineInfo::ProcessOneOpcode(ByteReader* reader,
         }
           break;
         case DW_LNE_define_file: {
-          const char *filename = reinterpret_cast<const char *>(start);
+          const char* filename = reinterpret_cast<const char*>(start);
 
           templen = strlen(filename) + 1;
           start += templen;
@@ -1520,7 +1520,7 @@ void LineInfo::ReadLines() {
 
   // lengthstart is the place the length field is based on.
   // It is the point in the header after the initial length field
-  const uint8_t *lengthstart = buffer_;
+  const uint8_t* lengthstart = buffer_;
 
   // In 64 bit dwarf, the initial length is 12 bytes, because of the
   // 0xffffffff at the start.
@@ -1529,7 +1529,7 @@ void LineInfo::ReadLines() {
   else
     lengthstart += 4;
 
-  const uint8_t *lineptr = after_header_;
+  const uint8_t* lineptr = after_header_;
   lsm.Reset(header_.default_is_stmt);
 
   // The LineInfoHandler interface expects each line's length along
@@ -1568,8 +1568,8 @@ void LineInfo::ReadLines() {
   after_header_ = lengthstart + header_.total_length;
 }
 
-RangeListReader::RangeListReader(const uint8_t *buffer, uint64_t size,
-                                 ByteReader *reader, RangeListHandler *handler)
+RangeListReader::RangeListReader(const uint8_t* buffer, uint64_t size,
+                                 ByteReader* reader, RangeListHandler* handler)
     : buffer_(buffer), size_(size), reader_(reader), handler_(handler) { }
 
 bool RangeListReader::ReadRangeList(uint64_t offset) {
@@ -1625,17 +1625,17 @@ class CallFrameInfo::Rule {
   // this rule. If REG is kCFARegister, then this rule describes how to compute
   // the canonical frame address. Return what the HANDLER member function
   // returned.
-  virtual bool Handle(Handler *handler,
+  virtual bool Handle(Handler* handler,
                       uint64_t address, int reg) const = 0;
 
   // Equality on rules. We use these to decide which rules we need
   // to report after a DW_CFA_restore_state instruction.
-  virtual bool operator==(const Rule &rhs) const = 0;
+  virtual bool operator==(const Rule& rhs) const = 0;
 
-  bool operator!=(const Rule &rhs) const { return ! (*this == rhs); }
+  bool operator!=(const Rule& rhs) const { return ! (*this == rhs); }
 
   // Return a pointer to a copy of this rule.
-  virtual Rule *Copy() const = 0;
+  virtual Rule* Copy() const = 0;
 
   // If this is a base+offset rule, change its base register to REG.
   // Otherwise, do nothing. (Ugly, but required for DW_CFA_def_cfa_register.)
@@ -1651,16 +1651,16 @@ class CallFrameInfo::UndefinedRule: public CallFrameInfo::Rule {
  public:
   UndefinedRule() { }
   ~UndefinedRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->UndefinedRule(address, reg);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const UndefinedRule *our_rhs = dynamic_cast<const UndefinedRule *>(&rhs);
+    const UndefinedRule* our_rhs = dynamic_cast<const UndefinedRule*>(&rhs);
     return (our_rhs != NULL);
   }
-  Rule *Copy() const { return new UndefinedRule(*this); }
+  Rule* Copy() const { return new UndefinedRule(*this); }
 };
 
 // Rule: the register's value is the same as that it had in the caller.
@@ -1668,16 +1668,16 @@ class CallFrameInfo::SameValueRule: public CallFrameInfo::Rule {
  public:
   SameValueRule() { }
   ~SameValueRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->SameValueRule(address, reg);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const SameValueRule *our_rhs = dynamic_cast<const SameValueRule *>(&rhs);
+    const SameValueRule* our_rhs = dynamic_cast<const SameValueRule*>(&rhs);
     return (our_rhs != NULL);
   }
-  Rule *Copy() const { return new SameValueRule(*this); }
+  Rule* Copy() const { return new SameValueRule(*this); }
 };
 
 // Rule: the register is saved at OFFSET from BASE_REGISTER.  BASE_REGISTER
@@ -1687,18 +1687,18 @@ class CallFrameInfo::OffsetRule: public CallFrameInfo::Rule {
   OffsetRule(int base_register, long offset)
       : base_register_(base_register), offset_(offset) { }
   ~OffsetRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->OffsetRule(address, reg, base_register_, offset_);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const OffsetRule *our_rhs = dynamic_cast<const OffsetRule *>(&rhs);
+    const OffsetRule* our_rhs = dynamic_cast<const OffsetRule*>(&rhs);
     return (our_rhs &&
             base_register_ == our_rhs->base_register_ &&
             offset_ == our_rhs->offset_);
   }
-  Rule *Copy() const { return new OffsetRule(*this); }
+  Rule* Copy() const { return new OffsetRule(*this); }
   // We don't actually need SetBaseRegister or SetOffset here, since they
   // are only ever applied to CFA rules, for DW_CFA_def_cfa_offset, and it
   // doesn't make sense to use OffsetRule for computing the CFA: it
@@ -1716,18 +1716,18 @@ class CallFrameInfo::ValOffsetRule: public CallFrameInfo::Rule {
   ValOffsetRule(int base_register, long offset)
       : base_register_(base_register), offset_(offset) { }
   ~ValOffsetRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->ValOffsetRule(address, reg, base_register_, offset_);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const ValOffsetRule *our_rhs = dynamic_cast<const ValOffsetRule *>(&rhs);
+    const ValOffsetRule* our_rhs = dynamic_cast<const ValOffsetRule*>(&rhs);
     return (our_rhs &&
             base_register_ == our_rhs->base_register_ &&
             offset_ == our_rhs->offset_);
   }
-  Rule *Copy() const { return new ValOffsetRule(*this); }
+  Rule* Copy() const { return new ValOffsetRule(*this); }
   void SetBaseRegister(unsigned reg) { base_register_ = reg; }
   void SetOffset(long long offset) { offset_ = offset; }
  private:
@@ -1741,16 +1741,16 @@ class CallFrameInfo::RegisterRule: public CallFrameInfo::Rule {
   explicit RegisterRule(int register_number)
       : register_number_(register_number) { }
   ~RegisterRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->RegisterRule(address, reg, register_number_);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const RegisterRule *our_rhs = dynamic_cast<const RegisterRule *>(&rhs);
+    const RegisterRule* our_rhs = dynamic_cast<const RegisterRule*>(&rhs);
     return (our_rhs && register_number_ == our_rhs->register_number_);
   }
-  Rule *Copy() const { return new RegisterRule(*this); }
+  Rule* Copy() const { return new RegisterRule(*this); }
  private:
   int register_number_;
 };
@@ -1758,19 +1758,19 @@ class CallFrameInfo::RegisterRule: public CallFrameInfo::Rule {
 // Rule: EXPRESSION evaluates to the address at which the register is saved.
 class CallFrameInfo::ExpressionRule: public CallFrameInfo::Rule {
  public:
-  explicit ExpressionRule(const string &expression)
+  explicit ExpressionRule(const string& expression)
       : expression_(expression) { }
   ~ExpressionRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->ExpressionRule(address, reg, expression_);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const ExpressionRule *our_rhs = dynamic_cast<const ExpressionRule *>(&rhs);
+    const ExpressionRule* our_rhs = dynamic_cast<const ExpressionRule*>(&rhs);
     return (our_rhs && expression_ == our_rhs->expression_);
   }
-  Rule *Copy() const { return new ExpressionRule(*this); }
+  Rule* Copy() const { return new ExpressionRule(*this); }
  private:
   string expression_;
 };
@@ -1778,20 +1778,20 @@ class CallFrameInfo::ExpressionRule: public CallFrameInfo::Rule {
 // Rule: EXPRESSION evaluates to the address at which the register is saved.
 class CallFrameInfo::ValExpressionRule: public CallFrameInfo::Rule {
  public:
-  explicit ValExpressionRule(const string &expression)
+  explicit ValExpressionRule(const string& expression)
       : expression_(expression) { }
   ~ValExpressionRule() { }
-  bool Handle(Handler *handler, uint64_t address, int reg) const {
+  bool Handle(Handler* handler, uint64_t address, int reg) const {
     return handler->ValExpressionRule(address, reg, expression_);
   }
-  bool operator==(const Rule &rhs) const {
+  bool operator==(const Rule& rhs) const {
     // dynamic_cast is allowed by the Google C++ Style Guide, if the use has
     // been carefully considered; cheap RTTI-like workarounds are forbidden.
-    const ValExpressionRule *our_rhs =
-        dynamic_cast<const ValExpressionRule *>(&rhs);
+    const ValExpressionRule* our_rhs =
+        dynamic_cast<const ValExpressionRule*>(&rhs);
     return (our_rhs && expression_ == our_rhs->expression_);
   }
-  Rule *Copy() const { return new ValExpressionRule(*this); }
+  Rule* Copy() const { return new ValExpressionRule(*this); }
  private:
   string expression_;
 };
@@ -1800,51 +1800,51 @@ class CallFrameInfo::ValExpressionRule: public CallFrameInfo::Rule {
 class CallFrameInfo::RuleMap {
  public:
   RuleMap() : cfa_rule_(NULL) { }
-  RuleMap(const RuleMap &rhs) : cfa_rule_(NULL) { *this = rhs; }
+  RuleMap(const RuleMap& rhs) : cfa_rule_(NULL) { *this = rhs; }
   ~RuleMap() { Clear(); }
 
-  RuleMap &operator=(const RuleMap &rhs);
+  RuleMap& operator=(const RuleMap& rhs);
 
   // Set the rule for computing the CFA to RULE. Take ownership of RULE.
-  void SetCFARule(Rule *rule) { delete cfa_rule_; cfa_rule_ = rule; }
+  void SetCFARule(Rule* rule) { delete cfa_rule_; cfa_rule_ = rule; }
 
   // Return the current CFA rule. Unlike RegisterRule, this RuleMap retains
   // ownership of the rule. We use this for DW_CFA_def_cfa_offset and
   // DW_CFA_def_cfa_register, and for detecting references to the CFA before
   // a rule for it has been established.
-  Rule *CFARule() const { return cfa_rule_; }
+  Rule* CFARule() const { return cfa_rule_; }
 
   // Return the rule for REG, or NULL if there is none. The caller takes
   // ownership of the result.
-  Rule *RegisterRule(int reg) const;
+  Rule* RegisterRule(int reg) const;
 
   // Set the rule for computing REG to RULE. Take ownership of RULE.
-  void SetRegisterRule(int reg, Rule *rule);
+  void SetRegisterRule(int reg, Rule* rule);
 
   // Make all the appropriate calls to HANDLER as if we were changing from
   // this RuleMap to NEW_RULES at ADDRESS. We use this to implement
   // DW_CFA_restore_state, where lots of rules can change simultaneously.
   // Return true if all handlers returned true; otherwise, return false.
-  bool HandleTransitionTo(Handler *handler, uint64_t address,
-                          const RuleMap &new_rules) const;
+  bool HandleTransitionTo(Handler* handler, uint64_t address,
+                          const RuleMap& new_rules) const;
 
  private:
   // A map from register numbers to Rules.
-  typedef std::map<int, Rule *> RuleByNumber;
+  typedef std::map<int, Rule*> RuleByNumber;
 
   // Remove all register rules and clear cfa_rule_.
   void Clear();
 
   // The rule for computing the canonical frame address. This RuleMap owns
   // this rule.
-  Rule *cfa_rule_;
+  Rule* cfa_rule_;
 
   // A map from register numbers to postfix expressions to recover
   // their values. This RuleMap owns the Rules the map refers to.
   RuleByNumber registers_;
 };
 
-CallFrameInfo::RuleMap &CallFrameInfo::RuleMap::operator=(const RuleMap &rhs) {
+CallFrameInfo::RuleMap& CallFrameInfo::RuleMap::operator=(const RuleMap& rhs) {
   Clear();
   // Since each map owns the rules it refers to, assignment must copy them.
   if (rhs.cfa_rule_) cfa_rule_ = rhs.cfa_rule_->Copy();
@@ -1854,7 +1854,7 @@ CallFrameInfo::RuleMap &CallFrameInfo::RuleMap::operator=(const RuleMap &rhs) {
   return *this;
 }
 
-CallFrameInfo::Rule *CallFrameInfo::RuleMap::RegisterRule(int reg) const {
+CallFrameInfo::Rule* CallFrameInfo::RuleMap::RegisterRule(int reg) const {
   assert(reg != Handler::kCFARegister);
   RuleByNumber::const_iterator it = registers_.find(reg);
   if (it != registers_.end())
@@ -1863,18 +1863,18 @@ CallFrameInfo::Rule *CallFrameInfo::RuleMap::RegisterRule(int reg) const {
     return NULL;
 }
 
-void CallFrameInfo::RuleMap::SetRegisterRule(int reg, Rule *rule) {
+void CallFrameInfo::RuleMap::SetRegisterRule(int reg, Rule* rule) {
   assert(reg != Handler::kCFARegister);
   assert(rule);
-  Rule **slot = &registers_[reg];
+  Rule** slot = &registers_[reg];
   delete *slot;
   *slot = rule;
 }
 
 bool CallFrameInfo::RuleMap::HandleTransitionTo(
-    Handler *handler,
+    Handler* handler,
     uint64_t address,
-    const RuleMap &new_rules) const {
+    const RuleMap& new_rules) const {
   // Transition from cfa_rule_ to new_rules.cfa_rule_.
   if (cfa_rule_ && new_rules.cfa_rule_) {
     if (*cfa_rule_ != *new_rules.cfa_rule_ &&
@@ -1954,7 +1954,7 @@ class CallFrameInfo::State {
  public:
   // Create a call frame information interpreter state with the given
   // reporter, reader, handler, and initial call frame info address.
-  State(ByteReader *reader, Handler *handler, Reporter *reporter,
+  State(ByteReader* reader, Handler* handler, Reporter* reporter,
         uint64_t address)
       : reader_(reader), handler_(handler), reporter_(reporter),
         address_(address), entry_(NULL), cursor_(NULL) { }
@@ -1962,11 +1962,11 @@ class CallFrameInfo::State {
   // Interpret instructions from CIE, save the resulting rule set for
   // DW_CFA_restore instructions, and return true. On error, report
   // the problem to reporter_ and return false.
-  bool InterpretCIE(const CIE &cie);
+  bool InterpretCIE(const CIE& cie);
 
   // Interpret instructions from FDE, and return true. On error,
   // report the problem to reporter_ and return false.
-  bool InterpretFDE(const FDE &fde);
+  bool InterpretFDE(const FDE& fde);
 
  private:  
   // The operands of a CFI instruction, for ParseOperands.
@@ -1996,7 +1996,7 @@ class CallFrameInfo::State {
   //   '8'  an eight-byte offset            (OPERANDS->offset)
   //   'e'  a DW_FORM_block holding a       (OPERANDS->expression)
   //        DWARF expression
-  bool ParseOperands(const char *format, Operands *operands);
+  bool ParseOperands(const char* format, Operands* operands);
 
   // Interpret one CFI instruction from STATE's instruction stream, update
   // STATE, report any rule changes to handler_, and return true. On
@@ -2019,7 +2019,7 @@ class CallFrameInfo::State {
 
   // Specify that REG can be recovered using RULE, and return true. On
   // failure, report and return false.
-  bool DoRule(unsigned reg, Rule *rule);
+  bool DoRule(unsigned reg, Rule* rule);
 
   // Specify that REG can be found at OFFSET from the CFA, and return true.
   // On failure, report and return false. (Subroutine for DW_CFA_offset,
@@ -2047,23 +2047,23 @@ class CallFrameInfo::State {
   }
 
   // For reading multi-byte values with the appropriate endianness.
-  ByteReader *reader_;
+  ByteReader* reader_;
 
   // The handler to which we should report the data we find.
-  Handler *handler_;
+  Handler* handler_;
 
   // For reporting problems in the info we're parsing.
-  Reporter *reporter_;
+  Reporter* reporter_;
 
   // The code address to which the next instruction in the stream applies.
   uint64_t address_;
 
   // The entry whose instructions we are currently processing. This is
   // first a CIE, and then an FDE.
-  const Entry *entry_;
+  const Entry* entry_;
 
   // The next instruction to process.
-  const uint8_t *cursor_;
+  const uint8_t* cursor_;
 
   // The current set of rules.
   RuleMap rules_;
@@ -2078,7 +2078,7 @@ class CallFrameInfo::State {
   std::stack<RuleMap> saved_rules_;
 };
 
-bool CallFrameInfo::State::InterpretCIE(const CIE &cie) {
+bool CallFrameInfo::State::InterpretCIE(const CIE& cie) {
   entry_ = &cie;
   cursor_ = entry_->instructions;
   while (cursor_ < entry_->end)
@@ -2090,7 +2090,7 @@ bool CallFrameInfo::State::InterpretCIE(const CIE &cie) {
   return true;
 }
 
-bool CallFrameInfo::State::InterpretFDE(const FDE &fde) {
+bool CallFrameInfo::State::InterpretFDE(const FDE& fde) {
   entry_ = &fde;
   cursor_ = entry_->instructions;
   while (cursor_ < entry_->end)
@@ -2099,10 +2099,10 @@ bool CallFrameInfo::State::InterpretFDE(const FDE &fde) {
   return true;
 }
 
-bool CallFrameInfo::State::ParseOperands(const char *format,
-                                         Operands *operands) {
+bool CallFrameInfo::State::ParseOperands(const char* format,
+                                         Operands* operands) {
   size_t len;
-  const char *operand;
+  const char* operand;
 
   for (operand = format; *operand; operand++) {
     size_t bytes_left = entry_->end - cursor_;
@@ -2161,7 +2161,7 @@ bool CallFrameInfo::State::ParseOperands(const char *format,
         if (len > bytes_left || expression_length > bytes_left - len)
           return ReportIncomplete();
         cursor_ += len;
-        operands->expression = string(reinterpret_cast<const char *>(cursor_),
+        operands->expression = string(reinterpret_cast<const char*>(cursor_),
                                       expression_length);
         cursor_ += expression_length;
         break;
@@ -2176,7 +2176,7 @@ bool CallFrameInfo::State::ParseOperands(const char *format,
 }
 
 bool CallFrameInfo::State::DoInstruction() {
-  CIE *cie = entry_->cie;
+  CIE* cie = entry_->cie;
   Operands ops;
 
   // Our entry's kind should have been set by now.
@@ -2266,7 +2266,7 @@ bool CallFrameInfo::State::DoInstruction() {
     // Change the base register used to compute the CFA.
     case DW_CFA_def_cfa_register: {
       if (!ParseOperands("r", &ops)) return false;
-      Rule *cfa_rule = rules_.CFARule();
+      Rule* cfa_rule = rules_.CFARule();
       if (!cfa_rule) {
         if (!DoDefCFA(ops.register_number, ops.offset)) {
           reporter_->NoCFARule(entry_->offset, entry_->kind, CursorOffset());
@@ -2299,7 +2299,7 @@ bool CallFrameInfo::State::DoInstruction() {
     case DW_CFA_def_cfa_expression: {
       if (!ParseOperands("e", &ops))
         return false;
-      Rule *rule = new ValExpressionRule(ops.expression);
+      Rule* rule = new ValExpressionRule(ops.expression);
       rules_.SetCFARule(rule);
       if (!rule->Handle(handler_, address_,
                         Handler::kCFARegister))
@@ -2406,7 +2406,7 @@ bool CallFrameInfo::State::DoInstruction() {
                                    CursorOffset());
         return false;
       }
-      const RuleMap &new_rules = saved_rules_.top();
+      const RuleMap& new_rules = saved_rules_.top();
       if (rules_.CFARule() && !new_rules.CFARule()) {
         reporter_->ClearingCFARule(entry_->offset, entry_->kind,
                                    CursorOffset());
@@ -2458,14 +2458,14 @@ bool CallFrameInfo::State::DoInstruction() {
 }
 
 bool CallFrameInfo::State::DoDefCFA(unsigned base_register, long offset) {
-  Rule *rule = new ValOffsetRule(base_register, offset);
+  Rule* rule = new ValOffsetRule(base_register, offset);
   rules_.SetCFARule(rule);
   return rule->Handle(handler_, address_,
                       Handler::kCFARegister);
 }
 
 bool CallFrameInfo::State::DoDefCFAOffset(long offset) {
-  Rule *cfa_rule = rules_.CFARule();
+  Rule* cfa_rule = rules_.CFARule();
   if (!cfa_rule) {
     reporter_->NoCFARule(entry_->offset, entry_->kind, CursorOffset());
     return false;
@@ -2475,7 +2475,7 @@ bool CallFrameInfo::State::DoDefCFAOffset(long offset) {
                           Handler::kCFARegister);
 }
 
-bool CallFrameInfo::State::DoRule(unsigned reg, Rule *rule) {
+bool CallFrameInfo::State::DoRule(unsigned reg, Rule* rule) {
   rules_.SetRegisterRule(reg, rule);
   return rule->Handle(handler_, address_, reg);
 }
@@ -2504,7 +2504,7 @@ bool CallFrameInfo::State::DoRestore(unsigned reg) {
     reporter_->RestoreInCIE(entry_->offset, CursorOffset());
     return false;
   }
-  Rule *rule = cie_rules_.RegisterRule(reg);
+  Rule* rule = cie_rules_.RegisterRule(reg);
   if (!rule) {
     // This isn't really the right thing to do, but since CFI generally
     // only mentions callee-saves registers, and GCC's convention for
@@ -2515,8 +2515,8 @@ bool CallFrameInfo::State::DoRestore(unsigned reg) {
   return DoRule(reg, rule);
 }
 
-bool CallFrameInfo::ReadEntryPrologue(const uint8_t *cursor, Entry *entry) {
-  const uint8_t *buffer_end = buffer_ + buffer_length_;
+bool CallFrameInfo::ReadEntryPrologue(const uint8_t* cursor, Entry* entry) {
+  const uint8_t* buffer_end = buffer_ + buffer_length_;
 
   // Initialize enough of ENTRY for use in error reporting.
   entry->offset = cursor - buffer_;
@@ -2593,8 +2593,8 @@ bool CallFrameInfo::ReadEntryPrologue(const uint8_t *cursor, Entry *entry) {
   return true;
 }
 
-bool CallFrameInfo::ReadCIEFields(CIE *cie) {
-  const uint8_t *cursor = cie->fields;
+bool CallFrameInfo::ReadCIEFields(CIE* cie) {
+  const uint8_t* cursor = cie->fields;
   size_t len;
 
   assert(cie->kind == kCIE);
@@ -2625,13 +2625,13 @@ bool CallFrameInfo::ReadCIEFields(CIE *cie) {
     return false;
   }
 
-  const uint8_t *augmentation_start = cursor;
-  const uint8_t *augmentation_end =
-      reinterpret_cast<const uint8_t *>(memchr(augmentation_start, '\0',
+  const uint8_t* augmentation_start = cursor;
+  const uint8_t* augmentation_end =
+      reinterpret_cast<const uint8_t*>(memchr(augmentation_start, '\0',
                                                cie->end - augmentation_start));
   if (! augmentation_end) return ReportIncomplete(cie);
   cursor = augmentation_end;
-  cie->augmentation = string(reinterpret_cast<const char *>(augmentation_start),
+  cie->augmentation = string(reinterpret_cast<const char*>(augmentation_start),
                              cursor - augmentation_start);
   // Skip the terminating '\0'.
   cursor++;
@@ -2692,9 +2692,9 @@ bool CallFrameInfo::ReadCIEFields(CIE *cie) {
     if (size_t(cie->end - cursor) < len + data_size)
       return ReportIncomplete(cie);
     cursor += len;
-    const uint8_t *data = cursor;
+    const uint8_t* data = cursor;
     cursor += data_size;
-    const uint8_t *data_end = cursor;
+    const uint8_t* data_end = cursor;
 
     cie->has_z_lsda = false;
     cie->has_z_personality = false;
@@ -2785,8 +2785,8 @@ bool CallFrameInfo::ReadCIEFields(CIE *cie) {
   return true;
 }
 
-bool CallFrameInfo::ReadFDEFields(FDE *fde) {
-  const uint8_t *cursor = fde->fields;
+bool CallFrameInfo::ReadFDEFields(FDE* fde) {
+  const uint8_t* cursor = fde->fields;
   size_t size;
 
   fde->address = reader_->ReadEncodedPointer(cursor, fde->cie->pointer_encoding,
@@ -2852,10 +2852,10 @@ bool CallFrameInfo::ReadFDEFields(FDE *fde) {
 }
   
 bool CallFrameInfo::Start() {
-  const uint8_t *buffer_end = buffer_ + buffer_length_;
-  const uint8_t *cursor;
+  const uint8_t* buffer_end = buffer_ + buffer_length_;
+  const uint8_t* cursor;
   bool all_ok = true;
-  const uint8_t *entry_end;
+  const uint8_t* entry_end;
   bool ok;
 
   // Traverse all the entries in buffer_, skipping CIEs and offering
@@ -2986,7 +2986,7 @@ bool CallFrameInfo::Start() {
   return all_ok;
 }
 
-const char *CallFrameInfo::KindName(EntryKind kind) {
+const char* CallFrameInfo::KindName(EntryKind kind) {
   if (kind == CallFrameInfo::kUnknown)
     return "entry";
   else if (kind == CallFrameInfo::kCIE)
@@ -2999,7 +2999,7 @@ const char *CallFrameInfo::KindName(EntryKind kind) {
   }
 }
 
-bool CallFrameInfo::ReportIncomplete(Entry *entry) {
+bool CallFrameInfo::ReportIncomplete(Entry* entry) {
   reporter_->Incomplete(entry->offset, entry->kind);
   return false;
 }
@@ -3058,7 +3058,7 @@ void CallFrameInfo::Reporter::UnrecognizedVersion(uint64_t offset, int version) 
 }
 
 void CallFrameInfo::Reporter::UnrecognizedAugmentation(uint64_t offset,
-                                                       const string &aug) {
+                                                       const string& aug) {
   fprintf(stderr,
           "%s: CFI frame description entry at offset 0x%" PRIx64 " in '%s':"
           " CIE specifies unrecognized augmentation: '%s'\n",

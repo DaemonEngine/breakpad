@@ -64,13 +64,13 @@ class DwpReader;
 
 // This maps from a string naming a section to a pair containing a
 // the data for the section, and the size of the section.
-typedef std::map<string, std::pair<const uint8_t *, uint64_t> > SectionMap;
+typedef std::map<string, std::pair<const uint8_t*, uint64_t> > SectionMap;
 
 // Abstract away the difference between elf and mach-o section names.
 // Elf-names use ".section_name, mach-o uses "__section_name".  Pass "name" in
 // the elf form, ".section_name".
 const SectionMap::const_iterator GetSectionByName(const SectionMap&
-                                                  sections, const char *name);
+                                                  sections, const char* name);
 
 typedef std::list<std::pair<enum DwarfAttribute, enum DwarfForm> >
     AttributeList;
@@ -88,7 +88,7 @@ struct LineInfoHeader {
   uint8_t opcode_base;
   // Use a pointer so that signalsafe_addr2line is able to use this structure
   // without heap allocation problem.
-  std::vector<unsigned char> *std_opcode_lengths;
+  std::vector<unsigned char>* std_opcode_lengths;
 };
 
 class LineInfo {
@@ -125,12 +125,12 @@ class LineInfo {
   // lsm's old address < PC <= lsm's new address
   static bool ProcessOneOpcode(ByteReader* reader,
                                LineInfoHandler* handler,
-                               const struct LineInfoHeader &header,
-                               const uint8_t *start,
+                               const struct LineInfoHeader& header,
+                               const uint8_t* start,
                                struct LineStateMachine* lsm,
                                size_t* len,
                                uintptr pc,
-                               bool *lsm_passes_pc);
+                               bool* lsm_passes_pc);
 
  private:
   // Reads the DWARF2/3 header for this line info.
@@ -171,7 +171,7 @@ class LineInfo {
   // buffer is the buffer for our line info, starting at exactly where
   // the line info to read is.  after_header is the place right after
   // the end of the line information header.
-  const uint8_t *buffer_;
+  const uint8_t* buffer_;
 #ifndef NDEBUG
   uint64_t buffer_length_;
 #endif
@@ -182,7 +182,7 @@ class LineInfo {
   const uint8_t* line_string_buffer_;
   uint64_t line_string_buffer_length_;
 
-  const uint8_t *after_header_;
+  const uint8_t* after_header_;
 };
 
 // This class is the main interface between the line info reader and
@@ -239,16 +239,16 @@ class RangeListHandler {
 
 class RangeListReader {
  public:
-  RangeListReader(const uint8_t *buffer, uint64_t size, ByteReader *reader,
-                  RangeListHandler *handler);
+  RangeListReader(const uint8_t* buffer, uint64_t size, ByteReader* reader,
+                  RangeListHandler* handler);
 
   bool ReadRangeList(uint64_t offset);
 
  private:
-  const uint8_t *buffer_;
+  const uint8_t* buffer_;
   uint64_t size_;
   ByteReader* reader_;
-  RangeListHandler *handler_;
+  RangeListHandler* handler_;
 };
 
 // This class is the main interface between the reader and the
@@ -322,7 +322,7 @@ class Dwarf2Handler {
   virtual void ProcessAttributeBuffer(uint64_t offset,
                                       enum DwarfAttribute attr,
                                       enum DwarfForm form,
-                                      const uint8_t *data,
+                                      const uint8_t* data,
                                       uint64_t len) { }
 
   // Called when we have an attribute with string data to give to our handler.
@@ -461,14 +461,14 @@ class CompilationUnit {
 
   // Processes a single DIE for this compilation unit and return a new
   // pointer just past the end of it
-  const uint8_t *ProcessDIE(uint64_t dieoffset,
-                            const uint8_t *start,
+  const uint8_t* ProcessDIE(uint64_t dieoffset,
+                            const uint8_t* start,
                             const Abbrev& abbrev);
 
   // Processes a single attribute and return a new pointer just past the
   // end of it
-  const uint8_t *ProcessAttribute(uint64_t dieoffset,
-                                  const uint8_t *start,
+  const uint8_t* ProcessAttribute(uint64_t dieoffset,
+                                  const uint8_t* start,
                                   enum DwarfAttribute attr,
                                   enum DwarfForm form);
 
@@ -564,11 +564,11 @@ class CompilationUnit {
 
   // Skips the die with attributes specified in ABBREV starting at
   // START, and return the new place to position the stream to.
-  const uint8_t *SkipDIE(const uint8_t *start, const Abbrev& abbrev);
+  const uint8_t* SkipDIE(const uint8_t* start, const Abbrev& abbrev);
 
   // Skips the attribute starting at START, with FORM, and return the
   // new place to position the stream to.
-  const uint8_t *SkipAttribute(const uint8_t *start, enum DwarfForm form);
+  const uint8_t* SkipAttribute(const uint8_t* start, enum DwarfForm form);
 
   // Process the actual debug information in a split DWARF file.
   void ProcessSplitDwarf();
@@ -587,9 +587,9 @@ class CompilationUnit {
   // buffer is the buffer for our CU, starting at .debug_info + offset
   // passed in from constructor.
   // after_header points to right after the compilation unit header.
-  const uint8_t *buffer_;
+  const uint8_t* buffer_;
   uint64_t buffer_length_;
-  const uint8_t *after_header_;
+  const uint8_t* after_header_;
 
   // The associated ByteReader that handles endianness issues for us
   ByteReader* reader_;
@@ -608,7 +608,7 @@ class CompilationUnit {
   // String section buffer and length, if we have a string section.
   // This is here to avoid doing a section lookup for strings in
   // ProcessAttribute, which is in the hot path for DWARF2 reading.
-  const uint8_t *string_buffer_;
+  const uint8_t* string_buffer_;
   uint64_t string_buffer_length_;
 
   // Similarly for .debug_line_string.
@@ -984,8 +984,8 @@ class CallFrameInfo {
   // The mechanics of C++ exception handling, personality routines,
   // and language-specific data areas are described here, rather nicely:
   // http://www.codesourcery.com/public/cxx-abi/abi-eh.html
-  CallFrameInfo(const uint8_t *buffer, size_t buffer_length,
-                ByteReader *reader, Handler *handler, Reporter *reporter,
+  CallFrameInfo(const uint8_t* buffer, size_t buffer_length,
+                ByteReader* reader, Handler* handler, Reporter* reporter,
                 bool eh_frame = false)
       : buffer_(buffer), buffer_length_(buffer_length),
         reader_(reader), handler_(handler), reporter_(reporter),
@@ -999,7 +999,7 @@ class CallFrameInfo {
   bool Start();
 
   // Return the textual name of KIND. For error reporting.
-  static const char *KindName(EntryKind kind);
+  static const char* KindName(EntryKind kind);
 
  private:
 
@@ -1012,7 +1012,7 @@ class CallFrameInfo {
     size_t offset;
 
     // The start of this entry in the buffer.
-    const uint8_t *start;
+    const uint8_t* start;
     
     // Which kind of entry this is.
     //
@@ -1023,16 +1023,16 @@ class CallFrameInfo {
 
     // The end of this entry's common prologue (initial length and id), and
     // the start of this entry's kind-specific fields.
-    const uint8_t *fields;
+    const uint8_t* fields;
 
     // The start of this entry's instructions.
-    const uint8_t *instructions;
+    const uint8_t* instructions;
 
     // The address past the entry's last byte in the buffer. (Note that
     // since offset points to the entry's initial length field, and the
     // length field is the number of bytes after that field, this is not
     // simply buffer_ + offset + length.)
-    const uint8_t *end;
+    const uint8_t* end;
 
     // For both DWARF CFI and .eh_frame sections, this is the CIE id in a
     // CIE, and the offset of the associated CIE in an FDE.
@@ -1040,7 +1040,7 @@ class CallFrameInfo {
 
     // The CIE that applies to this entry, if we've parsed it. If this is a
     // CIE, then this field points to this structure.
-    CIE *cie;
+    CIE* cie;
   };
 
   // A common information entry (CIE).
@@ -1114,14 +1114,14 @@ class CallFrameInfo {
   // true. On failure, report the problem, and return false. Even if we
   // return false, set ENTRY->end to the first byte after the entry if we
   // were able to figure that out, or NULL if we weren't.
-  bool ReadEntryPrologue(const uint8_t *cursor, Entry *entry);
+  bool ReadEntryPrologue(const uint8_t* cursor, Entry* entry);
 
   // Parse the fields of a CIE after the entry prologue, including any 'z'
   // augmentation data. Assume that the 'Entry' fields of CIE are
   // populated; use CIE->fields and CIE->end as the start and limit for
   // parsing. On success, populate the rest of *CIE, and return true; on
   // failure, report the problem and return false.
-  bool ReadCIEFields(CIE *cie);
+  bool ReadCIEFields(CIE* cie);
 
   // Parse the fields of an FDE after the entry prologue, including any 'z'
   // augmentation data. Assume that the 'Entry' fields of *FDE are
@@ -1129,12 +1129,12 @@ class CallFrameInfo {
   // parsing. Assume that FDE->cie is fully initialized. On success,
   // populate the rest of *FDE, and return true; on failure, report the
   // problem and return false.
-  bool ReadFDEFields(FDE *fde);
+  bool ReadFDEFields(FDE* fde);
 
   // Report that ENTRY is incomplete, and return false. This is just a
   // trivial wrapper for invoking reporter_->Incomplete; it provides a
   // little brevity.
-  bool ReportIncomplete(Entry *entry);
+  bool ReportIncomplete(Entry* entry);
 
   // Return true if ENCODING has the DW_EH_PE_indirect bit set.
   static bool IsIndirectEncoding(DwarfPointerEncoding encoding) {
@@ -1142,17 +1142,17 @@ class CallFrameInfo {
   }
 
   // The contents of the DWARF .debug_info section we're parsing.
-  const uint8_t *buffer_;
+  const uint8_t* buffer_;
   size_t buffer_length_;
 
   // For reading multi-byte values with the appropriate endianness.
-  ByteReader *reader_;
+  ByteReader* reader_;
 
   // The handler to which we should report the data we find.
-  Handler *handler_;
+  Handler* handler_;
 
   // For reporting problems in the info we're parsing.
-  Reporter *reporter_;
+  Reporter* reporter_;
 
   // True if we are processing .eh_frame-format data.
   bool eh_frame_;
@@ -1185,7 +1185,7 @@ class CallFrameInfo::Handler {
   // process a given FDE, the parser reiterates the appropriate CIE's
   // contents at the beginning of the FDE's rules.
   virtual bool Entry(size_t offset, uint64_t address, uint64_t length,
-                     uint8_t version, const string &augmentation,
+                     uint8_t version, const string& augmentation,
                      unsigned return_address) = 0;
 
   // When the Entry function returns true, the parser calls these
@@ -1234,13 +1234,13 @@ class CallFrameInfo::Handler {
   // At ADDRESS, the DWARF expression EXPRESSION yields the address at
   // which REG was saved.
   virtual bool ExpressionRule(uint64_t address, int reg,
-                              const string &expression) = 0;
+                              const string& expression) = 0;
 
   // At ADDRESS, the DWARF expression EXPRESSION yields the caller's
   // value for REG. (This rule doesn't provide an address at which the
   // register's value is saved.)
   virtual bool ValExpressionRule(uint64_t address, int reg,
-                                 const string &expression) = 0;
+                                 const string& expression) = 0;
 
   // Indicate that the rules for the address range reported by the
   // last call to Entry are complete.  End should return true if
@@ -1317,8 +1317,8 @@ class CallFrameInfo::Reporter {
   // in a Mach-O section named __debug_frame. If we support
   // Linux-style exception handling data, we could be reading an
   // .eh_frame section.
-  Reporter(const string &filename,
-           const string &section = ".debug_frame")
+  Reporter(const string& filename,
+           const string& section = ".debug_frame")
       : filename_(filename), section_(section) { }
   virtual ~Reporter() { }
 
@@ -1358,7 +1358,7 @@ class CallFrameInfo::Reporter {
   // which we don't recognize. We cannot parse DWARF CFI if it uses
   // augmentations we don't recognize.
   virtual void UnrecognizedAugmentation(uint64_t offset,
-                                        const string &augmentation);
+                                        const string& augmentation);
 
   // The pointer encoding ENCODING, specified by the CIE at OFFSET, is not
   // a valid encoding.

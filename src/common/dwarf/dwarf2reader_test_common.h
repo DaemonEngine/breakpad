@@ -70,7 +70,7 @@ class TestCompilationUnit: public google_breakpad::test_assembler::Section {
 
   // Append a DWARF compilation unit header to the section, with the given
   // DWARF version, abbrev table offset, and address size.
-  TestCompilationUnit &Header(int version, const Label &abbrev_offset,
+  TestCompilationUnit& Header(int version, const Label& abbrev_offset,
                               size_t address_size) {
     if (format_size_ == 4) {
       D32(length_);
@@ -92,7 +92,7 @@ class TestCompilationUnit: public google_breakpad::test_assembler::Section {
   }
 
   // Mark the end of this header's DIEs.
-  TestCompilationUnit &Finish() {
+  TestCompilationUnit& Finish() {
     length_ = Size() - post_length_offset_;
     return *this;
   }
@@ -122,7 +122,7 @@ class TestAbbrevTable: public google_breakpad::test_assembler::Section {
   // Start a new abbreviation table entry for abbreviation code |code|,
   // encoding a DIE whose tag is |tag|, and which has children if and only
   // if |has_children| is true.
-  TestAbbrevTable &Abbrev(int code, DwarfTag tag, DwarfHasChild has_children) {
+  TestAbbrevTable& Abbrev(int code, DwarfTag tag, DwarfHasChild has_children) {
     assert(code != 0);
     ULEB128(code);
     ULEB128(static_cast<unsigned>(tag));
@@ -132,21 +132,21 @@ class TestAbbrevTable: public google_breakpad::test_assembler::Section {
 
   // Add an attribute to the current abbreviation code whose name is |name|
   // and whose form is |form|.
-  TestAbbrevTable &Attribute(DwarfAttribute name, DwarfForm form) {
+  TestAbbrevTable& Attribute(DwarfAttribute name, DwarfForm form) {
     ULEB128(static_cast<unsigned>(name));
     ULEB128(static_cast<unsigned>(form));
     return *this;
   }
 
   // Finish the current abbreviation code.
-  TestAbbrevTable &EndAbbrev() {
+  TestAbbrevTable& EndAbbrev() {
     ULEB128(0);
     ULEB128(0);
     return *this;
   }
 
   // Finish the current abbreviation table.
-  TestAbbrevTable &EndTable() {
+  TestAbbrevTable& EndTable() {
     ULEB128(0);
     return *this;
   }

@@ -144,7 +144,7 @@ bool CUFunctionInfoHandler::StartDIE(uint64_t offset, enum DwarfTag tag) {
 void CUFunctionInfoHandler::ProcessAttributeString(uint64_t offset,
                                                    enum DwarfAttribute attr,
                                                    enum DwarfForm form,
-                                                   const string &data) {
+                                                   const string& data) {
   if (current_function_info_) {
     if (attr == DW_AT_name)
       current_function_info_->name = data;
