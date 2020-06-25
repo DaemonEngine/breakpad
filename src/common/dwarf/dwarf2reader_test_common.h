@@ -57,7 +57,7 @@ class TestCompilationUnit: public google_breakpad::test_assembler::Section {
     assert(format_size == 4 || format_size == 8);
     format_size_ = format_size;
   }
-    
+
   // Append a DWARF section offset value, of the appropriate size for this
   // compilation unit.
   template<typename T>
@@ -80,8 +80,14 @@ class TestCompilationUnit: public google_breakpad::test_assembler::Section {
     }
     post_length_offset_ = Size();
     D16(version);
-    SectionOffset(abbrev_offset);
-    D8(address_size);
+    if (version <= 4) {
+      SectionOffset(abbrev_offset);
+      D8(address_size);
+    } else {
+      D8(0x01);  // DW_UT_compile
+      D8(address_size);
+      SectionOffset(abbrev_offset);
+    }
     return *this;
   }
 
