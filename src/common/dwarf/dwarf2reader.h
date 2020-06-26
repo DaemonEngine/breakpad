@@ -65,6 +65,13 @@ class DwpReader;
 // This maps from a string naming a section to a pair containing a
 // the data for the section, and the size of the section.
 typedef std::map<string, std::pair<const uint8_t *, uint64_t> > SectionMap;
+
+// Abstract away the difference between elf and mach-o section names.
+// Elf-names use ".section_name, mach-o uses "__section_name".  Pass "name" in
+// the elf form, ".section_name".
+const SectionMap::const_iterator GetSectionByName(const SectionMap&
+                                                  sections, const char *name);
+
 typedef std::list<std::pair<enum DwarfAttribute, enum DwarfForm> >
     AttributeList;
 typedef AttributeList::iterator AttributeIterator;
@@ -543,20 +550,6 @@ class CompilationUnit {
   // Read the debug sections from a .dwo file.
   void ReadDebugSectionsFromDwo(ElfReader* elf_reader,
                                 SectionMap* sections);
-
-  // Abstract away the difference between elf, mach-o, and Mac OS section names.
-  // Elf-names use ".section_name, others use "__section_name".  Pass "name" in
-  // the elf form, ".section_name".
-  const SectionMap::const_iterator GetSectionByName(const char *name) {
-    assert(name[0] == '.');
-    auto iter = sections_.find(name);
-    if (iter != sections_.end())
-      return iter;
-    std::string macho_name("__");
-    macho_name += name + 1;
-    iter = sections_.find(macho_name);
-    return iter;
-  }
 
   // Path of the file containing the debug information.
   const string path_;

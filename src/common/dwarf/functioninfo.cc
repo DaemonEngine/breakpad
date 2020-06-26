@@ -164,7 +164,8 @@ void CUFunctionInfoHandler::ProcessAttributeUnsigned(uint64_t offset,
                                                      enum DwarfForm form,
                                                      uint64_t data) {
   if (attr == DW_AT_stmt_list) {
-    SectionMap::const_iterator iter = sections_.find("__debug_line");
+    SectionMap::const_iterator iter =
+        GetSectionByName(sections_, ".debug_line");
     assert(iter != sections_.end());
 
     scoped_ptr<LineInfo> lireader(new LineInfo(iter->second.first + data,

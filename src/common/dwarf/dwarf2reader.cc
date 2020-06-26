@@ -53,6 +53,18 @@
 
 namespace dwarf2reader {
 
+const SectionMap::const_iterator GetSectionByName(const SectionMap&
+                                                  sections, const char *name) {
+  assert(name[0] == '.');
+  auto iter = sections.find(name);
+  if (iter != sections.end())
+    return iter;
+  std::string macho_name("__");
+  macho_name += name + 1;
+  iter = sections.find(macho_name);
+  return iter;
+}
+
 CompilationUnit::CompilationUnit(const string& path,
                                  const SectionMap& sections, uint64_t offset,
                                  ByteReader* reader, Dwarf2Handler* handler)
@@ -100,7 +112,8 @@ void CompilationUnit::ReadAbbrevs() {
     return;
 
   // First get the debug_abbrev section.
-  SectionMap::const_iterator iter = GetSectionByName(".debug_abbrev");
+  SectionMap::const_iterator iter =
+      GetSectionByName(sections_, ".debug_abbrev");
   assert(iter != sections_.end());
 
   abbrevs_ = new std::vector<Abbrev>;
@@ -352,7 +365,8 @@ void CompilationUnit::ReadHeader() {
 
 uint64_t CompilationUnit::Start() {
   // First get the debug_info section.
-  SectionMap::const_iterator iter = GetSectionByName(".debug_info");
+  SectionMap::const_iterator iter =
+      GetSectionByName(sections_, ".debug_info");
   assert(iter != sections_.end());
 
   // Set up our buffer
@@ -383,28 +397,28 @@ uint64_t CompilationUnit::Start() {
   ReadAbbrevs();
 
   // Set the string section if we have one.
-  iter = GetSectionByName(".debug_str");
+  iter = GetSectionByName(sections_, ".debug_str");
   if (iter != sections_.end()) {
     string_buffer_ = iter->second.first;
     string_buffer_length_ = iter->second.second;
   }
 
   // Set the line string section if we have one.
-  iter = GetSectionByName(".debug_line_str");
+  iter = GetSectionByName(sections_, ".debug_line_str");
   if (iter != sections_.end()) {
     line_string_buffer_ = iter->second.first;
     line_string_buffer_length_ = iter->second.second;
   }
 
   // Set the string offsets section if we have one.
-  iter = GetSectionByName(".debug_str_offsets");
+  iter = GetSectionByName(sections_, ".debug_str_offsets");
   if (iter != sections_.end()) {
     str_offsets_buffer_ = iter->second.first;
     str_offsets_buffer_length_ = iter->second.second;
   }
 
   // Set the address section if we have one.
-  iter = GetSectionByName(".debug_addr");
+  iter = GetSectionByName(sections_, ".debug_addr");
   if (iter != sections_.end()) {
     addr_buffer_ = iter->second.first;
     addr_buffer_length_ = iter->second.second;
