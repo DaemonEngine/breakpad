@@ -158,7 +158,11 @@ class DwarfCUToModule: public dwarf2reader::RootDIEHandler {
     // mappings, given a pointer to some DWARF line number data
     // PROGRAM, and an overestimate of its size. Add no zero-length
     // lines to LINES.
-    virtual void ReadProgram(const uint8_t *program, uint64_t length,
+    virtual void ReadProgram(const uint8_t* program, uint64_t length,
+                             const uint8_t* string_section,
+                             uint64_t string_section_length,
+                             const uint8_t* line_string_section,
+                             uint64_t line_string_length,
                              Module *module, vector<Module::Line> *lines) = 0;
   };
 

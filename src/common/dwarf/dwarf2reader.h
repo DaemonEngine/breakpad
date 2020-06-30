@@ -98,8 +98,10 @@ class LineInfo {
   // to the beginning and length of the line information to read.
   // Reader is a ByteReader class that has the endianness set
   // properly.
-  LineInfo(const uint8_t *buffer_, uint64_t buffer_length,
-           ByteReader* reader, LineInfoHandler* handler);
+  LineInfo(const uint8_t* buffer, uint64_t buffer_length,
+           ByteReader* reader, const uint8_t* string_buffer,
+           size_t string_buffer_length, const uint8_t* line_string_buffer,
+           size_t line_string_buffer_length, LineInfoHandler* handler);
 
   virtual ~LineInfo() {
     if (header_.std_opcode_lengths) {
@@ -137,15 +139,32 @@ class LineInfo {
   // Reads the DWARF2/3 line information
   void ReadLines();
 
+  // Read the DWARF5 types and forms for the file and directory tables.
+  void ReadTypesAndForms(const uint8_t** lineptr, uint32_t* content_types,
+                         uint32_t* content_forms, uint32_t max_types,
+                         uint32_t* format_count);
+
+  // Read a row from the dwarf5 LineInfo file table.
+  void ReadFileRow(const uint8_t** lineptr, const uint32_t* content_types,
+                   const uint32_t* content_forms, uint32_t row,
+                   uint32_t format_count);
+
+  // Read and return the data at *lineptr according to form. Advance
+  // *lineptr appropriately.
+  uint64_t ReadUnsignedData(uint32_t form, const uint8_t** lineptr);
+
+  // Read and return the data at *lineptr according to form. Advance
+  // *lineptr appropriately.
+  const char* ReadStringForm(uint32_t form, const uint8_t** lineptr);
+
   // The associated handler to call processing functions in
   LineInfoHandler* handler_;
 
   // The associated ByteReader that handles endianness issues for us
   ByteReader* reader_;
 
-  // A DWARF2/3 line info header.  This is not the same size as
-  // in the actual file, as the one in the file may have a 32 bit or
-  // 64 bit lengths
+  // A DWARF line info header.  This is not the same size as in the actual file,
+  // as the one in the file may have a 32 bit or 64 bit lengths
 
   struct LineInfoHeader header_;
 
@@ -156,6 +175,13 @@ class LineInfo {
 #ifndef NDEBUG
   uint64_t buffer_length_;
 #endif
+  // Convenience pointers into .debug_str and .debug_line_str. These exactly
+  // correspond to those in the compilation unit.
+  const uint8_t* string_buffer_;
+  uint64_t string_buffer_length_;
+  const uint8_t* line_string_buffer_;
+  uint64_t line_string_buffer_length_;
+
   const uint8_t *after_header_;
 };
 

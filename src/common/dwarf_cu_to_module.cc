@@ -940,14 +940,35 @@ void DwarfCUToModule::ReadSourceLines(uint64_t offset) {
     cu_context_->reporter->MissingSection(".debug_line");
     return;
   }
-  const uint8_t *section_start = map_entry->second.first;
-  uint64_t section_length = map_entry->second.second;
-  if (offset >= section_length) {
+  const uint8_t* line_section_start = map_entry->second.first + offset;
+  uint64_t line_section_length = map_entry->second.second;
+  if (offset >= line_section_length) {
     cu_context_->reporter->BadLineInfoOffset(offset);
     return;
   }
-  line_reader_->ReadProgram(section_start + offset, section_length - offset,
-                            cu_context_->file_context->module_, &lines_);
+  line_section_length -= offset;
+  // When reading line tables, string sections are never needed for dwarf4, and
+  // may or may not be needed by dwarf5, so no error if they are missing.
+  const uint8_t* string_section_start = nullptr;
+  uint64_t string_section_length = 0;
+  map_entry = dwarf2reader::GetSectionByName(section_map, ".debug_str");
+  if (map_entry != section_map.end()) {
+    string_section_start = map_entry->second.first + offset;
+    string_section_length = map_entry->second.second - offset;
+  }
+  const uint8_t* line_string_section_start = nullptr;
+  uint64_t line_string_section_length = 0;
+  map_entry = dwarf2reader::GetSectionByName(section_map, ".debug_line_str");
+  if (map_entry != section_map.end()) {
+    line_string_section_start = map_entry->second.first + offset;
+    line_string_section_length = map_entry->second.second - offset;
+    return;
+  }
+  line_reader_->ReadProgram(
+      line_section_start, line_section_length,
+      string_section_start, string_section_length,
+      line_string_section_start, line_string_section_length,
+      cu_context_->file_context->module_, &lines_);
 }
 
 namespace {

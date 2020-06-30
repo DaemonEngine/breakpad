@@ -1039,10 +1039,17 @@ uint32_t DwpReader::LookupCUv2(uint64_t dwo_id) {
 }
 
 LineInfo::LineInfo(const uint8_t *buffer, uint64_t buffer_length,
-                   ByteReader* reader, LineInfoHandler* handler):
-    handler_(handler), reader_(reader), buffer_(buffer) {
+                   ByteReader* reader, const uint8_t* string_buffer,
+                   size_t string_buffer_length,
+                   const uint8_t* line_string_buffer,
+                   size_t line_string_buffer_length, LineInfoHandler* handler):
+    handler_(handler), reader_(reader), buffer_(buffer),
+    string_buffer_(string_buffer),
+    line_string_buffer_(line_string_buffer) {
 #ifndef NDEBUG
   buffer_length_ = buffer_length;
+  string_buffer_length_ = string_buffer_length;
+  line_string_buffer_length_ = line_string_buffer_length;
 #endif
   header_.std_opcode_lengths = NULL;
 }
@@ -1051,6 +1058,128 @@ uint64_t LineInfo::Start() {
   ReadHeader();
   ReadLines();
   return after_header_ - buffer_;
+}
+
+void LineInfo::ReadTypesAndForms(const uint8_t** lineptr,
+                                 uint32_t* content_types,
+                                 uint32_t* content_forms,
+                                 uint32_t max_types,
+                                 uint32_t* format_count) {
+  size_t len;
+
+  uint32_t count = reader_->ReadUnsignedLEB128(*lineptr, &len);
+  *lineptr += len;
+  if (count < 1 || count > max_types) {
+    return;
+  }
+  for (uint32_t col = 0; col < count; ++col) {
+    content_types[col] = reader_->ReadUnsignedLEB128(*lineptr, &len);
+    *lineptr += len;
+    content_forms[col] = reader_->ReadUnsignedLEB128(*lineptr, &len);
+    *lineptr += len;
+  }
+  *format_count = count;
+}
+
+const char* LineInfo::ReadStringForm(uint32_t form, const uint8_t** lineptr) {
+  const char* name = nullptr;
+  if (form == DW_FORM_string) {
+    name = reinterpret_cast<const char*>(*lineptr);
+    *lineptr += strlen(name) + 1;
+    return name;
+  } else if (form == DW_FORM_strp) {
+    uint64_t offset = reader_->ReadOffset(*lineptr);
+    assert(offset < string_buffer_length_);
+    *lineptr += reader_->OffsetSize();
+    if (string_buffer_ != nullptr) {
+      name = reinterpret_cast<const char*>(string_buffer_) + offset;
+      return name;
+    }
+  } else if (form == DW_FORM_line_strp) {
+    uint64_t offset = reader_->ReadOffset(*lineptr);
+    assert(offset < line_string_buffer_length_);
+    *lineptr += reader_->OffsetSize();
+    if (line_string_buffer_ != nullptr) {
+      name = reinterpret_cast<const char*>(line_string_buffer_) + offset;
+      return name;
+    }
+  }
+  // Shouldn't be called with a non-string-form, and
+  // if there is a string form but no string buffer,
+  // that is a problem too.
+  assert(0);
+  return nullptr;
+}
+
+uint64_t LineInfo::ReadUnsignedData(uint32_t form, const uint8_t** lineptr) {
+  size_t len;
+  uint64_t value;
+
+  switch (form) {
+    case DW_FORM_data1:
+      value = reader_->ReadOneByte(*lineptr);
+      *lineptr += 1;
+      return value;
+    case DW_FORM_data2:
+      value = reader_->ReadTwoBytes(*lineptr);
+      *lineptr += 2;
+      return value;
+    case DW_FORM_data4:
+      value = reader_->ReadFourBytes(*lineptr);
+      *lineptr += 4;
+      return value;
+    case DW_FORM_data8:
+      value = reader_->ReadEightBytes(*lineptr);
+      *lineptr += 8;
+      return value;
+    case DW_FORM_udata:
+      value = reader_->ReadUnsignedLEB128(*lineptr, &len);
+      *lineptr += len;
+      return value;
+    default:
+      fprintf(stderr, "Unrecognized data form.");
+      return 0;
+  }
+}
+
+void LineInfo::ReadFileRow(const uint8_t** lineptr,
+                           const uint32_t* content_types,
+                           const uint32_t* content_forms, uint32_t row,
+                           uint32_t format_count) {
+  const char* filename = nullptr;
+  uint64_t dirindex = 0;
+  uint64_t mod_time = 0;
+  uint64_t filelength = 0;
+
+  for (uint32_t col = 0; col < format_count; ++col) {
+    switch (content_types[col]) {
+      case DW_LNCT_path:
+        filename = ReadStringForm(content_forms[col], lineptr);
+        break;
+      case DW_LNCT_directory_index:
+        dirindex = ReadUnsignedData(content_forms[col], lineptr);
+        break;
+      case DW_LNCT_timestamp:
+        mod_time = ReadUnsignedData(content_forms[col], lineptr);
+        break;
+      case DW_LNCT_size:
+        filelength = ReadUnsignedData(content_forms[col], lineptr);
+        break;
+      case DW_LNCT_MD5:
+        // MD5 entries help a debugger sort different versions of files with
+        // the same name.  It is always paired with a DW_FORM_data16 and is
+        // unused in this case.
+        lineptr += 16;
+        break;
+      default:
+        fprintf(stderr, "Unrecognized form in line table header. %d\n",
+                content_types[col]);
+        assert(false);
+        break;
+    }
+  }
+  assert(filename != nullptr);
+  handler_->DefineFile(filename, row, dirindex, mod_time, filelength);
 }
 
 // The header for a debug_line section is mildly complicated, because
@@ -1067,11 +1196,23 @@ void LineInfo::ReadHeader() {
   assert(buffer_ + initial_length_size + header_.total_length <=
         buffer_ + buffer_length_);
 
-  // Address size *must* be set by CU ahead of time.
-  assert(reader_->AddressSize() != 0);
 
   header_.version = reader_->ReadTwoBytes(lineptr);
   lineptr += 2;
+
+  if (header_.version >= 5) {
+    uint8_t address_size = reader_->ReadOneByte(lineptr);
+    reader_->SetAddressSize(address_size);
+    lineptr += 1;
+    uint8_t segment_selector_size = reader_->ReadOneByte(lineptr);
+    if (segment_selector_size != 0) {
+      fprintf(stderr,"No support for segmented memory.");
+    }
+    lineptr += 1;
+  } else {
+    // Address size *must* be set by CU ahead of time.
+    assert(reader_->AddressSize() != 0);
+  }
 
   header_.prologue_length = reader_->ReadOffset(lineptr);
   lineptr += reader_->OffsetSize();
@@ -1106,41 +1247,84 @@ void LineInfo::ReadHeader() {
     lineptr += 1;
   }
 
-  // It is legal for the directory entry table to be empty.
-  if (*lineptr) {
-    uint32_t dirindex = 1;
-    while (*lineptr) {
-      const char *dirname = reinterpret_cast<const char *>(lineptr);
-      handler_->DefineDir(dirname, dirindex);
-      lineptr += strlen(dirname) + 1;
-      dirindex++;
+  if (header_.version <= 4) {
+    // Directory zero is assumed to be the compilation directory and special
+    // cased where used. It is not actually stored in the dwarf data. But an
+    // empty entry here avoids off-by-one errors elsewhere in the code.
+    handler_->DefineDir("", 0);
+    // It is legal for the directory entry table to be empty.
+    if (*lineptr) {
+      uint32_t dirindex = 1;
+      while (*lineptr) {
+        const char* dirname = reinterpret_cast<const char*>(lineptr);
+        handler_->DefineDir(dirname, dirindex);
+        lineptr += strlen(dirname) + 1;
+        dirindex++;
+      }
     }
-  }
-  lineptr++;
+    lineptr++;
+    // It is also legal for the file entry table to be empty.
 
-  // It is also legal for the file entry table to be empty.
-  if (*lineptr) {
-    uint32_t fileindex = 1;
+    // Similarly for file zero.
+    handler_->DefineFile("", 0, 0, 0, 0);
+    if (*lineptr) {
+      uint32_t fileindex = 1;
+      size_t len;
+      while (*lineptr) {
+        const char* filename = ReadStringForm(DW_FORM_string, &lineptr);
+
+        uint64_t dirindex = reader_->ReadUnsignedLEB128(lineptr, &len);
+        lineptr += len;
+
+        uint64_t mod_time = reader_->ReadUnsignedLEB128(lineptr, &len);
+        lineptr += len;
+
+        uint64_t filelength = reader_->ReadUnsignedLEB128(lineptr, &len);
+        lineptr += len;
+        handler_->DefineFile(filename, fileindex,
+                             static_cast<uint32_t>(dirindex), mod_time,
+                             filelength);
+        fileindex++;
+      }
+    }
+    lineptr++;
+  } else {
+    // Read the DWARF-5 directory table.
+
+    // Dwarf5 supports five different types and forms per directory- and
+    // file-table entry. Theoretically, there could be duplicate entries
+    // in this table, but that would be quite unusual.
+    static const uint32_t kMaxTypesAndForms = 5;
+    uint32_t content_types[kMaxTypesAndForms];
+    uint32_t content_forms[kMaxTypesAndForms];
+    uint32_t format_count;
     size_t len;
-    while (*lineptr) {
-      const char *filename = reinterpret_cast<const char *>(lineptr);
-      lineptr += strlen(filename) + 1;
 
-      uint64_t dirindex = reader_->ReadUnsignedLEB128(lineptr, &len);
-      lineptr += len;
+    ReadTypesAndForms(&lineptr, content_types, content_forms, kMaxTypesAndForms,
+                      &format_count);
+    uint32_t entry_count = reader_->ReadUnsignedLEB128(lineptr, &len);
+    lineptr += len;
+    for (uint32_t row = 0; row < entry_count; ++row) {
+      const char* dirname = nullptr;
+      for (uint32_t col = 0; col < format_count; ++col) {
+        // The path is the only relevant content type for this implementation.
+        if (content_types[col] == DW_LNCT_path) {
+          dirname = ReadStringForm(content_forms[col], &lineptr);
+        }
+      }
+      handler_->DefineDir(dirname, row);
+    }
 
-      uint64_t mod_time = reader_->ReadUnsignedLEB128(lineptr, &len);
-      lineptr += len;
+    // Read the DWARF-5 filename table.
+    ReadTypesAndForms(&lineptr, content_types, content_forms, kMaxTypesAndForms,
+                      &format_count);
+    entry_count = reader_->ReadUnsignedLEB128(lineptr, &len);
+    lineptr += len;
 
-      uint64_t filelength = reader_->ReadUnsignedLEB128(lineptr, &len);
-      lineptr += len;
-      handler_->DefineFile(filename, fileindex, static_cast<uint32_t>(dirindex), 
-                           mod_time, filelength);
-      fileindex++;
+    for (uint32_t row = 0; row < entry_count; ++row) {
+      ReadFileRow(&lineptr, content_types, content_forms, row, format_count);
     }
   }
-  lineptr++;
-
   after_header_ = lineptr;
 }
 

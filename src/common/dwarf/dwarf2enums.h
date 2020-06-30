@@ -316,6 +316,14 @@ enum DwarfAttribute {
   DW_AT_PGI_lstride  = 0x3a02
 };
 
+// Line number content type codes (DWARF 5).
+enum DwarfLineNumberContentType {
+  DW_LNCT_path = 1,
+  DW_LNCT_directory_index = 2,
+  DW_LNCT_timestamp = 3,
+  DW_LNCT_size = 4,
+  DW_LNCT_MD5 = 5,
+};
 
 // Line number opcodes.
 enum DwarfLineNumberOps {
