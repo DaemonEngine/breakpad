@@ -178,9 +178,13 @@ class LineInfo {
   // Convenience pointers into .debug_str and .debug_line_str. These exactly
   // correspond to those in the compilation unit.
   const uint8_t* string_buffer_;
+#ifndef NDEBUG
   uint64_t string_buffer_length_;
+#endif
   const uint8_t* line_string_buffer_;
+#ifndef NDEBUG
   uint64_t line_string_buffer_length_;
+#endif
 
   const uint8_t* after_header_;
 };
