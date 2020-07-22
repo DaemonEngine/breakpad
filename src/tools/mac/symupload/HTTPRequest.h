@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-
 #import <Foundation/Foundation.h>
 
-#import "HTTPRequest.h"
- /**
-  Represents a multipart/form-data HTTP upload (POST request).
-  Each parameter pair is sent as a boundary.
-  Each file is sent with a name field in addition to the filename and data.
-  */
-@interface HTTPMultipartUpload : HTTPRequest {
+NS_ASSUME_NONNULL_BEGIN
+/**
+ Represents a single HTTP request. Sending the request is synchronous.
+ Once the send is complete, the response will be set.
+
+ This is a base interface that specific HTTP requests derive from.
+ It is not intended to be instantiated directly.
+ */
+@interface HTTPRequest : NSObject {
  @protected
-  NSDictionary *parameters_;    // The key/value pairs for sending data (STRONG)
-  NSMutableDictionary *files_;  // Dictionary of name/file-path (STRONG)
-  NSString *boundary_;          // The boundary string (STRONG)
+  NSURL *URL_;                   // The destination URL (STRONG)
+  NSHTTPURLResponse *response_;  // The response from the send (STRONG)
 }
 
 /**
- Sets the parameters that will be sent in the multipart POST request.
+ Initializes the HTTPRequest and sets its URL.
  */
-- (void)setParameters:(NSDictionary *)parameters;
-- (NSDictionary *)parameters;
+- (id)initWithURL:(NSURL *)URL;
+
+- (NSURL *)URL;
+
+- (NSHTTPURLResponse*) response;
+
+- (NSString*)HTTPMethod;   // Internal, don't call outside class hierarchy.
+
+- (NSString*)contentType;  // Internal, don't call outside class hierarchy.
+
+- (NSData*)bodyData;       // Internal, don't call outside class hierarchy.
+
+- (NSData *)send:(NSError **)error;
 
 /**
- Adds a file to be uploaded in the multipart POST request, by its file path.
+ Appends a file to the HTTP request, either by filename or by file content
+ (in the form of NSData).
  */
-- (void)addFileAtPath:(NSString *)path name:(NSString *)name;
-
-/**
- Adds a file to be uploaded in the multipart POST request, by its name and
- contents.
- */
-- (void)addFileContents:(NSData *)data name:(NSString *)name;
-- (NSDictionary *)files;
++ (void)appendFileToBodyData:(NSMutableData *)data
+                    withName:(NSString*)name
+              withFileOrData:(id)fileOrData;
 
 @end
+
+NS_ASSUME_NONNULL_END

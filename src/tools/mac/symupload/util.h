@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+#ifndef util_h
+#define util_h
 
 #import <Foundation/Foundation.h>
 
-#import "HTTPRequest.h"
- /**
-  Represents a multipart/form-data HTTP upload (POST request).
-  Each parameter pair is sent as a boundary.
-  Each file is sent with a name field in addition to the filename and data.
-  */
-@interface HTTPMultipartUpload : HTTPRequest {
- @protected
-  NSDictionary *parameters_;    // The key/value pairs for sending data (STRONG)
-  NSMutableDictionary *files_;  // Dictionary of name/file-path (STRONG)
-  NSString *boundary_;          // The boundary string (STRONG)
+// As -[NSString stringByAddingPercentEscapesUsingEncoding:] has been
+// deprecated with iOS 9.0 / OS X 10.11 SDKs, this function re-implements it
+// using -[NSString stringByAddingPercentEncodingWithAllowedCharacters:] when
+// using those SDKs.
+static NSString *PercentEncodeNSString(NSString *key) {
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_9_0) &&     \
+__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_9_0) ||                      \
+(defined(MAC_OS_X_VERSION_MIN_REQUIRED) &&                                 \
+defined(MAC_OS_X_VERSION_10_11) &&                                        \
+MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11)
+  return [key stringByAddingPercentEncodingWithAllowedCharacters:
+          [NSCharacterSet URLQueryAllowedCharacterSet]];
+#else
+  return [key stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+#endif
 }
 
-/**
- Sets the parameters that will be sent in the multipart POST request.
- */
-- (void)setParameters:(NSDictionary *)parameters;
-- (NSDictionary *)parameters;
-
-/**
- Adds a file to be uploaded in the multipart POST request, by its file path.
- */
-- (void)addFileAtPath:(NSString *)path name:(NSString *)name;
-
-/**
- Adds a file to be uploaded in the multipart POST request, by its name and
- contents.
- */
-- (void)addFileContents:(NSData *)data name:(NSString *)name;
-- (NSDictionary *)files;
-
-@end
+#endif /* util_h */

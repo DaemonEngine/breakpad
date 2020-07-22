@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#import "HTTPSimplePostRequest.h"
 
+@implementation HTTPSimplePostRequest
 
-#import <Foundation/Foundation.h>
+//=============================================================================
+- (void)dealloc {
+    [contentType_ release];
+    [body_ release];
 
-#import "HTTPRequest.h"
- /**
-  Represents a multipart/form-data HTTP upload (POST request).
-  Each parameter pair is sent as a boundary.
-  Each file is sent with a name field in addition to the filename and data.
-  */
-@interface HTTPMultipartUpload : HTTPRequest {
- @protected
-  NSDictionary *parameters_;    // The key/value pairs for sending data (STRONG)
-  NSMutableDictionary *files_;  // Dictionary of name/file-path (STRONG)
-  NSString *boundary_;          // The boundary string (STRONG)
+    [super dealloc];
 }
 
-/**
- Sets the parameters that will be sent in the multipart POST request.
- */
-- (void)setParameters:(NSDictionary *)parameters;
-- (NSDictionary *)parameters;
+//=============================================================================
+- (void)setContentType:(NSString *)contentType {
+    contentType_ = [contentType copy];
+}
 
-/**
- Adds a file to be uploaded in the multipart POST request, by its file path.
- */
-- (void)addFileAtPath:(NSString *)path name:(NSString *)name;
+//=============================================================================
+- (void)setBody:(NSString *)body {
+  body_ = [body copy];
+}
 
-/**
- Adds a file to be uploaded in the multipart POST request, by its name and
- contents.
- */
-- (void)addFileContents:(NSData *)data name:(NSString *)name;
-- (NSDictionary *)files;
+//=============================================================================
+- (NSString*)HTTPMethod {
+    return @"POST";
+}
+
+//=============================================================================
+- (NSString*)contentType {
+    return contentType_;
+}
+
+//=============================================================================
+- (NSData*)bodyData {
+    NSMutableData* data = [NSMutableData data];
+    [data appendData:[body_ dataUsingEncoding:NSUTF8StringEncoding]];
+    return data;
+}
 
 @end

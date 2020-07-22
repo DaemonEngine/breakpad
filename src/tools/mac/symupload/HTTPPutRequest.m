@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#import "HTTPPutRequest.h"
 
+@implementation HTTPPutRequest
 
-#import <Foundation/Foundation.h>
+//=============================================================================
+- (void)dealloc {
+  [file_ release];
 
-#import "HTTPRequest.h"
- /**
-  Represents a multipart/form-data HTTP upload (POST request).
-  Each parameter pair is sent as a boundary.
-  Each file is sent with a name field in addition to the filename and data.
-  */
-@interface HTTPMultipartUpload : HTTPRequest {
- @protected
-  NSDictionary *parameters_;    // The key/value pairs for sending data (STRONG)
-  NSMutableDictionary *files_;  // Dictionary of name/file-path (STRONG)
-  NSString *boundary_;          // The boundary string (STRONG)
+  [super dealloc];
 }
 
-/**
- Sets the parameters that will be sent in the multipart POST request.
- */
-- (void)setParameters:(NSDictionary *)parameters;
-- (NSDictionary *)parameters;
+//=============================================================================
+- (void)setFile:(NSString *)file {
+  file_ = [file copy];
+}
 
-/**
- Adds a file to be uploaded in the multipart POST request, by its file path.
- */
-- (void)addFileAtPath:(NSString *)path name:(NSString *)name;
+//=============================================================================
+- (NSString*)HTTPMethod {
+  return @"PUT";
+}
 
-/**
- Adds a file to be uploaded in the multipart POST request, by its name and
- contents.
- */
-- (void)addFileContents:(NSData *)data name:(NSString *)name;
-- (NSDictionary *)files;
+//=============================================================================
+- (NSData*)bodyData {
+  NSMutableData *postBody = [NSMutableData data];
+
+  [HTTPRequest appendFileToBodyData:postBody
+                           withName:@"symbol_file"
+                     withFileOrData:file_];
+
+  return postBody;
+}
 
 @end

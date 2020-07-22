@@ -43,11 +43,22 @@
 #include <unistd.h>
 
 #include <Foundation/Foundation.h>
+
 #include "HTTPMultipartUpload.h"
+#include "HTTPPutRequest.h"
+#include "SymbolCollectorClient.h"
+
+typedef enum {
+  SymUploadProtocolV1,
+  SymUploadProtocolV2
+} SymUploadProtocol;
 
 typedef struct {
   NSString *symbolsPath;
   NSString *uploadURLStr;
+  SymUploadProtocol symUploadProtocol;
+  NSString* apiKey;
+  BOOL force;
   BOOL success;
 } Options;
 
@@ -84,15 +95,12 @@ static NSArray *ModuleDataForSymbolFile(NSString *file) {
 }
 
 //=============================================================================
-static void Start(Options *options) {
+static void StartSymUploadProtocolV1(Options* options,
+                                     NSArray* moduleParts,
+                                     NSString* compactedID) {
   NSURL *url = [NSURL URLWithString:options->uploadURLStr];
   HTTPMultipartUpload *ul = [[HTTPMultipartUpload alloc] initWithURL:url];
   NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-  NSArray *moduleParts = ModuleDataForSymbolFile(options->symbolsPath);
-  NSMutableString *compactedID =
-    [NSMutableString stringWithString:[moduleParts objectAtIndex:3]];
-  [compactedID replaceOccurrencesOfString:@"-" withString:@"" options:0
-                                    range:NSMakeRange(0, [compactedID length])];
 
   // Add parameters
   [parameters setObject:compactedID forKey:@"debug_identifier"];
@@ -136,12 +144,105 @@ static void Start(Options *options) {
 }
 
 //=============================================================================
+static void StartSymUploadProtocolV2(Options* options,
+                                     NSString* debugFile,
+                                     NSString* debugID) {
+  if (!options->force) {
+    SymbolStatus symbolStatus = [SymbolCollectorClient
+                                 CheckSymbolStatus:options->uploadURLStr
+                                 withAPIKey:options->apiKey
+                                 withDebugFile:debugFile
+                                 withDebugID:debugID];
+    if (symbolStatus == SymbolStatusFound) {
+      fprintf(stdout, "Symbol file already exists, upload aborted."
+              " Use \"-f\" to overwrite.\n");
+      options->success = YES;
+      return;
+    } else if (symbolStatus == SymbolStatusUnknown) {
+      fprintf(stdout, "Failed to get check for existing symbol.\n");
+      return;
+    }
+  }
+
+  UploadURLResponse* URLResponse = [SymbolCollectorClient
+                                    CreateUploadURL:options->uploadURLStr
+                                    withAPIKey:options->apiKey];
+  if (URLResponse == nil) {
+    return;
+  }
+
+  NSURL* uploadURL = [NSURL URLWithString:[URLResponse uploadURL]];
+  HTTPPutRequest* putRequest = [[HTTPPutRequest alloc]
+                                        initWithURL:uploadURL];
+  [putRequest setFile:options->symbolsPath];
+
+  NSError *error = nil;
+  NSData* data = [putRequest send:&error];
+  NSString *result = [[NSString alloc] initWithData:data
+                                           encoding:NSUTF8StringEncoding];
+  int responseCode = [[putRequest response] statusCode];
+  [putRequest release];
+
+  if (error || responseCode != 200) {
+    fprintf(stdout, "Failed to upload symbol file.\n");
+    fprintf(stdout, "Response code: %d\n", responseCode);
+    fprintf(stdout, "Response:\n");
+    fprintf(stdout, "%s\n", [result UTF8String]);
+    return;
+  }
+
+  CompleteUploadResult completeUploadResult = [SymbolCollectorClient
+                                         CompleteUpload:options->uploadURLStr
+                                         withAPIKey:options->apiKey
+                                         withUploadKey:[URLResponse uploadKey]
+                                         withDebugFile:debugFile
+                                         withDebugID:debugID];
+  [URLResponse release];
+  if (completeUploadResult == CompleteUploadResultError) {
+    fprintf(stdout, "Failed to complete upload.\n");
+    return;
+  } else if (completeUploadResult == CompleteUploadResultDuplicateData) {
+    fprintf(stdout, "Uploaded file checksum matched existing file checksum,"
+           " no change necessary.\n");
+  } else {
+    fprintf(stdout, "Successfully sent the symbol file.\n");
+  }
+  options->success = YES;
+}
+
+//=============================================================================
+static void Start(Options *options) {
+  NSArray *moduleParts = ModuleDataForSymbolFile(options->symbolsPath);
+  NSMutableString *compactedID =
+  [NSMutableString stringWithString:[moduleParts objectAtIndex:3]];
+  [compactedID replaceOccurrencesOfString:@"-" withString:@"" options:0
+                                    range:NSMakeRange(0, [compactedID length])];
+
+  if (options->symUploadProtocol == SymUploadProtocolV1) {
+    StartSymUploadProtocolV1(options, moduleParts, compactedID);
+  } else if (options->symUploadProtocol == SymUploadProtocolV2) {
+    StartSymUploadProtocolV2(options,
+                             [moduleParts objectAtIndex:4],
+                             compactedID);
+  }
+}
+
+//=============================================================================
 static void
 Usage(int argc, const char *argv[]) {
   fprintf(stderr, "Submit symbol information.\n");
-  fprintf(stderr, "Usage: %s <symbols> <upload-URL>\n", argv[0]);
-  fprintf(stderr, "<symbols> should be created by using the dump_syms tool.\n");
-  fprintf(stderr, "<upload-URL> is the destination for the upload\n");
+  fprintf(stderr, "Usage: %s [options] <symbol-file> <upload-URL>\n", argv[0]);
+  fprintf(stderr, "<symbol-file> should be created by using the dump_syms "
+          "tool.\n");
+  fprintf(stderr, "<upload-URL> is the destination for the upload.\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "\t-p <protocol>: protocol to use for upload, accepts "
+          "[\"sym-upload-v1\", \"sym-upload-v2\"]. Default is "
+          "\"sym-upload-v1\".\n");
+  fprintf(stderr, "\t-k <api-key>: secret for authentication with upload "
+          "server. [Only in sym-upload-v2 protocol mode]\n");
+  fprintf(stderr, "\t-f: Overwrite symbol file on server if already present. "
+          "[Only in sym-upload-v2 protocol mode]\n");
   fprintf(stderr, "\t-h: Usage\n");
   fprintf(stderr, "\t-?: Usage\n");
 }
@@ -149,11 +250,33 @@ Usage(int argc, const char *argv[]) {
 //=============================================================================
 static void
 SetupOptions(int argc, const char *argv[], Options *options) {
+  // Set default value of symUploadProtocol.
+  options->symUploadProtocol = SymUploadProtocolV1;
+
   extern int optind;
   char ch;
 
-  while ((ch = getopt(argc, (char * const *)argv, "h?")) != -1) {
+  while ((ch = getopt(argc, (char * const *)argv, "p:k:hf?")) != -1) {
     switch (ch) {
+      case 'p':
+        if (strcmp(optarg, "sym-upload-v2") == 0) {
+          options->symUploadProtocol = SymUploadProtocolV2;
+          break;
+        } else if (strcmp(optarg, "sym-upload-v1") == 0) {
+          // This is already the default but leave in case that changes.
+          options->symUploadProtocol = SymUploadProtocolV1;
+          break;
+        }
+        Usage(argc, argv);
+        exit(0);
+        break;
+      case 'k':
+        options->apiKey = [NSString stringWithCString:optarg
+                                             encoding:NSASCIIStringEncoding];
+        break;
+      case 'f':
+        options->force = YES;
+        break;
       default:
         Usage(argc, argv);
         exit(0);

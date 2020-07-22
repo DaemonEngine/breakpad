@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-
 #import <Foundation/Foundation.h>
 
 #import "HTTPRequest.h"
- /**
-  Represents a multipart/form-data HTTP upload (POST request).
-  Each parameter pair is sent as a boundary.
-  Each file is sent with a name field in addition to the filename and data.
-  */
-@interface HTTPMultipartUpload : HTTPRequest {
- @protected
-  NSDictionary *parameters_;    // The key/value pairs for sending data (STRONG)
-  NSMutableDictionary *files_;  // Dictionary of name/file-path (STRONG)
-  NSString *boundary_;          // The boundary string (STRONG)
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ Represents a simple (non-multipart) HTTP POST request.
+ */
+@interface HTTPSimplePostRequest : HTTPRequest {
+@protected
+  NSString* contentType_;
+  NSString* body_;
 }
 
 /**
- Sets the parameters that will be sent in the multipart POST request.
+ Sets the content type of the POST request.
  */
-- (void)setParameters:(NSDictionary *)parameters;
-- (NSDictionary *)parameters;
+- (void)setContentType:(NSString*)contentType;
 
 /**
- Adds a file to be uploaded in the multipart POST request, by its file path.
+ Sets the contents of the POST request's body.
  */
-- (void)addFileAtPath:(NSString *)path name:(NSString *)name;
-
-/**
- Adds a file to be uploaded in the multipart POST request, by its name and
- contents.
- */
-- (void)addFileContents:(NSData *)data name:(NSString *)name;
-- (NSDictionary *)files;
+- (void)setBody:(NSString*)body;
 
 @end
+
+NS_ASSUME_NONNULL_END
