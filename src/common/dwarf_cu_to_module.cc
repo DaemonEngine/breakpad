@@ -1195,7 +1195,10 @@ void DwarfCUToModule::AssignLinesToFunctions() {
     // next_transition may end up being zero, in which case we've completed
     // our pass. Handle that here, instead of trying to deal with it in
     // each place we compute next_transition.
-    if (!next_transition)
+
+    // Some dwarf producers handle linker-removed functions by using -1 as a
+    // tombstone in the line table. So the end marker can be -1.
+    if (!next_transition || next_transition == Module::kMaxAddress)
       break;
 
     // Advance iterators as needed. If lines overlap or functions overlap,

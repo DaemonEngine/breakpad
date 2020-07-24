@@ -39,6 +39,7 @@
 #define COMMON_LINUX_MODULE_H__
 
 #include <iostream>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -62,6 +63,7 @@ class Module {
  public:
   // The type of addresses and sizes in a symbol table.
   typedef uint64_t Address;
+  static constexpr uint64_t kMaxAddress = std::numeric_limits<Address>::max();
   struct File;
   struct Function;
   struct Line;
