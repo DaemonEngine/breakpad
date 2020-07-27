@@ -1089,6 +1089,11 @@ void DwarfCUToModule::AssignLinesToFunctions() {
     return;
   }
 
+  // Some dwarf producers handle linker-removed functions by using -1 as a
+  // tombstone in the line table. So the end marker can be -1.
+  if (current == Module::kMaxAddress)
+    return;
+
   while (range || line) {
     // This loop has two invariants that hold at the top.
     //
