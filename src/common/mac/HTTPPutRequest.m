@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,25 +27,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#import <Foundation/Foundation.h>
+#import "HTTPPutRequest.h"
 
-#import "HTTPRequest.h"
+@implementation HTTPPutRequest
 
-NS_ASSUME_NONNULL_BEGIN
+//=============================================================================
+- (void)dealloc {
+  [file_ release];
 
-/**
- Represents an HTTP PUT request.
- */
-@interface HTTPPutRequest : HTTPRequest {
-@protected
-    NSString* file_;
+  [super dealloc];
 }
 
-/**
- Sets the path of the file that will be sent in the PUT request.
- */
-- (void)setFile:(NSString*)file;
+//=============================================================================
+- (void)setFile:(NSString*)file {
+  file_ = [file copy];
+}
+
+//=============================================================================
+- (NSString*)HTTPMethod {
+  return @"PUT";
+}
+
+//=============================================================================
+- (NSData*)bodyData {
+  NSMutableData* postBody = [NSMutableData data];
+
+  [HTTPRequest appendFileToBodyData:postBody
+                           withName:@"symbol_file"
+                     withFileOrData:file_];
+
+  return postBody;
+}
 
 @end
-
-NS_ASSUME_NONNULL_END

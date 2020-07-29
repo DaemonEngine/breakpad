@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,24 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- Represents a response from a sym-upload-v2 server to a CreateUploadURL call.
+ Represents a response from a sym-upload-v2 server to a createUploadURLOnServer
+ call.
  */
 @interface UploadURLResponse : NSObject {
-@protected
+ @protected
   NSString* uploadURL_;
   NSString* uploadKey_;
 }
 
-- (id)initWithUploadURL:(NSString*)uploadURL
-          withUploadKey:(NSString*)uploadKey;
+- (id)initWithUploadURL:(NSString*)uploadURL withUploadKey:(NSString*)uploadKey;
 
 - (NSString*)uploadURL;
 - (NSString*)uploadKey;
 @end
 
 /**
- Possible return statuses from a sym-upload-v2 server to a CompleteUpload call.
+ Possible return statuses from a sym-upload-v2 server to a
+ completeUploadOnServer call.
  */
 typedef NS_ENUM(NSInteger, CompleteUploadResult) {
   CompleteUploadResultOk,
@@ -57,8 +58,8 @@ typedef NS_ENUM(NSInteger, CompleteUploadResult) {
 };
 
 /**
- Possible return statuses from a sym-upload-v2 server to a CheckSymbolStatus
- call.
+ Possible return statuses from a sym-upload-v2 server to a
+ checkSymbolStatusOnServer call.
  */
 typedef NS_ENUM(NSInteger, SymbolStatus) {
   SymbolStatusFound,
@@ -70,30 +71,31 @@ typedef NS_ENUM(NSInteger, SymbolStatus) {
  Interface to help a client interact with a sym-upload-v2 server, over HTTP.
  For details of the API and protocol, see :/docs/sym_upload_v2_protocol.md.
  */
-@interface SymbolCollectorClient : NSObject;
+@interface SymbolCollectorClient : NSObject
+;
 
 /**
- Call the CheckSymbolstatus API on the server.
+ Calls the /v1/symbols/{debug_file}/{debug_id}:checkStatus API on the server.
  */
-+ (SymbolStatus)CheckSymbolStatus:(NSString*)APIURL
-                       withAPIKey:(NSString*)APIKey
-                    withDebugFile:(NSString*)debugFile
-                      withDebugID:(NSString*)debugID;
++ (SymbolStatus)checkSymbolStatusOnServer:(NSString*)APIURL
+                               withAPIKey:(NSString*)APIKey
+                            withDebugFile:(NSString*)debugFile
+                              withDebugID:(NSString*)debugID;
 
 /**
- Call the CreateUploadURL API on the server.
+ Calls the /v1/uploads:create API on the server.
  */
-+ (UploadURLResponse*)CreateUploadURL:(NSString*)APIURL
-                           withAPIKey:(NSString*)APIKey;
++ (UploadURLResponse*)createUploadURLOnServer:(NSString*)APIURL
+                                   withAPIKey:(NSString*)APIKey;
 
 /**
- Call the CompleteUpload API on the server.
+ Calls the /v1/uploads/{key}:complete API on the server.
  */
-+ (CompleteUploadResult)CompleteUpload:(NSString*)APIURL
-                            withAPIKey:(NSString*)APIKey
-                         withUploadKey:(NSString*)uploadKey
-                         withDebugFile:(NSString*)debugFile
-                           withDebugID:(NSString*)debugID;
++ (CompleteUploadResult)completeUploadOnServer:(NSString*)APIURL
+                                    withAPIKey:(NSString*)APIKey
+                                 withUploadKey:(NSString*)uploadKey
+                                 withDebugFile:(NSString*)debugFile
+                                   withDebugID:(NSString*)debugID;
 
 @end
 

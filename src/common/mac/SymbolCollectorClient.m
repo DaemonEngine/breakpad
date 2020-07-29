@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,8 @@
 @implementation UploadURLResponse
 
 //=============================================================================
-- (id)initWithUploadURL:(NSString *)uploadURL
-          withUploadKey:(NSString *)uploadKey {
+- (id)initWithUploadURL:(NSString*)uploadURL
+          withUploadKey:(NSString*)uploadKey {
   if (self = [super init]) {
     uploadURL_ = [uploadURL copy];
     uploadKey_ = [uploadKey copy];
@@ -48,7 +48,7 @@
 - (void)dealloc {
   [uploadURL_ release];
   [uploadKey_ release];
-  
+
   [super dealloc];
 }
 
@@ -66,22 +66,20 @@
 @implementation SymbolCollectorClient
 
 //=============================================================================
-+ (SymbolStatus)CheckSymbolStatus:(NSString *)APIURL
-                       withAPIKey:(NSString *)APIKey
-                    withDebugFile:(NSString *)debugFile
-                      withDebugID:(NSString *)debugID {
-  NSURL* URL = [NSURL URLWithString:[NSString stringWithFormat:
-                                     @"%@/v1/symbols/%@/%@:checkStatus"
-                                     @"?key=%@",
-                                     APIURL,
-                                     debugFile,
-                                     debugID,
-                                     APIKey]];
++ (SymbolStatus)checkSymbolStatusOnServer:(NSString*)APIURL
+                               withAPIKey:(NSString*)APIKey
+                            withDebugFile:(NSString*)debugFile
+                              withDebugID:(NSString*)debugID {
+  NSURL* URL = [NSURL
+      URLWithString:[NSString
+                        stringWithFormat:@"%@/v1/symbols/%@/%@:checkStatus"
+                                         @"?key=%@",
+                                         APIURL, debugFile, debugID, APIKey]];
 
   HTTPGetRequest* getRequest = [[HTTPGetRequest alloc] initWithURL:URL];
-  NSError *error = nil;
-  NSData *data = [getRequest send:&error];
-  NSString *result = [[NSString alloc] initWithData:data
+  NSError* error = nil;
+  NSData* data = [getRequest send:&error];
+  NSString* result = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
   int responseCode = [[getRequest response] statusCode];
   [getRequest release];
@@ -96,14 +94,13 @@
 
   error = nil;
   NSRegularExpression* statusRegex = [NSRegularExpression
-                                      regularExpressionWithPattern:
-                                      @"\"status\": \"([^\"]+)\""
-                                      options:0
-                                      error:&error];
-  NSArray* matches = [statusRegex
-                      matchesInString:result
-                      options:0
-                      range: NSMakeRange(0, [result length])];
+      regularExpressionWithPattern:@"\"status\": \"([^\"]+)\""
+                           options:0
+                             error:&error];
+  NSArray* matches =
+      [statusRegex matchesInString:result
+                           options:0
+                             range:NSMakeRange(0, [result length])];
   if ([matches count] != 1) {
     fprintf(stdout, "Failed to parse check symbol status response.");
     fprintf(stdout, "Response:\n");
@@ -114,28 +111,26 @@
   NSString* status = [result substringWithRange:[matches[0] rangeAtIndex:1]];
   [result release];
 
-  return [status isEqualToString:@"FOUND"] ?
-    SymbolStatusFound :
-    SymbolStatusMissing;
+  return [status isEqualToString:@"FOUND"] ? SymbolStatusFound
+                                           : SymbolStatusMissing;
 }
 
 //=============================================================================
-+ (UploadURLResponse *)CreateUploadURL:(NSString *)APIURL
-                            withAPIKey:(NSString *)APIKey {
-  NSURL* URL = [NSURL URLWithString:[NSString stringWithFormat:
-                                     @"%@/v1/uploads:create?key=%@",
-                                     APIURL,
-                                     APIKey]];
++ (UploadURLResponse*)createUploadURLOnServer:(NSString*)APIURL
+                                   withAPIKey:(NSString*)APIKey {
+  NSURL* URL = [NSURL
+      URLWithString:[NSString stringWithFormat:@"%@/v1/uploads:create?key=%@",
+                                               APIURL, APIKey]];
 
-  HTTPSimplePostRequest* postRequest = [[HTTPSimplePostRequest alloc]
-                                        initWithURL:URL];
-  NSError *error = nil;
+  HTTPSimplePostRequest* postRequest =
+      [[HTTPSimplePostRequest alloc] initWithURL:URL];
+  NSError* error = nil;
   NSData* data = [postRequest send:&error];
-  NSString *result = [[NSString alloc] initWithData:data
+  NSString* result = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
   int responseCode = [[postRequest response] statusCode];
   [postRequest release];
-  
+
   if (error || responseCode != 200) {
     fprintf(stdout, "Failed to create upload URL.\n");
     fprintf(stdout, "Response code: %d\n", responseCode);
@@ -146,65 +141,60 @@
 
   // Note camel-case rather than underscores.
   NSRegularExpression* uploadURLRegex = [NSRegularExpression
-                                         regularExpressionWithPattern:
-                                         @"\"uploadUrl\": \"([^\"]+)\""
-                                         options:0
-                                         error:&error];
+      regularExpressionWithPattern:@"\"uploadUrl\": \"([^\"]+)\""
+                           options:0
+                             error:&error];
   NSRegularExpression* uploadKeyRegex = [NSRegularExpression
-                                         regularExpressionWithPattern:
-                                         @"\"uploadKey\": \"([^\"]+)\""
-                                         options:0
-                                         error:&error];
+      regularExpressionWithPattern:@"\"uploadKey\": \"([^\"]+)\""
+                           options:0
+                             error:&error];
 
-  NSArray* uploadURLMatches = [uploadURLRegex
-                      matchesInString:result
-                      options:0
-                      range: NSMakeRange(0, [result length])];
-  NSArray* uploadKeyMatches = [uploadKeyRegex
-                            matchesInString:result
-                            options:0
-                            range: NSMakeRange(0, [result length])];
+  NSArray* uploadURLMatches =
+      [uploadURLRegex matchesInString:result
+                              options:0
+                                range:NSMakeRange(0, [result length])];
+  NSArray* uploadKeyMatches =
+      [uploadKeyRegex matchesInString:result
+                              options:0
+                                range:NSMakeRange(0, [result length])];
   if ([uploadURLMatches count] != 1 || [uploadKeyMatches count] != 1) {
     fprintf(stdout, "Failed to parse create url response.");
     fprintf(stdout, "Response:\n");
     fprintf(stdout, "%s\n", [result UTF8String]);
     return nil;
   }
-  NSString* uploadURL = [result
-                          substringWithRange:[uploadURLMatches[0]
-                                              rangeAtIndex:1]];
-  NSString* uploadKey = [result
-                          substringWithRange:[uploadKeyMatches[0]
-                                              rangeAtIndex:1]];
+  NSString* uploadURL =
+      [result substringWithRange:[uploadURLMatches[0] rangeAtIndex:1]];
+  NSString* uploadKey =
+      [result substringWithRange:[uploadKeyMatches[0] rangeAtIndex:1]];
 
   return [[UploadURLResponse alloc] initWithUploadURL:uploadURL
-                                           withUploadKey:uploadKey];
+                                        withUploadKey:uploadKey];
 }
 
 //=============================================================================
-+ (CompleteUploadResult)CompleteUpload:(NSString *)APIURL
-                            withAPIKey:(NSString *)APIKey
-                         withUploadKey:(NSString *)uploadKey
-                         withDebugFile:(NSString *)debugFile
-                           withDebugID:(NSString *)debugID {
-  NSURL* URL = [NSURL URLWithString:[NSString stringWithFormat:
-                                     @"%@/v1/uploads/%@:complete?key=%@",
-                                     APIURL,
-                                     uploadKey,
-                                     APIKey]];
-  NSString* body = [NSString stringWithFormat:
++ (CompleteUploadResult)completeUploadOnServer:(NSString*)APIURL
+                                    withAPIKey:(NSString*)APIKey
+                                 withUploadKey:(NSString*)uploadKey
+                                 withDebugFile:(NSString*)debugFile
+                                   withDebugID:(NSString*)debugID {
+  NSURL* URL = [NSURL
+      URLWithString:[NSString
+                        stringWithFormat:@"%@/v1/uploads/%@:complete?key=%@",
+                                         APIURL, uploadKey, APIKey]];
+  NSString* body =
+      [NSString stringWithFormat:
                     @"{ symbol_id: { debug_file: \"%@\", debug_id: \"%@\" } }",
-                    debugFile,
-                    debugID];
+                    debugFile, debugID];
 
-  HTTPSimplePostRequest* postRequest = [[HTTPSimplePostRequest alloc]
-                                        initWithURL:URL];
+  HTTPSimplePostRequest* postRequest =
+      [[HTTPSimplePostRequest alloc] initWithURL:URL];
   [postRequest setBody:body];
   [postRequest setContentType:@"application/json"];
 
-  NSError *error = nil;
+  NSError* error = nil;
   NSData* data = [postRequest send:&error];
-  NSString *result = [[NSString alloc] initWithData:data
+  NSString* result = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
   int responseCode = [[postRequest response] statusCode];
   [postRequest release];
@@ -219,29 +209,27 @@
 
   // Note camel-case rather than underscores.
   NSRegularExpression* completeResultRegex = [NSRegularExpression
-                                      regularExpressionWithPattern:
-                                      @"\"result\": \"([^\"]+)\""
-                                      options:0
-                                      error:&error];
-  
-  NSArray* completeResultMatches = [completeResultRegex
-                            matchesInString:result
-                            options:0
-                            range: NSMakeRange(0, [result length])];
+      regularExpressionWithPattern:@"\"result\": \"([^\"]+)\""
+                           options:0
+                             error:&error];
+
+  NSArray* completeResultMatches =
+      [completeResultRegex matchesInString:result
+                                   options:0
+                                     range:NSMakeRange(0, [result length])];
 
   if ([completeResultMatches count] != 1) {
     fprintf(stdout, "Failed to parse complete upload response.");
     fprintf(stdout, "Response:\n");
     fprintf(stdout, "%s\n", [result UTF8String]);
-    return nil;
+    return CompleteUploadResultError;
   }
-  NSString* completeResult = [result
-                         substringWithRange:[completeResultMatches[0]
-                                             rangeAtIndex:1]];
+  NSString* completeResult =
+      [result substringWithRange:[completeResultMatches[0] rangeAtIndex:1]];
   [result release];
 
-  return ([completeResult isEqualToString:@"DUPLICATE_DATA"]) ?
-  CompleteUploadResultDuplicateData :
-  CompleteUploadResultOk;
+  return ([completeResult isEqualToString:@"DUPLICATE_DATA"])
+             ? CompleteUploadResultDuplicateData
+             : CompleteUploadResultOk;
 }
 @end

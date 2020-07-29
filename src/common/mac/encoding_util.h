@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,13 +27,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#import "HTTPGetRequest.h"
+#ifndef GOOGLE_BREAKPAD_COMMON_MAC_ENCODING_UTIL_H
+#define GOOGLE_BREAKPAD_COMMON_MAC_ENCODING_UTIL_H
 
-@implementation HTTPGetRequest
+#import <Foundation/Foundation.h>
 
-//=============================================================================
-- (NSString*)HTTPMethod {
-    return @"GET";
-}
+// As -[NSString stringByAddingPercentEscapesUsingEncoding:] has been
+// deprecated with iOS 9.0 / OS X 10.11 SDKs, this function re-implements it
+// using -[NSString stringByAddingPercentEncodingWithAllowedCharacters:] when
+// using those SDKs.
+NSString* PercentEncodeNSString(NSString* key);
 
-@end
+#endif  // GOOGLE_BREAKPAD_COMMON_MAC_ENCODING_UTIL_H

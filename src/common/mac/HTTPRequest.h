@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -39,32 +39,32 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface HTTPRequest : NSObject {
  @protected
-  NSURL *URL_;                   // The destination URL (STRONG)
-  NSHTTPURLResponse *response_;  // The response from the send (STRONG)
+  NSURL* URL_;                   // The destination URL (STRONG)
+  NSHTTPURLResponse* response_;  // The response from the send (STRONG)
 }
 
 /**
  Initializes the HTTPRequest and sets its URL.
  */
-- (id)initWithURL:(NSURL *)URL;
+- (id)initWithURL:(NSURL*)URL;
 
-- (NSURL *)URL;
+- (NSURL*)URL;
 
-- (NSHTTPURLResponse*) response;
+- (NSHTTPURLResponse*)response;
 
-- (NSString*)HTTPMethod;   // Internal, don't call outside class hierarchy.
+- (NSString*)HTTPMethod;  // Internal, don't call outside class hierarchy.
 
 - (NSString*)contentType;  // Internal, don't call outside class hierarchy.
 
-- (NSData*)bodyData;       // Internal, don't call outside class hierarchy.
+- (NSData*)bodyData;  // Internal, don't call outside class hierarchy.
 
-- (NSData *)send:(NSError **)error;
+- (NSData*)send:(NSError**)error;
 
 /**
  Appends a file to the HTTP request, either by filename or by file content
  (in the form of NSData).
  */
-+ (void)appendFileToBodyData:(NSMutableData *)data
++ (void)appendFileToBodyData:(NSMutableData*)data
                     withName:(NSString*)name
               withFileOrData:(id)fileOrData;
 

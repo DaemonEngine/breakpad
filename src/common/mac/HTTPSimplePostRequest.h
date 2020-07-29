@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,43 +27,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#import "HTTPSimplePostRequest.h"
+#import <Foundation/Foundation.h>
 
-@implementation HTTPSimplePostRequest
+#import "HTTPRequest.h"
 
-//=============================================================================
-- (void)dealloc {
-    [contentType_ release];
-    [body_ release];
+NS_ASSUME_NONNULL_BEGIN
 
-    [super dealloc];
+/**
+ Represents a simple (non-multipart) HTTP POST request.
+ */
+@interface HTTPSimplePostRequest : HTTPRequest {
+ @protected
+  NSString* contentType_;
+  NSString* body_;
 }
 
-//=============================================================================
-- (void)setContentType:(NSString *)contentType {
-    contentType_ = [contentType copy];
-}
+/**
+ Sets the content type of the POST request.
+ */
+- (void)setContentType:(NSString*)contentType;
 
-//=============================================================================
-- (void)setBody:(NSString *)body {
-  body_ = [body copy];
-}
-
-//=============================================================================
-- (NSString*)HTTPMethod {
-    return @"POST";
-}
-
-//=============================================================================
-- (NSString*)contentType {
-    return contentType_;
-}
-
-//=============================================================================
-- (NSData*)bodyData {
-    NSMutableData* data = [NSMutableData data];
-    [data appendData:[body_ dataUsingEncoding:NSUTF8StringEncoding]];
-    return data;
-}
+/**
+ Sets the contents of the POST request's body.
+ */
+- (void)setBody:(NSString*)body;
 
 @end
+
+NS_ASSUME_NONNULL_END

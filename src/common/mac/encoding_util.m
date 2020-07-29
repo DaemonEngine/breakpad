@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#import "HTTPPutRequest.h"
+#include "encoding_util.h"
 
-@implementation HTTPPutRequest
+#include <Availability.h>
+#include <AvailabilityMacros.h>
+#import <Foundation/Foundation.h>
 
-//=============================================================================
-- (void)dealloc {
-  [file_ release];
-
-  [super dealloc];
+NSString* PercentEncodeNSString(NSString* key) {
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_9_0) && \
+     __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_9_0) ||                  \
+    (defined(MAC_OS_X_VERSION_MIN_REQUIRED) &&                             \
+     defined(MAC_OS_X_VERSION_10_11) &&                                    \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11)
+  return [key stringByAddingPercentEncodingWithAllowedCharacters:
+                  [NSCharacterSet URLQueryAllowedCharacterSet]];
+#else
+  return [key stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+#endif
 }
-
-//=============================================================================
-- (void)setFile:(NSString *)file {
-  file_ = [file copy];
-}
-
-//=============================================================================
-- (NSString*)HTTPMethod {
-  return @"PUT";
-}
-
-//=============================================================================
-- (NSData*)bodyData {
-  NSMutableData *postBody = [NSMutableData data];
-
-  [HTTPRequest appendFileToBodyData:postBody
-                           withName:@"symbol_file"
-                     withFileOrData:file_];
-
-  return postBody;
-}
-
-@end

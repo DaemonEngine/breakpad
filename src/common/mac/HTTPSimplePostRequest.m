@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef util_h
-#define util_h
+#import "HTTPSimplePostRequest.h"
 
-#import <Foundation/Foundation.h>
+@implementation HTTPSimplePostRequest
 
-// As -[NSString stringByAddingPercentEscapesUsingEncoding:] has been
-// deprecated with iOS 9.0 / OS X 10.11 SDKs, this function re-implements it
-// using -[NSString stringByAddingPercentEncodingWithAllowedCharacters:] when
-// using those SDKs.
-static NSString *PercentEncodeNSString(NSString *key) {
-#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_9_0) &&     \
-__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_9_0) ||                      \
-(defined(MAC_OS_X_VERSION_MIN_REQUIRED) &&                                 \
-defined(MAC_OS_X_VERSION_10_11) &&                                        \
-MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11)
-  return [key stringByAddingPercentEncodingWithAllowedCharacters:
-          [NSCharacterSet URLQueryAllowedCharacterSet]];
-#else
-  return [key stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-#endif
+//=============================================================================
+- (void)dealloc {
+  [contentType_ release];
+  [body_ release];
+
+  [super dealloc];
 }
 
-#endif /* util_h */
+//=============================================================================
+- (void)setContentType:(NSString*)contentType {
+  contentType_ = [contentType copy];
+}
+
+//=============================================================================
+- (void)setBody:(NSString*)body {
+  body_ = [body copy];
+}
+
+//=============================================================================
+- (NSString*)HTTPMethod {
+  return @"POST";
+}
+
+//=============================================================================
+- (NSString*)contentType {
+  return contentType_;
+}
+
+//=============================================================================
+- (NSData*)bodyData {
+  NSMutableData* data = [NSMutableData data];
+  [data appendData:[body_ dataUsingEncoding:NSUTF8StringEncoding]];
+  return data;
+}
+
+@end
