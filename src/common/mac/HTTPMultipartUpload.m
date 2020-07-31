@@ -59,7 +59,7 @@
 
   NSString* escaped = PercentEncodeNSString(key);
   NSString* fmt = @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n";
-  NSString* form = [NSString stringWithFormat:fmt, boundary_, escaped, value];
+  NSString *form = [NSString stringWithFormat:fmt, escaped, value];
 
   [data appendData:[form dataUsingEncoding:NSUTF8StringEncoding]];
   return data;
