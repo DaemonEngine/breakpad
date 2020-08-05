@@ -70,11 +70,16 @@
                                withAPIKey:(NSString*)APIKey
                             withDebugFile:(NSString*)debugFile
                               withDebugID:(NSString*)debugID {
+  NSString* escapedDebugFile =
+      [debugFile stringByAddingPercentEncodingWithAllowedCharacters:
+                     [NSCharacterSet URLHostAllowedCharacterSet]];
+
   NSURL* URL = [NSURL
       URLWithString:[NSString
                         stringWithFormat:@"%@/v1/symbols/%@/%@:checkStatus"
                                          @"?key=%@",
-                                         APIURL, debugFile, debugID, APIKey]];
+                                         APIURL, escapedDebugFile, debugID,
+                                         APIKey]];
 
   HTTPGetRequest* getRequest = [[HTTPGetRequest alloc] initWithURL:URL];
   NSError* error = nil;
