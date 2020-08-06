@@ -48,7 +48,13 @@
 #include "HTTPPutRequest.h"
 #include "SymbolCollectorClient.h"
 
-typedef enum { SymUploadProtocolV1, SymUploadProtocolV2 } SymUploadProtocol;
+typedef enum { kSymUploadProtocolV1, kSymUploadProtocolV2 } SymUploadProtocol;
+
+typedef enum {
+  kResultSuccess = 0,
+  kResultFailure = 1,
+  kResultAlreadyExists = 2
+} Result;
 
 typedef struct {
   NSString* symbolsPath;
@@ -56,7 +62,7 @@ typedef struct {
   SymUploadProtocol symUploadProtocol;
   NSString* apiKey;
   BOOL force;
-  BOOL success;
+  Result result;
 } Options;
 
 //=============================================================================
@@ -137,14 +143,14 @@ static void StartSymUploadProtocolV1(Options* options,
 
   [result release];
   [ul release];
-  options->success = !error && status == 200;
+  options->result = (!error && status == 200) ? kResultSuccess : kResultFailure;
 }
 
 //=============================================================================
 static void StartSymUploadProtocolV2(Options* options,
                                      NSArray* moduleParts,
                                      NSString* debugID) {
-  options->success = NO;
+  options->result = kResultFailure;
 
   NSString* debugFile = [moduleParts objectAtIndex:4];
   if (!options->force) {
@@ -156,6 +162,7 @@ static void StartSymUploadProtocolV2(Options* options,
     if (symbolStatus == SymbolStatusFound) {
       fprintf(stdout, "Symbol file already exists, upload aborted."
                       " Use \"-f\" to overwrite.\n");
+      options->result = kResultAlreadyExists;
       return;
     } else if (symbolStatus == SymbolStatusUnknown) {
       fprintf(stdout, "Failed to get check for existing symbol.\n");
@@ -205,7 +212,7 @@ static void StartSymUploadProtocolV2(Options* options,
   } else {
     fprintf(stdout, "Successfully sent the symbol file.\n");
   }
-  options->success = YES;
+  options->result = kResultSuccess;
 }
 
 //=============================================================================
@@ -218,9 +225,9 @@ static void Start(Options* options) {
                                   options:0
                                     range:NSMakeRange(0, [compactedID length])];
 
-  if (options->symUploadProtocol == SymUploadProtocolV1) {
+  if (options->symUploadProtocol == kSymUploadProtocolV1) {
     StartSymUploadProtocolV1(options, moduleParts, compactedID);
-  } else if (options->symUploadProtocol == SymUploadProtocolV2) {
+  } else if (options->symUploadProtocol == kSymUploadProtocolV2) {
     StartSymUploadProtocolV2(options, moduleParts, compactedID);
   }
 }
@@ -242,12 +249,27 @@ static void Usage(int argc, const char* argv[]) {
                   "[Only in sym-upload-v2 protocol mode]\n");
   fprintf(stderr, "\t-h: Usage\n");
   fprintf(stderr, "\t-?: Usage\n");
+  fprintf(stderr, "Exit codes:\n");
+  fprintf(stderr, "\t%d: Success\n", kResultSuccess);
+  fprintf(stderr, "\t%d: Failure\n", kResultFailure);
+  fprintf(stderr,
+          "\t%d: Symbol file already exists on server (and -f was not "
+          "specified).\n",
+          kResultAlreadyExists);
+  fprintf(stderr,
+          "\t   [This exit code will only be returned by the sym-upload-v2 "
+          "protocol.\n");
+  fprintf(stderr,
+          "\t    The sym-upload-v1 protocol can return either Success or "
+          "Failure\n");
+  fprintf(stderr, "\t    in this case, and the action taken by the server is "
+                  "unspecified.]\n");
 }
 
 //=============================================================================
 static void SetupOptions(int argc, const char* argv[], Options* options) {
   // Set default value of symUploadProtocol.
-  options->symUploadProtocol = SymUploadProtocolV1;
+  options->symUploadProtocol = kSymUploadProtocolV1;
 
   extern int optind;
   char ch;
@@ -256,11 +278,11 @@ static void SetupOptions(int argc, const char* argv[], Options* options) {
     switch (ch) {
       case 'p':
         if (strcmp(optarg, "sym-upload-v2") == 0) {
-          options->symUploadProtocol = SymUploadProtocolV2;
+          options->symUploadProtocol = kSymUploadProtocolV2;
           break;
         } else if (strcmp(optarg, "sym-upload-v1") == 0) {
           // This is already the default but leave in case that changes.
-          options->symUploadProtocol = SymUploadProtocolV1;
+          options->symUploadProtocol = kSymUploadProtocolV1;
           break;
         }
         Usage(argc, argv);
@@ -319,5 +341,5 @@ int main(int argc, const char* argv[]) {
   Start(&options);
 
   [pool release];
-  return options.success ? 0 : 1;
+  return options.result;
 }
