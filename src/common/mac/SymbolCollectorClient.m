@@ -77,9 +77,9 @@
   [allowedDebugFileCharacters
       formUnionWithCharacterSet:[NSCharacterSet controlCharacterSet]];
   [allowedDebugFileCharacters invert];
-  NSString* escapedDebugFile = [debugFile
-      stringByAddingPercentEncodingWithAllowedCharacters:
-          allowedDebugFileCharacters];
+  NSString* escapedDebugFile =
+      [debugFile stringByAddingPercentEncodingWithAllowedCharacters:
+                     allowedDebugFileCharacters];
 
   NSURL* URL = [NSURL
       URLWithString:[NSString
@@ -189,7 +189,8 @@
                                     withAPIKey:(NSString*)APIKey
                                  withUploadKey:(NSString*)uploadKey
                                  withDebugFile:(NSString*)debugFile
-                                   withDebugID:(NSString*)debugID {
+                                   withDebugID:(NSString*)debugID
+                                      withType:(NSString*)type {
   NSURL* URL = [NSURL
       URLWithString:[NSString
                         stringWithFormat:@"%@/v1/uploads/%@:complete?key=%@",
@@ -199,7 +200,8 @@
       [NSDictionary dictionaryWithObjectsAndKeys:debugFile, @"debug_file",
                                                  debugID, @"debug_id", nil];
   NSDictionary* jsonDictionary = [NSDictionary
-      dictionaryWithObjectsAndKeys:symbolIdDictionary, @"symbol_id", nil];
+      dictionaryWithObjectsAndKeys:symbolIdDictionary, @"symbol_id", type,
+                                   @"symbol_upload_type", nil];
   NSError* error;
   NSData* jsonData =
       [NSJSONSerialization dataWithJSONObject:jsonDictionary
