@@ -202,32 +202,37 @@
   NSDictionary* jsonDictionary = [NSDictionary
       dictionaryWithObjectsAndKeys:symbolIdDictionary, @"symbol_id", type,
                                    @"symbol_upload_type", nil];
-  NSError* error;
+  NSError* error = nil;
   NSData* jsonData =
       [NSJSONSerialization dataWithJSONObject:jsonDictionary
                                       options:NSJSONWritingPrettyPrinted
                                         error:&error];
-  if (error) {
+  if (jsonData == nil) {
+    fprintf(stdout, "Error: %s\n", [[error localizedDescription] UTF8String]);
     fprintf(stdout,
             "Failed to complete upload. Could not write JSON payload.\n");
     return CompleteUploadResultError;
   }
+
   NSString* body = [[NSString alloc] initWithData:jsonData
                                          encoding:NSUTF8StringEncoding];
-
   HTTPSimplePostRequest* postRequest =
       [[HTTPSimplePostRequest alloc] initWithURL:URL];
   [postRequest setBody:body];
   [postRequest setContentType:@"application/json"];
 
-  error = nil;
   NSData* data = [postRequest send:&error];
+  if (data == nil) {
+    fprintf(stdout, "Error: %s\n", [[error localizedDescription] UTF8String]);
+    fprintf(stdout, "Failed to complete upload URL.\n");
+    return CompleteUploadResultError;
+  }
+
   NSString* result = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
   int responseCode = [[postRequest response] statusCode];
   [postRequest release];
-
-  if (error || responseCode != 200) {
+  if (responseCode != 200) {
     fprintf(stdout, "Failed to complete upload URL.\n");
     fprintf(stdout, "Response code: %d\n", responseCode);
     fprintf(stdout, "Response:\n");
