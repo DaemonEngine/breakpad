@@ -232,23 +232,14 @@ bool LoadStabs(const typename ElfClass::Ehdr* elf_header,
 // owned by a function) with the results.
 class DumperRangesHandler : public DwarfCUToModule::RangesHandler {
  public:
-  DumperRangesHandler(const uint8_t* buffer, uint64_t size,
-                      dwarf2reader::ByteReader* reader)
-      : buffer_(buffer), size_(size), reader_(reader) { }
+  DumperRangesHandler() { }
 
   bool ReadRanges(uint64_t offset, Module::Address base_address,
                   vector<Module::Range>* ranges) {
     DwarfRangeListHandler handler(base_address, ranges);
-    dwarf2reader::RangeListReader rangelist_reader(buffer_, size_, reader_,
-                                                   &handler);
 
-    return rangelist_reader.ReadRangeList(offset);
+    return reader_->ReadRangeList(offset, &handler);
   }
-
- private:
-  const uint8_t* buffer_;
-  uint64_t size_;
-  dwarf2reader::ByteReader* reader_;
 };
 
 // A line-to-module loader that accepts line number info parsed by
@@ -314,16 +305,17 @@ bool LoadDwarf(const string& dwarf_filename,
   }
 
   // Optional .debug_ranges reader
-  scoped_ptr<DumperRangesHandler> ranges_handler;
   dwarf2reader::SectionMap::const_iterator ranges_entry =
       file_context.section_map().find(".debug_ranges");
   if (ranges_entry != file_context.section_map().end()) {
     const std::pair<const uint8_t*, uint64_t>& ranges_section =
       ranges_entry->second;
-    ranges_handler.reset(
-      new DumperRangesHandler(ranges_section.first, ranges_section.second,
-                              &byte_reader));
+    file_context.SetDebugRangeInfo(ranges_section.first,
+                                   ranges_section.second,
+                                   &byte_reader);
   }
+
+  DumperRangesHandler ranges_handler;
 
   // Parse all the compilation units in the .debug_info section.
   DumperLineToModule line_to_module(&byte_reader);
@@ -341,7 +333,7 @@ bool LoadDwarf(const string& dwarf_filename,
     // data that was found.
     DwarfCUToModule::WarningReporter reporter(dwarf_filename, offset);
     DwarfCUToModule root_handler(&file_context, &line_to_module,
-                                 ranges_handler.get(), &reporter);
+                                 &ranges_handler, &reporter);
     // Make a Dwarf2Handler that drives the DIEHandler.
     dwarf2reader::DIEDispatcher die_dispatcher(&root_handler);
     // Make a DWARF parser for the compilation unit at OFFSET.

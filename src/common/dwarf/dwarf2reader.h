@@ -243,16 +243,14 @@ class RangeListHandler {
 
 class RangeListReader {
  public:
-  RangeListReader(const uint8_t* buffer, uint64_t size, ByteReader* reader,
-                  RangeListHandler* handler);
+  RangeListReader(const uint8_t* buffer, uint64_t size, ByteReader* reader);
 
-  bool ReadRangeList(uint64_t offset);
+  bool ReadRangeList(uint64_t offset, RangeListHandler* handler);
 
  private:
   const uint8_t* buffer_;
   uint64_t size_;
   ByteReader* reader_;
-  RangeListHandler* handler_;
 };
 
 // This class is the main interface between the reader and the
