@@ -1569,11 +1569,10 @@ void LineInfo::ReadLines() {
 }
 
 RangeListReader::RangeListReader(const uint8_t* buffer, uint64_t size,
-                                 ByteReader* reader)
-    : buffer_(buffer), size_(size), reader_(reader) { }
+                                 ByteReader* reader, RangeListHandler* handler)
+    : buffer_(buffer), size_(size), reader_(reader), handler_(handler) { }
 
-bool RangeListReader::ReadRangeList(uint64_t offset,
-                                    RangeListHandler* handler) {
+bool RangeListReader::ReadRangeList(uint64_t offset) {
   const uint64_t max_address =
     (reader_->AddressSize() == 4) ? 0xffffffffUL
                                   : 0xffffffffffffffffULL;
@@ -1590,12 +1589,12 @@ bool RangeListReader::ReadRangeList(uint64_t offset,
       reader_->ReadAddress(buffer_ + offset + reader_->AddressSize());
 
     if (start_address == max_address) { // Base address selection
-      handler->SetBaseAddress(end_address);
+      handler_->SetBaseAddress(end_address);
     } else if (start_address == 0 && end_address == 0) { // End-of-list
-      handler->Finish();
+      handler_->Finish();
       list_end = true;
     } else { // Add a range entry
-      handler->AddRange(start_address, end_address);
+      handler_->AddRange(start_address, end_address);
     }
 
     offset += entry_size;

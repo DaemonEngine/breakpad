@@ -89,11 +89,6 @@ class DwarfCUToModule: public dwarf2reader::RootDIEHandler {
                                 const uint8_t* contents,
                                 uint64_t length);
 
-    void SetDebugRangeInfo(const uint8_t* contents, uint64_t size,
-                           dwarf2reader::ByteReader* reader) {
-      range_list_reader_ = dwarf2reader::RangeListReader(contents, size, reader);
-    }
-
     // Clear the section map for testing.
     void ClearSectionMapForTest();
 
@@ -124,9 +119,6 @@ class DwarfCUToModule: public dwarf2reader::RootDIEHandler {
     // True if we are handling references between compilation units.
     const bool handle_inter_cu_refs_;
 
-    // Reader for .debug_ranges section, which is global to the file.
-    dwarf2reader::RangeListReader range_list_reader_;
-
     // Inter-compilation unit data used internally by the handlers.
     scoped_ptr<FilePrivate> file_private_;
   };
@@ -135,23 +127,16 @@ class DwarfCUToModule: public dwarf2reader::RootDIEHandler {
   // DwarfCUToModule.
   class RangesHandler {
    public:
-    RangesHandler() : reader_(nullptr) { }
+    RangesHandler() { }
     virtual ~RangesHandler() { }
 
     // Called when finishing a function to populate the function's ranges.
-    // base_address holds the base PC the range list values are offsets
-    // off. Return false if the rangelist falls out of the relevant section.
+    // The ranges' entries are read starting from offset in the .debug_ranges
+    // section, base_address holds the base PC the range list values are
+    // offsets off. Return false if the rangelist falls out of the
+    // .debug_ranges section.
     virtual bool ReadRanges(uint64_t offset, Module::Address base_address,
                             vector<Module::Range>* ranges) = 0;
-
-    // Read ranges from this buffer and interpret them according to attr. Called
-    // upon seeing a DW_AT_ranges or DW_AT_rngslist attribute.
-    void SetRangesReader(dwarf2reader::RangeListReader* reader) {
-      reader_ = reader;
-    }
-
-   protected:
-    dwarf2reader::RangeListReader* reader_;
   };
 
   // An abstract base class for handlers that handle DWARF line data

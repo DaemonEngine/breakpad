@@ -134,7 +134,6 @@ DwarfCUToModule::FileContext::FileContext(const string& filename,
     : filename_(filename),
       module_(module),
       handle_inter_cu_refs_(handle_inter_cu_refs),
-      range_list_reader_(nullptr, 0, nullptr),
       file_private_(new FilePrivate()) {
 }
 
@@ -194,7 +193,7 @@ struct DwarfCUToModule::CUContext {
   // For printing error messages.
   WarningReporter* reporter;
 
-  // For handling ranges, however they may be specified.
+  // For reading ranges from the .debug_ranges section
   RangesHandler* ranges_handler;
 
   // The source language of this compilation unit.
@@ -206,9 +205,6 @@ struct DwarfCUToModule::CUContext {
   uint64_t low_pc;
   uint64_t high_pc;
   uint64_t ranges;
-
-  // For reading dwarf4 ranges.
-  scoped_ptr<dwarf2reader::RangeListReader> range_list_reader_;
 
   // The functions defined in this compilation unit. We accumulate
   // them here during parsing. Then, in DwarfCUToModule::Finish, we
@@ -516,15 +512,6 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
       break;
     case dwarf2reader::DW_AT_ranges:
       ranges_ = data;
-      if (cu_context_->ranges_handler) {
-          cu_context_->ranges_handler->SetRangesReader(
-              &cu_context_->file_context->range_list_reader_);
-      } else {
-        cu_context_->reporter->MissingRanges();
-        // The rest of the code will fall back to low-pc, which is better than
-        // nothing.
-        ranges_ = 0;
-      }
       break;
 
     default:
