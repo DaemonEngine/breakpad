@@ -226,6 +226,7 @@ const uint8_t* CompilationUnit::SkipAttribute(const uint8_t* start,
     case DW_FORM_GNU_str_index:
     case DW_FORM_GNU_addr_index:
     case DW_FORM_addrx:
+    case DW_FORM_rnglistx:
       reader_->ReadUnsignedLEB128(start, &len);
       return start + len;
 
@@ -657,6 +658,10 @@ const uint8_t* CompilationUnit::ProcessAttribute(
       ProcessAttributeAddrIndex(
           dieoffset, attr, form, reader_->ReadFourBytes(start));
       return start + 4;
+    case DW_FORM_rnglistx:
+      ProcessAttributeUnsigned(
+          dieoffset, attr, form, reader_->ReadUnsignedLEB128(start, &len));
+      return start + len;
   }
   fprintf(stderr, "Unhandled form type\n");
   return NULL;
@@ -1568,11 +1573,76 @@ void LineInfo::ReadLines() {
   after_header_ = lengthstart + header_.total_length;
 }
 
-RangeListReader::RangeListReader(const uint8_t* buffer, uint64_t size,
-                                 ByteReader* reader, RangeListHandler* handler)
-    : buffer_(buffer), size_(size), reader_(reader), handler_(handler) { }
+bool RangeListReader::SetRangesBase(uint64_t offset) {
+  // Versions less than 5 don't use ranges base.
+  if (cu_info_->version_ < 5) {
+    return true;
+  }
+  // Length may not be 12 bytes, but if 12 bytes aren't available
+  // at this point, then the header is too short.
+  if (offset + 12 >= cu_info_->size_) {
+    return false;
+  }
+  // The length of this CU's contribution.
+  uint64_t cu_length = reader_->ReadFourBytes(cu_info_->buffer_ + offset);
+  offset += 4;
+  if (cu_length == 0xffffffffUL) {
+    cu_length = reader_->ReadEightBytes(cu_info_->buffer_ + offset);
+    offset += 8;
+  }
 
-bool RangeListReader::ReadRangeList(uint64_t offset) {
+  // Truncating size here results in correctly ignoring everything not from
+  // this cu from here on out.
+  cu_info_->size_ = offset + cu_length;
+
+  // Check for the rest of the header in advance.
+  if (offset + 8 >= cu_info_->size_) {
+    return false;
+  }
+  // Version. Can only read version 5.
+  if (reader_->ReadTwoBytes(cu_info_->buffer_ + offset) != 5) {
+    return false;
+  }
+  offset += 2;
+  // Address size
+  if (reader_->ReadOneByte(cu_info_->buffer_ + offset) !=
+      reader_->AddressSize()) {
+    return false;
+  }
+  offset += 1;
+  // Segment selectors are unsupported
+  if (reader_->ReadOneByte(cu_info_->buffer_ + offset) != 0) {
+    return false;
+  }
+  offset += 1;
+  offset_entry_count_ = reader_->ReadFourBytes(cu_info_->buffer_ + offset);
+  offset += 4;
+  offset_array_ = offset;
+  return true;
+}
+
+bool RangeListReader::ReadRanges(enum DwarfForm form, uint64_t data) {
+  if (form == DW_FORM_sec_offset) {
+    if (cu_info_->version_ <= 4) {
+      return ReadDebugRanges(data);
+    } else {
+      return ReadDebugRngList(data);
+    }
+  } else if (form == DW_FORM_rnglistx) {
+    SetRangesBase(cu_info_->ranges_base_);
+    if (data >= offset_entry_count_) {
+      return false;
+    }
+    uint64_t index_offset = reader_->AddressSize() * data;
+    uint64_t range_list_offset =
+        reader_->ReadAddress(cu_info_->buffer_ + offset_array_ + index_offset);
+
+    return ReadDebugRngList(range_list_offset);
+  }
+  return false;
+}
+
+bool RangeListReader::ReadDebugRanges(uint64_t offset) {
   const uint64_t max_address =
     (reader_->AddressSize() == 4) ? 0xffffffffUL
                                   : 0xffffffffffffffffULL;
@@ -1580,27 +1650,84 @@ bool RangeListReader::ReadRangeList(uint64_t offset) {
   bool list_end = false;
 
   do {
-    if (offset > size_ - entry_size) {
+    if (offset > cu_info_->size_ - entry_size) {
       return false; // Invalid range detected
     }
 
-    uint64_t start_address = reader_->ReadAddress(buffer_ + offset);
-    uint64_t end_address =
-      reader_->ReadAddress(buffer_ + offset + reader_->AddressSize());
+    uint64_t start_address = reader_->ReadAddress(cu_info_->buffer_ + offset);
+    uint64_t end_address = reader_->ReadAddress(
+        cu_info_->buffer_ + offset + reader_->AddressSize());
 
     if (start_address == max_address) { // Base address selection
-      handler_->SetBaseAddress(end_address);
+      cu_info_->base_address_ = end_address;
     } else if (start_address == 0 && end_address == 0) { // End-of-list
       handler_->Finish();
       list_end = true;
     } else { // Add a range entry
-      handler_->AddRange(start_address, end_address);
+      handler_->AddRange(start_address + cu_info_->base_address_,
+                         end_address + cu_info_->base_address_);
     }
 
     offset += entry_size;
   } while (!list_end);
 
   return true;
+}
+
+bool RangeListReader::ReadDebugRngList(uint64_t offset) {
+  uint64_t start = 0;
+  uint64_t end = 0;
+  uint64_t range_len = 0;
+  uint64_t index = 0;
+  // A uleb128's length isn't known until after it has been read, so overruns
+  // are only caught after an entire entry.
+  while (offset < cu_info_->size_) {
+    uint8_t entry_type = reader_->ReadOneByte(cu_info_->buffer_ + offset);
+    offset += 1;
+    // Handle each entry type per Dwarf 5 Standard, section 2.17.3.
+    switch (entry_type) {
+      case DW_RLE_end_of_list:
+        handler_->Finish();
+        return true;
+      case DW_RLE_base_addressx:
+        offset += ReadULEB(offset, &index);
+        cu_info_->base_address_ = GetAddressAtIndex(index);
+        break;
+      case DW_RLE_startx_endx:
+        offset += ReadULEB(offset, &index);
+        start = GetAddressAtIndex(index);
+        offset += ReadULEB(offset, &index);
+        end = GetAddressAtIndex(index);
+        handler_->AddRange(start, end);
+        break;
+      case DW_RLE_startx_length:
+        offset += ReadULEB(offset, &index);
+        start = GetAddressAtIndex(index);
+        offset += ReadULEB(offset, &range_len);
+        handler_->AddRange(start, start + range_len);
+        break;
+      case DW_RLE_offset_pair:
+        offset += ReadULEB(offset, &start);
+        offset += ReadULEB(offset, &end);
+        handler_->AddRange(start + cu_info_->base_address_,
+                           end + cu_info_->base_address_);
+        break;
+      case DW_RLE_base_address:
+        offset += ReadAddress(offset, &cu_info_->base_address_);
+        break;
+      case DW_RLE_start_end:
+        offset += ReadAddress(offset, &start);
+        offset += ReadAddress(offset, &end);
+        handler_->AddRange(start, end);
+        break;
+      case DW_RLE_start_length:
+        offset += ReadAddress(offset, &start);
+        offset += ReadULEB(offset, &end);
+        handler_->AddRange(start, start + end);
+        break;
+    }
+  }
+  return false;
 }
 
 // A DWARF rule for recovering the address or value of a register, or
