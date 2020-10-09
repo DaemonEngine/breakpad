@@ -72,8 +72,19 @@ typedef std::map<string, std::pair<const uint8_t*, uint64_t> > SectionMap;
 const SectionMap::const_iterator GetSectionByName(const SectionMap&
                                                   sections, const char* name);
 
-typedef std::list<std::pair<enum DwarfAttribute, enum DwarfForm> >
-    AttributeList;
+// Most of the time, this struct functions as a simple attribute and form pair.
+// However, Dwarf5 DW_FORM_implicit_const means that a form may have its value
+// in line in the abbrev table, and that value must be associated with the
+// pair until the attr's value is needed.
+struct AttrForm {
+  AttrForm(enum DwarfAttribute attr, enum DwarfForm form, uint64_t value) :
+      attr_(attr), form_(form), value_(value) { }
+
+  enum DwarfAttribute attr_;
+  enum DwarfForm form_;
+  uint64_t value_;
+};
+typedef std::list<AttrForm> AttributeList;
 typedef AttributeList::iterator AttributeIterator;
 typedef AttributeList::const_iterator ConstAttributeIterator;
 
@@ -527,7 +538,8 @@ class CompilationUnit {
   const uint8_t* ProcessAttribute(uint64_t dieoffset,
                                   const uint8_t* start,
                                   enum DwarfAttribute attr,
-                                  enum DwarfForm form);
+                                  enum DwarfForm form,
+                                  uint64_t implicit_const);
 
   // Called when we have an attribute with unsigned data to give to
   // our handler.  The attribute is for the DIE at OFFSET from the

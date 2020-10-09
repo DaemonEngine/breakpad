@@ -160,10 +160,15 @@ void CompilationUnit::ReadAbbrevs() {
       if (nametemp == 0 && formtemp == 0)
         break;
 
-      const enum DwarfAttribute name =
-        static_cast<enum DwarfAttribute>(nametemp);
-      const enum DwarfForm form = static_cast<enum DwarfForm>(formtemp);
-      abbrev.attributes.push_back(std::make_pair(name, form));
+      uint64_t value = 0;
+      if (formtemp == DW_FORM_implicit_const) {
+        value = reader_->ReadUnsignedLEB128(abbrevptr, &len);
+        abbrevptr += len;
+      }
+      AttrForm abbrev_attr(static_cast<enum DwarfAttribute>(nametemp),
+                           static_cast<enum DwarfForm>(formtemp),
+                           value);
+      abbrev.attributes.push_back(abbrev_attr);
     }
     assert(abbrev.number == abbrevs_->size());
     abbrevs_->push_back(abbrev);
@@ -176,7 +181,7 @@ const uint8_t* CompilationUnit::SkipDIE(const uint8_t* start,
   for (AttributeList::const_iterator i = abbrev.attributes.begin();
        i != abbrev.attributes.end();
        i++)  {
-    start = SkipAttribute(start, i->second);
+    start = SkipAttribute(start, i->form_);
   }
   return start;
 }
@@ -194,6 +199,7 @@ const uint8_t* CompilationUnit::SkipAttribute(const uint8_t* start,
       return SkipAttribute(start, form);
 
     case DW_FORM_flag_present:
+    case DW_FORM_implicit_const:
       return start;
     case DW_FORM_addrx1:
     case DW_FORM_data1:
@@ -213,11 +219,15 @@ const uint8_t* CompilationUnit::SkipAttribute(const uint8_t* start,
     case DW_FORM_ref4:
     case DW_FORM_data4:
     case DW_FORM_strx4:
+    case DW_FORM_ref_sup4:
       return start + 4;
     case DW_FORM_ref8:
     case DW_FORM_data8:
     case DW_FORM_ref_sig8:
+    case DW_FORM_ref_sup8:
       return start + 8;
+    case DW_FORM_data16:
+      return start + 16;
     case DW_FORM_string:
       return start + strlen(reinterpret_cast<const char*>(start)) + 1;
     case DW_FORM_udata:
@@ -227,6 +237,7 @@ const uint8_t* CompilationUnit::SkipAttribute(const uint8_t* start,
     case DW_FORM_GNU_addr_index:
     case DW_FORM_addrx:
     case DW_FORM_rnglistx:
+    case DW_FORM_loclistx:
       reader_->ReadUnsignedLEB128(start, &len);
       return start + len;
 
@@ -458,7 +469,7 @@ void CompilationUnit::ProcessFormStringIndex(
 // This is all boring data manipulation and calling of the handler.
 const uint8_t* CompilationUnit::ProcessAttribute(
     uint64_t dieoffset, const uint8_t* start, enum DwarfAttribute attr,
-    enum DwarfForm form) {
+    enum DwarfForm form, uint64_t implicit_const) {
   size_t len;
 
   switch (form) {
@@ -468,7 +479,7 @@ const uint8_t* CompilationUnit::ProcessAttribute(
       form = static_cast<enum DwarfForm>(reader_->ReadUnsignedLEB128(start,
                                                                      &len));
       start += len;
-      return ProcessAttribute(dieoffset, start, attr, form);
+      return ProcessAttribute(dieoffset, start, attr, form, implicit_const);
 
     case DW_FORM_flag_present:
       ProcessAttributeUnsigned(dieoffset, attr, form, 1);
@@ -490,6 +501,10 @@ const uint8_t* CompilationUnit::ProcessAttribute(
       ProcessAttributeUnsigned(dieoffset, attr, form,
                                reader_->ReadEightBytes(start));
       return start + 8;
+    case DW_FORM_data16:
+      // This form is designed for an md5 checksum inside line tables.
+      fprintf(stderr, "Unhandled form type: DW_FORM_data16\n");
+      return start + 16;
     case DW_FORM_string: {
       const char* str = reinterpret_cast<const char*>(start);
       ProcessAttributeString(dieoffset, attr, form, str);
@@ -557,7 +572,10 @@ const uint8_t* CompilationUnit::ProcessAttribute(
       handler_->ProcessAttributeSignature(dieoffset, attr, form,
                                           reader_->ReadEightBytes(start));
       return start + 8;
-
+    case DW_FORM_implicit_const:
+      handler_->ProcessAttributeUnsigned(dieoffset, attr, form,
+                                         implicit_const);
+      return start;
     case DW_FORM_block1: {
       uint64_t datalen = reader_->ReadOneByte(start);
       handler_->ProcessAttributeBuffer(dieoffset, attr, form, start + 1,
@@ -609,7 +627,18 @@ const uint8_t* CompilationUnit::ProcessAttribute(
       // No support currently for suplementary object files.
       fprintf(stderr, "Unhandled form type: DW_FORM_strp_sup\n");
       return start + 4;
-
+    case DW_FORM_ref_sup4:
+      // No support currently for suplementary object files.
+      fprintf(stderr, "Unhandled form type: DW_FORM_ref_sup4\n");
+      return start + 4;
+    case DW_FORM_ref_sup8:
+      // No support currently for suplementary object files.
+      fprintf(stderr, "Unhandled form type: DW_FORM_ref_sup8\n");
+      return start + 8;
+    case DW_FORM_loclistx:
+      ProcessAttributeUnsigned(dieoffset, attr, form,
+                               reader_->ReadUnsignedLEB128(start, &len));
+      return start + len;
     case DW_FORM_strx:
     case DW_FORM_GNU_str_index: {
       uint64_t str_index = reader_->ReadUnsignedLEB128(start, &len);
@@ -673,7 +702,7 @@ const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
   for (AttributeList::const_iterator i = abbrev.attributes.begin();
        i != abbrev.attributes.end();
        i++)  {
-    start = ProcessAttribute(dieoffset, start, i->first, i->second);
+    start = ProcessAttribute(dieoffset, start, i->attr_, i->form_, i->value_);
   }
 
   // If this is a compilation unit in a split DWARF object, verify that

@@ -162,20 +162,25 @@ enum DwarfForm {
 
   // Added in DWARF 5:
   DW_FORM_strx = 0x1a,
+  DW_FORM_addrx = 0x1b,
+  DW_FORM_ref_sup4 = 0x1c,
   DW_FORM_strp_sup = 0x1d,
+  DW_FORM_data16 = 0x1e,
   DW_FORM_line_strp = 0x1f,
 
   // DWARF 4, but value out of order.
   DW_FORM_ref_sig8 = 0x20,
 
   // Added in DWARF 5:
+  DW_FORM_implicit_const = 0x21,
+  DW_FORM_loclistx = 0x22,
   DW_FORM_rnglistx = 0x23,
+  DW_FORM_ref_sup8 = 0x24,
   DW_FORM_strx1 = 0x25,
   DW_FORM_strx2 = 0x26,
   DW_FORM_strx3 = 0x27,
   DW_FORM_strx4 = 0x28,
 
-  DW_FORM_addrx = 0x1b,
   DW_FORM_addrx1 = 0x29,
   DW_FORM_addrx2 = 0x2a,
   DW_FORM_addrx3 = 0x2b,

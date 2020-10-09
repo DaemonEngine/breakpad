@@ -463,6 +463,35 @@ TEST_P(DwarfForms, ref_sig8_not_first) {
   ParseCompilationUnit(GetParam(), 98);
 }
 
+TEST_P(DwarfForms, implicit_const) {
+  const DwarfHeaderParams& params = GetParam();
+  const uint64_t implicit_constant_value = 0x1234;
+  // Create the abbreviation table.
+  Label abbrev_table = abbrevs.Here();
+  abbrevs.Abbrev(1, (DwarfTag) 0x253e7b2b, dwarf2reader::DW_children_no)
+      .Attribute((DwarfAttribute) 0xd708d908,
+                 dwarf2reader::DW_FORM_implicit_const)
+      .ULEB128(implicit_constant_value);
+  abbrevs.EndAbbrev().EndTable();
+
+  info.set_format_size(params.format_size);
+  info.set_endianness(params.endianness);
+  info.Header(params.version, abbrev_table, params.address_size)
+          .ULEB128(1);                    // abbrev code
+  info.Finish();
+
+  ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x253e7b2b);
+  EXPECT_CALL(handler,
+              ProcessAttributeUnsigned(_, (DwarfAttribute) 0xd708d908,
+                                       dwarf2reader::DW_FORM_implicit_const,
+                                       implicit_constant_value))
+      .InSequence(s)
+      .WillOnce(Return());
+  ExpectEndCompilationUnit();
+
+  ParseCompilationUnit(GetParam());
+}
+
 // Tests for the other attribute forms could go here.
 
 INSTANTIATE_TEST_CASE_P(
