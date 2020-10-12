@@ -293,7 +293,7 @@ class RangeListReader {
   // Convenience functions to handle the mechanics of reading entries in the
   // ranges section.
   uint64_t ReadULEB(uint64_t offset, uint64_t* value) {
-    uint64_t len;
+    size_t len;
     *value = reader_->ReadUnsignedLEB128(cu_info_->buffer_ + offset, &len);
     return len;
   }
