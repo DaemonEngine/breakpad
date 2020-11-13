@@ -574,10 +574,8 @@ TEST(RangeList, Dwarf5ReadRangeList) {
   using dwarf2reader::DW_RLE_offset_pair;
   using dwarf2reader::DW_RLE_end_of_list;
   using dwarf2reader::DW_RLE_base_address;
-  using dwarf2reader::DW_RLE_offset_pair;
   using dwarf2reader::DW_RLE_start_end;
   using dwarf2reader::DW_RLE_start_length;
-  using dwarf2reader::DW_RLE_end_of_list;
   using dwarf2reader::DW_FORM_sec_offset;
   using dwarf2reader::DW_FORM_rnglistx;
 
