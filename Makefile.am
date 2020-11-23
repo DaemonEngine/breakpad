@@ -123,6 +123,7 @@ endif
 check_LIBRARIES =
 noinst_LIBRARIES =
 lib_LIBRARIES =
+libexec_PROGRAMS =
 bin_PROGRAMS =
 check_PROGRAMS =
 EXTRA_PROGRAMS =
@@ -363,6 +364,8 @@ if X86_HOST
 bin_PROGRAMS += \
 	src/tools/mac/dump_syms/dump_syms_mac
 endif
+libexec_PROGRAMS += \
+	src/tools/linux/core_handler/core_handler
 endif
 endif LINUX_HOST
 
@@ -568,6 +571,12 @@ src_tools_linux_core2md_core2md_SOURCES = \
 	src/tools/linux/core2md/core2md.cc
 
 src_tools_linux_core2md_core2md_LDADD = \
+	src/client/linux/libbreakpad_client.a
+
+src_tools_linux_core_handler_core_handler_SOURCES = \
+	src/tools/linux/core_handler/core_handler.cc
+
+src_tools_linux_core_handler_core_handler_LDADD = \
 	src/client/linux/libbreakpad_client.a
 
 src_tools_linux_dump_syms_dump_syms_SOURCES = \
