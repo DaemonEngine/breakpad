@@ -356,6 +356,7 @@ CLEANFILES += \
 if !DISABLE_TOOLS
 bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
+	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/dump_syms/dump_syms \
 	src/tools/linux/md2core/minidump-2-core \
 	src/tools/linux/symupload/minidump_upload \
@@ -577,6 +578,12 @@ src_tools_linux_core_handler_core_handler_SOURCES = \
 	src/tools/linux/core_handler/core_handler.cc
 
 src_tools_linux_core_handler_core_handler_LDADD = \
+	src/client/linux/libbreakpad_client.a
+
+src_tools_linux_pid2md_pid2md_SOURCES = \
+	src/tools/linux/pid2md/pid2md.cc
+
+src_tools_linux_pid2md_pid2md_LDADD = \
 	src/client/linux/libbreakpad_client.a
 
 src_tools_linux_dump_syms_dump_syms_SOURCES = \
