@@ -375,6 +375,7 @@ endif LINUX_HOST
 if !DISABLE_PROCESSOR
 check_PROGRAMS += \
 	src/common/test_assembler_unittest \
+	src/common/dwarf/dwarf2reader_lineinfo_unittest \
 	src/processor/address_map_unittest \
 	src/processor/basic_source_line_resolver_unittest \
 	src/processor/cfi_frame_info_unittest \
@@ -1220,6 +1221,19 @@ src_common_test_assembler_unittest_CPPFLAGS = \
 src_common_test_assembler_unittest_LDADD = \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+
+src_common_dwarf_dwarf2reader_lineinfo_unittest_SOURCES = \
+	src/common/dwarf/dwarf2reader.h \
+	src/common/dwarf/dwarf2reader_lineinfo_unittest.cc
+src_common_dwarf_dwarf2reader_lineinfo_unittest_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+src_common_dwarf_dwarf2reader_lineinfo_unittest_LDADD = \
+  src/common/dwarf/bytereader.o \
+  src/common/dwarf/dwarf2reader.o \
+  src/common/dwarf/elf_reader.o \
+	$(TEST_LIBS) \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+
 
 ## Non-installables
 noinst_PROGRAMS =
