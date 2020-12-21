@@ -165,8 +165,8 @@ EXTRA_PROGRAMS = $(am__EXEEXT_1)
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@@X86_HOST_TRUE@am__append_14 = \
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@@X86_HOST_TRUE@	src/tools/mac/dump_syms/dump_syms_mac
 
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@am__append_15 = \
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/tools/linux/core_handler/core_handler
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@am__append_15 = \
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@	src/tools/linux/core_handler/core_handler
 
 @DISABLE_PROCESSOR_FALSE@am__append_16 = \
 @DISABLE_PROCESSOR_FALSE@	src/common/test_assembler_unittest \
@@ -307,7 +307,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libexecdir)" \
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/tools/linux/md2core/minidump_2_core_unittest$(EXEEXT)
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@@X86_HOST_TRUE@am__EXEEXT_8 = src/common/mac/macho_reader_unittest$(EXEEXT)
 @DISABLE_PROCESSOR_FALSE@@SELFTEST_TRUE@am__EXEEXT_9 = src/processor/stackwalker_selftest$(EXEEXT)
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@am__EXEEXT_10 = src/tools/linux/core_handler/core_handler$(EXEEXT)
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@am__EXEEXT_10 = src/tools/linux/core_handler/core_handler$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(libexec_PROGRAMS) $(noinst_PROGRAMS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -1451,10 +1451,10 @@ src_tools_linux_core2md_core2md_OBJECTS =  \
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_core2md_core2md_DEPENDENCIES = src/client/linux/libbreakpad_client.a
 am__src_tools_linux_core_handler_core_handler_SOURCES_DIST =  \
 	src/tools/linux/core_handler/core_handler.cc
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@am_src_tools_linux_core_handler_core_handler_OBJECTS = src/tools/linux/core_handler/core_handler.$(OBJEXT)
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@am_src_tools_linux_core_handler_core_handler_OBJECTS = src/tools/linux/core_handler/core_handler.$(OBJEXT)
 src_tools_linux_core_handler_core_handler_OBJECTS =  \
 	$(am_src_tools_linux_core_handler_core_handler_OBJECTS)
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_DEPENDENCIES = src/client/linux/libbreakpad_client.a
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_DEPENDENCIES = src/client/linux/libbreakpad_client.a
 am__src_tools_linux_dump_syms_dump_syms_SOURCES_DIST =  \
 	src/common/dwarf_cfi_to_module.cc \
 	src/common/dwarf_cu_to_module.cc \
@@ -2777,11 +2777,11 @@ TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_core2md_core2md_LDADD = \
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/client/linux/libbreakpad_client.a
 
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_SOURCES = \
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/tools/linux/core_handler/core_handler.cc
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_SOURCES = \
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@	src/tools/linux/core_handler/core_handler.cc
 
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_LDADD = \
-@DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/client/linux/libbreakpad_client.a
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@src_tools_linux_core_handler_core_handler_LDADD = \
+@DISABLE_TOOLS_FALSE@@HAVE_MEMFD_CREATE_TRUE@@LINUX_HOST_TRUE@	src/client/linux/libbreakpad_client.a
 
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@src_tools_linux_pid2md_pid2md_SOURCES = \
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@	src/tools/linux/pid2md/pid2md.cc

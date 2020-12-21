@@ -650,6 +650,8 @@ LINUX_HOST_FALSE
 LINUX_HOST_TRUE
 WARN_CXXFLAGS
 HAVE_CXX11
+HAVE_MEMFD_CREATE_FALSE
+HAVE_MEMFD_CREATE_TRUE
 HAVE_GETCONTEXT_FALSE
 HAVE_GETCONTEXT_TRUE
 PTHREAD_CFLAGS
@@ -6651,7 +6653,7 @@ fi
 done
 
 
-for ac_header in a.out.h sys/random.h
+for ac_header in a.out.h sys/mman.h sys/random.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -6664,7 +6666,7 @@ fi
 
 done
 
-for ac_func in arc4random getcontext getrandom
+for ac_func in arc4random getcontext getrandom memfd_create
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -6682,6 +6684,14 @@ done
 else
   HAVE_GETCONTEXT_TRUE='#'
   HAVE_GETCONTEXT_FALSE=
+fi
+
+ if test "x$ac_cv_func_memfd_create" = xyes; then
+  HAVE_MEMFD_CREATE_TRUE=
+  HAVE_MEMFD_CREATE_FALSE='#'
+else
+  HAVE_MEMFD_CREATE_TRUE='#'
+  HAVE_MEMFD_CREATE_FALSE=
 fi
 
 
@@ -7884,6 +7894,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_GETCONTEXT_TRUE}" && test -z "${HAVE_GETCONTEXT_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_GETCONTEXT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_MEMFD_CREATE_TRUE}" && test -z "${HAVE_MEMFD_CREATE_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_MEMFD_CREATE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${LINUX_HOST_TRUE}" && test -z "${LINUX_HOST_FALSE}"; then

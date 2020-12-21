@@ -365,8 +365,10 @@ if X86_HOST
 bin_PROGRAMS += \
 	src/tools/mac/dump_syms/dump_syms_mac
 endif
+if HAVE_MEMFD_CREATE
 libexec_PROGRAMS += \
 	src/tools/linux/core_handler/core_handler
+endif
 endif
 endif LINUX_HOST
 
@@ -576,11 +578,13 @@ src_tools_linux_core2md_core2md_SOURCES = \
 src_tools_linux_core2md_core2md_LDADD = \
 	src/client/linux/libbreakpad_client.a
 
+if HAVE_MEMFD_CREATE
 src_tools_linux_core_handler_core_handler_SOURCES = \
 	src/tools/linux/core_handler/core_handler.cc
 
 src_tools_linux_core_handler_core_handler_LDADD = \
 	src/client/linux/libbreakpad_client.a
+endif
 
 src_tools_linux_pid2md_pid2md_SOURCES = \
 	src/tools/linux/pid2md/pid2md.cc
