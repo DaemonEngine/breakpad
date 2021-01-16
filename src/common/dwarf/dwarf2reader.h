@@ -554,7 +554,7 @@ class CompilationUnit {
     if (attr == DW_AT_GNU_dwo_id) {
       dwo_id_ = data;
     }
-    else if (attr == DW_AT_GNU_addr_base) {
+    else if (attr == DW_AT_GNU_addr_base || attr == DW_AT_addr_base) {
       addr_base_ = data;
     }
     else if (attr == DW_AT_GNU_ranges_base || attr == DW_AT_rnglists_base) {
@@ -611,7 +611,7 @@ class CompilationUnit {
                               enum DwarfAttribute attr,
                               enum DwarfForm form,
                               const char* data) {
-    if (attr == DW_AT_GNU_dwo_name)
+    if (attr == DW_AT_GNU_dwo_name || attr == DW_AT_dwo_name)
       dwo_name_ = data;
     handler_->ProcessAttributeString(offset, attr, form, data);
   }
