@@ -319,6 +319,90 @@ TEST_P(DwarfForms, addr) {
   ParseCompilationUnit(GetParam());
 }
 
+TEST_P(DwarfForms, strx1) {
+  if (GetParam().version != 5) {
+    return;
+  }
+  Label abbrev_table = abbrevs.Here();
+  abbrevs.Abbrev(1, dwarf2reader::DW_TAG_compile_unit,
+                 dwarf2reader::DW_children_no)
+      .Attribute(dwarf2reader::DW_AT_name, dwarf2reader::DW_FORM_strx1)
+      .Attribute(dwarf2reader::DW_AT_low_pc, dwarf2reader::DW_FORM_addr)
+      .Attribute(dwarf2reader::DW_AT_str_offsets_base,
+                 dwarf2reader::DW_FORM_sec_offset)
+      .EndAbbrev()
+      .EndTable();
+
+  info.set_format_size(GetParam().format_size);
+  info.set_endianness(GetParam().endianness);
+  info.Header(GetParam().version, abbrev_table, GetParam().address_size,
+              dwarf2reader::DW_UT_compile)
+      .ULEB128(1)                                 // abbrev index
+      .D8(2);                                     // string index
+
+  uint64_t value;
+  uint64_t offsets_base;
+  if (GetParam().address_size == 4) {
+    value = 0xc8e9ffcc;
+    offsets_base = 8;
+    info.D32(value);                              // low pc
+    info.D32(offsets_base);                       // str_offsets_base
+  } else {
+    value = 0xe942517fc2768564ULL;
+    offsets_base = 16;
+    info.D64(value);                              // low_pc
+    info.D64(offsets_base);                       // str_offsets_base
+  }
+  info.Finish();
+
+  Section debug_strings;
+  // no header, just a series of null-terminated strings.
+  debug_strings.AppendCString("apple");    // offset = 0
+  debug_strings.AppendCString("bird");     // offset = 6
+  debug_strings.AppendCString("canary");   // offset = 11
+  debug_strings.AppendCString("dinosaur"); // offset = 18
+
+  Section str_offsets;
+  str_offsets.set_endianness(GetParam().endianness);
+  // Header for .debug_str_offsets
+  if (GetParam().address_size == 4) {
+    str_offsets.D32(24);  // section length  (4 bytes)
+  } else {
+    str_offsets.D32(0xffffffff);
+    str_offsets.D64(48);  // section length (12 bytes)
+  }
+  str_offsets.D16(GetParam().version); // version (2 bytes)
+  str_offsets.D16(0);                  // padding (2 bytes)
+
+  // .debug_str_offsets data (the offsets)
+  if (GetParam().address_size == 4) {
+    str_offsets.D32(0);
+    str_offsets.D32(6);
+    str_offsets.D32(11);
+    str_offsets.D32(18);
+  } else {
+    str_offsets.D64(0);
+    str_offsets.D64(6);
+    str_offsets.D64(11);
+    str_offsets.D64(18);
+  }
+
+
+  ExpectBeginCompilationUnit(GetParam(), dwarf2reader::DW_TAG_compile_unit);
+  EXPECT_CALL(handler, ProcessAttributeString(_, dwarf2reader::DW_AT_name,
+                                              dwarf2reader::DW_FORM_strx1,
+                                              "bird"))
+      .WillOnce(Return());
+  EXPECT_CALL(handler, ProcessAttributeUnsigned(_, dwarf2reader::DW_AT_low_pc,
+                                                dwarf2reader::DW_FORM_addr,
+                                                value))
+      .InSequence(s)
+      .WillOnce(Return());
+  ExpectEndCompilationUnit();
+
+  ParseCompilationUnit(GetParam());
+}
+
 TEST_P(DwarfForms, block2_empty) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x16e4d2f7,
                           (DwarfAttribute) 0xe52c4463,
