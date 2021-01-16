@@ -1203,7 +1203,7 @@ void LineInfo::ReadFileRow(const uint8_t** lineptr,
         // MD5 entries help a debugger sort different versions of files with
         // the same name.  It is always paired with a DW_FORM_data16 and is
         // unused in this case.
-        lineptr += 16;
+        *lineptr += 16;
         break;
       default:
         fprintf(stderr, "Unrecognized form in line table header. %d\n",

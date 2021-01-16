@@ -1333,7 +1333,8 @@ bool DwarfCUToModule::StartCompilationUnit(uint64_t offset,
 bool DwarfCUToModule::StartRootDIE(uint64_t offset, enum DwarfTag tag) {
   // We don't deal with partial compilation units (the only other tag
   // likely to be used for root DIE).
-  return tag == dwarf2reader::DW_TAG_compile_unit;
+  return (tag == dwarf2reader::DW_TAG_compile_unit
+	  || tag == dwarf2reader::DW_TAG_skeleton_unit);
 }
 
 } // namespace google_breakpad
