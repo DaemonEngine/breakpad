@@ -1076,7 +1076,7 @@ void DwpReader::Initialize() {
     if (shndx_pool_ >= cu_index_ + cu_index_size_) {
       version_ = 0;
     }
-  } else if (version_ == 2) {
+  } else if (version_ == 2 || version_ == 5) {
     ncolumns_ = byte_reader_.ReadFourBytes(
         reinterpret_cast<const uint8_t*>(cu_index_) + sizeof(uint32_t));
     nunits_ = byte_reader_.ReadFourBytes(
@@ -1154,7 +1154,7 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
         ".debug_str",
         std::make_pair(reinterpret_cast<const uint8_t*> (string_buffer_),
                        string_buffer_size_)));
-  } else if (version_ == 2) {
+  } else if (version_ == 2 || version_ == 5) {
     uint32_t index = LookupCUv2(dwo_id);
     if (index == 0) {
       return;
