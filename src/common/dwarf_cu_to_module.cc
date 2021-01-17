@@ -1024,16 +1024,15 @@ void DwarfCUToModule::ReadSourceLines(uint64_t offset) {
   uint64_t string_section_length = 0;
   map_entry = dwarf2reader::GetSectionByName(section_map, ".debug_str");
   if (map_entry != section_map.end()) {
-    string_section_start = map_entry->second.first + offset;
-    string_section_length = map_entry->second.second - offset;
+    string_section_start = map_entry->second.first;
+    string_section_length = map_entry->second.second;
   }
   const uint8_t* line_string_section_start = nullptr;
   uint64_t line_string_section_length = 0;
   map_entry = dwarf2reader::GetSectionByName(section_map, ".debug_line_str");
   if (map_entry != section_map.end()) {
-    line_string_section_start = map_entry->second.first + offset;
-    line_string_section_length = map_entry->second.second - offset;
-    return;
+    line_string_section_start = map_entry->second.first;
+    line_string_section_length = map_entry->second.second;
   }
   line_reader_->ReadProgram(
       line_section_start, line_section_length,
