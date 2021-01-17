@@ -74,7 +74,7 @@ CompilationUnit::CompilationUnit(const string& path,
       line_string_buffer_(NULL), line_string_buffer_length_(0),
       str_offsets_buffer_(NULL), str_offsets_buffer_length_(0),
       addr_buffer_(NULL), addr_buffer_length_(0),
-      is_split_dwarf_(false), dwo_id_(0), dwo_name_(),
+      is_split_dwarf_(false), is_type_unit_(false), dwo_id_(0), dwo_name_(),
       skeleton_dwo_id_(0), ranges_base_(0), addr_base_(0),
       str_offsets_base_(0), have_checked_for_dwp_(false), dwp_path_(),
       dwp_byte_reader_(), dwp_reader_() {}
@@ -358,6 +358,7 @@ void CompilationUnit::ReadHeader() {
         break;
       case DW_UT_type:
       case DW_UT_split_type:
+	is_type_unit_ = true;
         headerptr += ReadTypeSignature(headerptr);
         headerptr += ReadTypeOffset(headerptr);
         break;
@@ -403,6 +404,8 @@ uint64_t CompilationUnit::Start() {
                                       reader_->OffsetSize(),
                                       header_.length,
                                       header_.version))
+    return ourlength;
+  else if (header_.version == 5 && is_type_unit_)
     return ourlength;
 
   // Otherwise, continue by reading our abbreviation entries.

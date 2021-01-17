@@ -714,6 +714,9 @@ class CompilationUnit {
   // associated with the skeleton compilation unit.
   bool is_split_dwarf_;
 
+  // Flag indicating if it's a Type Unit (only applicable to DWARF v5).
+  bool is_type_unit_;
+
   // The value of the DW_AT_GNU_dwo_id attribute, if any.
   uint64_t dwo_id_;
 
