@@ -568,11 +568,11 @@ const uint8_t* CompilationUnit::ProcessStrOffsetBaseAttribute(
       return start + datalen + len;
     }
     case DW_FORM_strp: {
-      const uint64_t offset = reader_->ReadOffset(start);
+      reader_->ReadOffset(start);
       return start + reader_->OffsetSize();
     }
     case DW_FORM_line_strp: {
-      const uint64_t offset = reader_->ReadOffset(start);
+      reader_->ReadOffset(start);
       return start + reader_->OffsetSize();
     }
     case DW_FORM_strp_sup:
@@ -586,7 +586,7 @@ const uint8_t* CompilationUnit::ProcessStrOffsetBaseAttribute(
       return start + len;
     case DW_FORM_strx:
     case DW_FORM_GNU_str_index: {
-      uint64_t str_index = reader_->ReadUnsignedLEB128(start, &len);
+      reader_->ReadUnsignedLEB128(start, &len);
       return start + len;
     }
     case DW_FORM_strx1: {
