@@ -88,8 +88,8 @@ class TestCompilationUnit: public google_breakpad::test_assembler::Section {
       D8(address_size);
       SectionOffset(abbrev_offset);
       if (header_type == dwarf2reader::DW_UT_type) {
-        uint64 dummy_type_signature = 0xdeadbeef;
-        uint64 dummy_type_offset = 0x2b;
+        uint64_t dummy_type_signature = 0xdeadbeef;
+        uint64_t dummy_type_offset = 0x2b;
         D64(dummy_type_signature);
         if (format_size_ == 4)
           D32(dummy_type_offset);
