@@ -278,6 +278,8 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/source_line_resolver_base.cc \
 	src/processor/stack_frame_cpu.cc \
 	src/processor/stack_frame_symbolizer.cc \
+	src/processor/stackwalk_common.cc \
+	src/processor/stackwalk_common.h \
 	src/processor/stackwalker.cc \
 	src/processor/stackwalker_amd64.cc \
 	src/processor/stackwalker_amd64.h \
