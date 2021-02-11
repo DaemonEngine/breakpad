@@ -250,7 +250,7 @@ TEST_P(DwarfHeader, TypeUnitHeader) {
   EXPECT_EQ(parser.Start(), info_contents.size());
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     HeaderVariants, DwarfHeader,
     ::testing::Values(DwarfHeaderParams(kLittleEndian, 4, 2, 4, 1),
                       DwarfHeaderParams(kLittleEndian, 4, 2, 8, 1),
@@ -626,7 +626,7 @@ TEST_P(DwarfForms, implicit_const) {
 
 // Tests for the other attribute forms could go here.
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     HeaderVariants, DwarfForms,
     ::testing::Values(DwarfHeaderParams(kLittleEndian, 4, 2, 4, 1),
                       DwarfHeaderParams(kLittleEndian, 4, 2, 8, 1),
