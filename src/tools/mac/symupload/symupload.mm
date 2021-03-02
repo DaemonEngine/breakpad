@@ -27,7 +27,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// symupload.m: Upload a symbol file to a HTTP server.  The upload is sent as
+// symupload.mm: Upload a symbol file to a HTTP server.  The upload is sent as
 // a multipart/form-data POST request with the following parameters:
 //  code_file: the basename of the module, e.g. "app"
 //  debug_file: the basename of the debugging file, e.g. "app"
@@ -47,8 +47,13 @@
 #include "HTTPMultipartUpload.h"
 #include "HTTPPutRequest.h"
 #include "SymbolCollectorClient.h"
+#include "common/mac/dump_syms.h"
+
+using google_breakpad::DumpSymbols;
 
 NSString* const kBreakpadSymbolType = @"BREAKPAD";
+NSString* const kMachOSymbolType = @"MACHO";
+NSString* const kDSYMSymbolType = @"DSYM";
 
 typedef enum { kSymUploadProtocolV1, kSymUploadProtocolV2 } SymUploadProtocol;
 
@@ -275,7 +280,9 @@ static void Usage(int argc, const char* argv[]) {
   fprintf(stderr, "-c:\t <code-file> Explicitly set 'code_file' for symbol "
                   "upload (basename of executable).\n");
   fprintf(stderr, "-i:\t <debug-id> Explicitly set 'debug_id' for symbol "
-                  "upload (typically build ID of executable).\n");
+                  "upload (typically build ID of executable). The debug-id for "
+                  "symbol-types 'dsym' and 'macho' will be determined "
+                  "automatically. \n");
   fprintf(stderr, "\t-h: Usage\n");
   fprintf(stderr, "\t-?: Usage\n");
   fprintf(stderr, "\n");
@@ -410,6 +417,27 @@ static void SetupOptions(int argc, const char* argv[], Options* options) {
     Usage(argc, argv);
     exit(1);
   }
+
+  if (!isBreakpadUpload && hasCodeFile && !hasDebugID &&
+      ([options->type isEqualToString:kMachOSymbolType] ||
+       [options->type isEqualToString:kDSYMSymbolType])) {
+    DumpSymbols dump_symbols(NO_CFI, false);
+    if (dump_symbols.Read(argv[optind])) {
+      std::string identifier = dump_symbols.Identifier();
+      if (identifier.empty()) {
+        fprintf(stderr, "\n");
+        fprintf(stderr,
+                "%s: Unable to determine debug-id. Please specify with '-i'.\n",
+                argv[0]);
+        fprintf(stderr, "\n");
+        Usage(argc, argv);
+        exit(1);
+      }
+      options->debugID = [NSString stringWithUTF8String:identifier.c_str()];
+      hasDebugID = true;
+    }
+  }
+
   if (!isBreakpadUpload && (!hasCodeFile || !hasDebugID)) {
     fprintf(stderr, "\n");
     fprintf(stderr,

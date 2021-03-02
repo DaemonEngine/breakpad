@@ -285,6 +285,11 @@ SuperFatArch* DumpSymbols::FindBestMatchForArchitecture(
 string DumpSymbols::Identifier() {
   FileID file_id(object_filename_.c_str());
   unsigned char identifier_bytes[16];
+  scoped_ptr<Module> module;
+  if (!selected_object_file_) {
+    if (!CreateEmptyModule(module))
+      return string();
+  }
   cpu_type_t cpu_type = selected_object_file_->cputype;
   cpu_subtype_t cpu_subtype = selected_object_file_->cpusubtype;
   if (!file_id.MachoIdentifier(cpu_type, cpu_subtype, identifier_bytes)) {
