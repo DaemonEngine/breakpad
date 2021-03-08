@@ -307,6 +307,10 @@ string DumpSymbols::Identifier() {
       i = compacted.find('-', i))
     compacted.erase(i, 1);
 
+  // The pdb for these IDs has an extra byte, so to make everything uniform put
+  // a 0 on the end of mac IDs.
+  compacted += "0";
+
   return compacted;
 }
 
@@ -411,7 +415,6 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
   string identifier = Identifier();
   if (identifier.empty())
     return false;
-  identifier += "0";
 
   // Create a module to hold the debugging information.
   module.reset(new Module(module_name,
