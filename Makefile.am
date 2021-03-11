@@ -358,9 +358,10 @@ bin_PROGRAMS += \
 endif !DISABLE_PROCESSOR
 
 if !DISABLE_TOOLS
-bin_PROGRAMS += \
-	src/tools/linux/symupload/minidump_upload \
-	src/tools/linux/symupload/sym_upload
+# slipher: disabling these to avoid curl dependency
+# bin_PROGRAMS += \
+#	src/tools/linux/symupload/minidump_upload \
+#	src/tools/linux/symupload/sym_upload
 endif
 
 if LINUX_HOST
