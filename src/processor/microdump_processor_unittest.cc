@@ -232,7 +232,7 @@ TEST_F(MicrodumpProcessorTest, TestProcessMultiple) {
   ASSERT_EQ("arm", state.system_info()->cpu);
   ASSERT_EQ("lge/p1_tmo_us/p1:6.0/MRA58K/1603210524c8d:user/release-keys",
             state.system_info()->os_version);
-  ASSERT_EQ(6U, state.threads()->at(0)->frames()->size());
+  ASSERT_EQ(5U, state.threads()->at(0)->frames()->size());
 }
 
 TEST_F(MicrodumpProcessorTest, TestProcessMips) {
