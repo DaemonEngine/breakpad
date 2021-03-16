@@ -238,27 +238,6 @@ StackFrameARM* StackwalkerARM::GetCallerByFramePointer(
   return frame;
 }
 
-StackFrameARM* StackwalkerARM::GetCallerByLinkRegister(
-    const vector<StackFrame*>& frames) {
-  StackFrameARM* last_frame = static_cast<StackFrameARM*>(frames.back());
-  uint32_t last_lr = last_frame->context.iregs[MD_CONTEXT_ARM_REG_LR];
-
-  if (!(last_frame->context_validity & StackFrameARM::CONTEXT_VALID_LR) ||
-      !InstructionAddressSeemsValid(last_lr)) {
-    return NULL;
-  }
-
-  StackFrameARM* frame = new StackFrameARM();
-
-  frame->trust = StackFrame::FRAME_TRUST_SCAN;
-  frame->context = last_frame->context;
-  frame->context.iregs[MD_CONTEXT_ARM_REG_PC] = last_lr;
-  frame->context_validity =
-      context_frame_validity_ & (~StackFrameARM::CONTEXT_VALID_LR);
-
-  return frame;
-}
-
 StackFrame* StackwalkerARM::GetCallerFrame(const CallStack* stack,
                                            bool stack_scan_allowed) {
   if (!memory_ || !stack) {
@@ -284,12 +263,6 @@ StackFrame* StackwalkerARM::GetCallerFrame(const CallStack* stack,
   // to frame pointer, if this is configured.
   if (fp_register_ >= 0 && !frame.get())
     frame.reset(GetCallerByFramePointer(frames));
-
-  // For the first frame, return address may still be in the LR register at
-  // entry. Prefer to use LR register than scanning stack if LR register value
-  // points to a function range.
-  if (frames.size() == 1 && !frame.get())
-    frame.reset(GetCallerByLinkRegister(frames));
 
   // If everuthing failed, fall back to stack scanning.
   if (stack_scan_allowed && !frame.get())
