@@ -1776,54 +1776,6 @@ void LineInfo::ReadLines() {
   after_header_ = lengthstart + header_.total_length;
 }
 
-bool RangeListReader::SetRangesBase(uint64_t offset) {
-  // Versions less than 5 don't use ranges base.
-  if (cu_info_->version_ < 5) {
-    return true;
-  }
-  // Length may not be 12 bytes, but if 12 bytes aren't available
-  // at this point, then the header is too short.
-  if (offset + 12 >= cu_info_->size_) {
-    return false;
-  }
-  // The length of this CU's contribution.
-  uint64_t cu_length = reader_->ReadFourBytes(cu_info_->buffer_ + offset);
-  offset += 4;
-  if (cu_length == 0xffffffffUL) {
-    cu_length = reader_->ReadEightBytes(cu_info_->buffer_ + offset);
-    offset += 8;
-  }
-
-  // Truncating size here results in correctly ignoring everything not from
-  // this cu from here on out.
-  cu_info_->size_ = offset + cu_length;
-
-  // Check for the rest of the header in advance.
-  if (offset + 8 >= cu_info_->size_) {
-    return false;
-  }
-  // Version. Can only read version 5.
-  if (reader_->ReadTwoBytes(cu_info_->buffer_ + offset) != 5) {
-    return false;
-  }
-  offset += 2;
-  // Address size
-  if (reader_->ReadOneByte(cu_info_->buffer_ + offset) !=
-      reader_->AddressSize()) {
-    return false;
-  }
-  offset += 1;
-  // Segment selectors are unsupported
-  if (reader_->ReadOneByte(cu_info_->buffer_ + offset) != 0) {
-    return false;
-  }
-  offset += 1;
-  offset_entry_count_ = reader_->ReadFourBytes(cu_info_->buffer_ + offset);
-  offset += 4;
-  offset_array_ = offset;
-  return true;
-}
-
 bool RangeListReader::ReadRanges(enum DwarfForm form, uint64_t data) {
   if (form == DW_FORM_sec_offset) {
     if (cu_info_->version_ <= 4) {
@@ -1832,15 +1784,12 @@ bool RangeListReader::ReadRanges(enum DwarfForm form, uint64_t data) {
       return ReadDebugRngList(data);
     }
   } else if (form == DW_FORM_rnglistx) {
-    SetRangesBase(cu_info_->ranges_base_);
-    if (data >= offset_entry_count_) {
-      return false;
-    }
+    offset_array_ = cu_info_->ranges_base_;
     uint64_t index_offset = reader_->AddressSize() * data;
     uint64_t range_list_offset =
-        reader_->ReadAddress(cu_info_->buffer_ + offset_array_ + index_offset);
+        reader_->ReadOffset(cu_info_->buffer_ + offset_array_ + index_offset);
 
-    return ReadDebugRngList(range_list_offset);
+    return ReadDebugRngList(offset_array_ + range_list_offset);
   }
   return false;
 }
