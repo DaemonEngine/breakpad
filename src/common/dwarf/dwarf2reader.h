@@ -538,9 +538,9 @@ class CompilationUnit {
                                   enum DwarfForm form,
                                   uint64_t implicit_const);
 
-  // Special version of ProcessAttribute, for finding str_offsets_base in
-  // DW_TAG_compile_unit, for DWARF v5.
-  const uint8_t* ProcessStrOffsetBaseAttribute(uint64_t dieoffset,
+  // Special version of ProcessAttribute, for finding str_offsets_base and
+  // DW_AT_addr_base in DW_TAG_compile_unit, for DWARF v5.
+  const uint8_t* ProcessOffsetBaseAttribute(uint64_t dieoffset,
 					       const uint8_t* start,
 					       enum DwarfAttribute attr,
 					       enum DwarfForm form,

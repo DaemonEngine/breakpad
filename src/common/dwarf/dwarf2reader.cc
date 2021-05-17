@@ -467,11 +467,12 @@ void CompilationUnit::ProcessFormStringIndex(
   ProcessAttributeString(dieoffset, attr, form, str);
 }
 
-// Special function for pre-processing the DW_AT_str_offsets_base in a
-// DW_TAG_compile_unit die (for DWARF v5). We must make sure to find and
-// process the DW_AT_str_offsets_base attribute before attempting to read
-// any string attribute in the compile unit.
-const uint8_t* CompilationUnit::ProcessStrOffsetBaseAttribute(
+// Special function for pre-processing the
+// DW_AT_str_offsets_base and DW_AT_addr_base in a DW_TAG_compile_unit die (for
+// DWARF v5). We must make sure to find and process the
+// DW_AT_str_offsets_base and DW_AT_addr_base attributes before attempting to
+// read any string and address attribute in the compile unit.
+const uint8_t* CompilationUnit::ProcessOffsetBaseAttribute(
     uint64_t dieoffset, const uint8_t* start, enum DwarfAttribute attr,
     enum DwarfForm form, uint64_t implicit_const) {
   size_t len;
@@ -483,7 +484,7 @@ const uint8_t* CompilationUnit::ProcessStrOffsetBaseAttribute(
       form = static_cast<enum DwarfForm>(reader_->ReadUnsignedLEB128(start,
                                                                      &len));
       start += len;
-      return ProcessStrOffsetBaseAttribute(dieoffset, start, attr, form,
+      return ProcessOffsetBaseAttribute(dieoffset, start, attr, form,
 					   implicit_const);
 
     case DW_FORM_flag_present:
@@ -516,11 +517,12 @@ const uint8_t* CompilationUnit::ProcessStrOffsetBaseAttribute(
 
     // This is the important one here!
     case DW_FORM_sec_offset:
-      if (attr == dwarf2reader::DW_AT_str_offsets_base)
-	ProcessAttributeUnsigned(dieoffset, attr, form,
-				 reader_->ReadOffset(start));
+      if (attr == dwarf2reader::DW_AT_str_offsets_base ||
+          attr == dwarf2reader::DW_AT_addr_base)
+        ProcessAttributeUnsigned(dieoffset, attr, form,
+                                 reader_->ReadOffset(start));
       else
-	reader_->ReadOffset(start);
+        reader_->ReadOffset(start);
       return start + reader_->OffsetSize();
 
     case DW_FORM_ref1:
@@ -858,16 +860,16 @@ const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
                                            const uint8_t* start,
                                            const Abbrev& abbrev) {
   // With DWARF v5, the compile_unit die may contain a
-  // DW_AT_str_offsets_base.  If it does, that attribute must be found
-  // and processed before trying to process the other attributes; otherwise
-  // the string values will all come out incorrect.
+  // DW_AT_str_offsets_base or DW_AT_addr_base.  If it does, that attribute must
+  // be found and processed before trying to process the other attributes;
+  // otherwise the string or address values will all come out incorrect.
   if (abbrev.tag == DW_TAG_compile_unit && header_.version == 5) {
     uint64_t dieoffset_copy = dieoffset;
     const uint8_t* start_copy = start;
     for (AttributeList::const_iterator i = abbrev.attributes.begin();
 	 i != abbrev.attributes.end();
 	 i++) {
-      start_copy = ProcessStrOffsetBaseAttribute(dieoffset_copy, start_copy,
+      start_copy = ProcessOffsetBaseAttribute(dieoffset_copy, start_copy,
 						 i->attr_, i->form_,
 						 i->value_);
     }
