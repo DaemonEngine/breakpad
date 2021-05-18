@@ -126,6 +126,10 @@ struct DwarfCUToModule::FilePrivate {
   SpecificationByOffset specifications;
 
   AbstractOriginByOffset origins;
+
+  // Keep a list of forward references from DW_AT_abstract_origin and
+  // DW_AT_specification attributes so names can be fixed up.
+  std::map<uint64_t, Module::Function*> forward_ref_die_to_func;
 };
 
 DwarfCUToModule::FileContext::FileContext(const string& filename,
@@ -265,10 +269,6 @@ struct DwarfCUToModule::CUContext {
   //
   // Destroying this destroys all the functions this vector points to.
   vector<Module::Function*> functions;
-
-  // Keep a list of forward references from DW_AT_abstract_origin and
-  // DW_AT_specification attributes so names can be fixed up.
-  std::map<uint64_t, Module::Function*> forward_ref_die_to_func;
 };
 
 // Information about the context of a particular DIE. This is for
@@ -642,8 +642,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
   // to be processed, and fix up the name of the appropriate Module::Function.
   // "name_" will have already been fixed up in EndAttributes().
   if (!name_.empty()) {
-    auto iter = cu_context_->forward_ref_die_to_func.find(offset_);
-    if (iter != cu_context_->forward_ref_die_to_func.end())
+    auto iter =
+        cu_context_->file_context->file_private_->forward_ref_die_to_func.find(
+            offset_);
+    if (iter !=
+        cu_context_->file_context->file_private_->forward_ref_die_to_func.end())
       iter->second->name = name_;
   }
 
@@ -708,14 +711,9 @@ void DwarfCUToModule::FuncHandler::Finish() {
       // description is just empty debug data and should just be discarded.
       cu_context_->functions.push_back(func.release());
       if (forward_ref_die_offset_ != 0) {
-        auto iter =
-            cu_context_->forward_ref_die_to_func.find(forward_ref_die_offset_);
-        if (iter == cu_context_->forward_ref_die_to_func.end()) {
-          cu_context_->reporter->UnknownSpecification(offset_,
-                                                      forward_ref_die_offset_);
-        } else {
-          iter->second = cu_context_->functions.back();
-        }
+        cu_context_->file_context->file_private_
+            ->forward_ref_die_to_func[forward_ref_die_offset_] =
+            cu_context_->functions.back();
       }
     }
   } else if (inline_) {
