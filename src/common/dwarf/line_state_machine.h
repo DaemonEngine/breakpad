@@ -30,6 +30,8 @@
 #ifndef COMMON_DWARF_LINE_STATE_MACHINE_H__
 #define COMMON_DWARF_LINE_STATE_MACHINE_H__
 
+#include <stdint.h>
+
 namespace dwarf2reader {
 
 // This is the format of a DWARF2/3 line state machine that we process
