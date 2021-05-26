@@ -49,7 +49,6 @@ using google_breakpad::DwarfTag;
 using google_breakpad::DwarfAttribute;
 using google_breakpad::DwarfForm;
 using google_breakpad::DwarfInline;
-using google_breakpad::RootDIEHandler;
 using google_breakpad::DwarfCUToModule;
 using google_breakpad::Module;
 
