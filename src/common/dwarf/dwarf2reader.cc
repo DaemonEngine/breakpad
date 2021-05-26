@@ -28,8 +28,8 @@
 
 // CFI reader author: Jim Blandy <jimb@mozilla.com> <jimb@red-bean.com>
 
-// Implementation of dwarf2reader::LineInfo, dwarf2reader::CompilationUnit,
-// and dwarf2reader::CallFrameInfo. See dwarf2reader.h for details.
+// Implementation of LineInfo, CompilationUnit,
+// and CallFrameInfo. See dwarf2reader.h for details.
 
 #include "common/dwarf/dwarf2reader.h"
 
@@ -51,7 +51,7 @@
 #include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 
 const SectionMap::const_iterator GetSectionByName(const SectionMap&
                                                   sections, const char *name) {
@@ -517,8 +517,8 @@ const uint8_t* CompilationUnit::ProcessOffsetBaseAttribute(
 
     // This is the important one here!
     case DW_FORM_sec_offset:
-      if (attr == dwarf2reader::DW_AT_str_offsets_base ||
-          attr == dwarf2reader::DW_AT_addr_base)
+      if (attr == DW_AT_str_offsets_base ||
+          attr == DW_AT_addr_base)
         ProcessAttributeUnsigned(dieoffset, attr, form,
                                  reader_->ReadOffset(start));
       else
@@ -3414,4 +3414,4 @@ void CallFrameInfo::Reporter::ClearingCFARule(uint64_t offset,
           section_.c_str(), insn_offset);
 }
 
-}  // namespace dwarf2reader
+}  // namespace google_breakpad

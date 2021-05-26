@@ -56,7 +56,7 @@
 #include "common/using_std_string.h"
 #include "common/dwarf/elf_reader.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 struct LineStateMachine;
 class Dwarf2Handler;
 class LineInfoHandler;
@@ -1489,6 +1489,6 @@ class CallFrameInfo::Reporter {
   string section_;
 };
 
-}  // namespace dwarf2reader
+}  // namespace google_breakpad
 
 #endif  // UTIL_DEBUGINFO_DWARF2READER_H__

@@ -29,7 +29,7 @@
 
 // Original author: Jim Blandy <jimb@mozilla.com> <jimb@red-bean.com>
 
-// dwarf2reader_die_unittest.cc: Unit tests for dwarf2reader::CompilationUnit
+// dwarf2reader_die_unittest.cc: Unit tests for google_breakpad::CompilationUnit
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -51,16 +51,16 @@ using google_breakpad::test_assembler::Section;
 using google_breakpad::test_assembler::kBigEndian;
 using google_breakpad::test_assembler::kLittleEndian;
 
-using dwarf2reader::ByteReader;
-using dwarf2reader::CompilationUnit;
-using dwarf2reader::Dwarf2Handler;
-using dwarf2reader::DwarfAttribute;
-using dwarf2reader::DwarfForm;
-using dwarf2reader::DwarfHasChild;
-using dwarf2reader::DwarfTag;
-using dwarf2reader::ENDIANNESS_BIG;
-using dwarf2reader::ENDIANNESS_LITTLE;
-using dwarf2reader::SectionMap;
+using google_breakpad::ByteReader;
+using google_breakpad::CompilationUnit;
+using google_breakpad::Dwarf2Handler;
+using google_breakpad::DwarfAttribute;
+using google_breakpad::DwarfForm;
+using google_breakpad::DwarfHasChild;
+using google_breakpad::DwarfTag;
+using google_breakpad::ENDIANNESS_BIG;
+using google_breakpad::ENDIANNESS_LITTLE;
+using google_breakpad::SectionMap;
 
 using std::vector;
 using testing::InSequence;
@@ -168,9 +168,9 @@ class DwarfHeader: public DIEFixture,
 
 TEST_P(DwarfHeader, Header) {
   Label abbrev_table = abbrevs.Here();
-  abbrevs.Abbrev(1, dwarf2reader::DW_TAG_compile_unit,
-                 dwarf2reader::DW_children_yes)
-      .Attribute(dwarf2reader::DW_AT_name, dwarf2reader::DW_FORM_string)
+  abbrevs.Abbrev(1, google_breakpad::DW_TAG_compile_unit,
+                 google_breakpad::DW_children_yes)
+      .Attribute(google_breakpad::DW_AT_name, google_breakpad::DW_FORM_string)
       .EndAbbrev()
       .EndTable();
 
@@ -178,7 +178,7 @@ TEST_P(DwarfHeader, Header) {
   info.set_endianness(GetParam().endianness);
 
   info.Header(GetParam().version, abbrev_table, GetParam().address_size,
-              dwarf2reader::DW_UT_compile)
+              google_breakpad::DW_UT_compile)
       .ULEB128(1)                     // DW_TAG_compile_unit, with children
       .AppendCString("sam")           // DW_AT_name, DW_FORM_string
       .D8(0);                         // end of children
@@ -191,10 +191,10 @@ TEST_P(DwarfHeader, Header) {
                                      GetParam().format_size, _,
                                      GetParam().version))
         .WillOnce(Return(true));
-    EXPECT_CALL(handler, StartDIE(_, dwarf2reader::DW_TAG_compile_unit))
+    EXPECT_CALL(handler, StartDIE(_, google_breakpad::DW_TAG_compile_unit))
         .WillOnce(Return(true));
-    EXPECT_CALL(handler, ProcessAttributeString(_, dwarf2reader::DW_AT_name,
-                                                dwarf2reader::DW_FORM_string,
+    EXPECT_CALL(handler, ProcessAttributeString(_, google_breakpad::DW_AT_name,
+                                                google_breakpad::DW_FORM_string,
                                                 "sam"))
         .WillOnce(Return());
     EXPECT_CALL(handler, EndDIE(_))
@@ -210,9 +210,9 @@ TEST_P(DwarfHeader, Header) {
 TEST_P(DwarfHeader, TypeUnitHeader) {
   Label abbrev_table = abbrevs.Here();
   int version = 5;
-  abbrevs.Abbrev(1, dwarf2reader::DW_TAG_type_unit,
-                 dwarf2reader::DW_children_yes)
-      .Attribute(dwarf2reader::DW_AT_name, dwarf2reader::DW_FORM_string)
+  abbrevs.Abbrev(1, google_breakpad::DW_TAG_type_unit,
+                 google_breakpad::DW_children_yes)
+      .Attribute(google_breakpad::DW_AT_name, google_breakpad::DW_FORM_string)
       .EndAbbrev()
       .EndTable();
 
@@ -220,7 +220,7 @@ TEST_P(DwarfHeader, TypeUnitHeader) {
   info.set_endianness(GetParam().endianness);
 
   info.Header(version, abbrev_table, GetParam().address_size,
-              dwarf2reader::DW_UT_type)
+              google_breakpad::DW_UT_type)
       .ULEB128(0x41)                  // DW_TAG_type_unit, with children
       .AppendCString("sam")           // DW_AT_name, DW_FORM_string
       .D8(0);                         // end of children
@@ -234,10 +234,10 @@ TEST_P(DwarfHeader, TypeUnitHeader) {
                                      version))
         .WillOnce(Return(true));
     // If the type unit is handled properly, these calls will be skipped.
-    EXPECT_CALL(handler, StartDIE(_, dwarf2reader::DW_TAG_type_unit))
+    EXPECT_CALL(handler, StartDIE(_, google_breakpad::DW_TAG_type_unit))
         .Times(0);
-    EXPECT_CALL(handler, ProcessAttributeString(_, dwarf2reader::DW_AT_name,
-                                                dwarf2reader::DW_FORM_string,
+    EXPECT_CALL(handler, ProcessAttributeString(_, google_breakpad::DW_AT_name,
+                                                google_breakpad::DW_FORM_string,
                                                 "sam"))
         .Times(0);
     EXPECT_CALL(handler, EndDIE(_))
@@ -291,7 +291,7 @@ struct DwarfFormsFixture: public DIEFixture {
                                DwarfForm form) {
     // Create the abbreviation table.
     Label abbrev_table = abbrevs.Here();
-    abbrevs.Abbrev(1, tag, dwarf2reader::DW_children_no)
+    abbrevs.Abbrev(1, tag, google_breakpad::DW_children_no)
         .Attribute(name, form)
         .EndAbbrev()
         .EndTable();
@@ -300,7 +300,7 @@ struct DwarfFormsFixture: public DIEFixture {
     info.set_format_size(params.format_size);
     info.set_endianness(params.endianness);
     info.Header(params.version, abbrev_table, params.address_size,
-                dwarf2reader::DW_UT_compile)
+                google_breakpad::DW_UT_compile)
         .ULEB128(1);                    // abbrev code
   }
 
@@ -342,9 +342,9 @@ struct DwarfForms: public DwarfFormsFixture,
                    public TestWithParam<DwarfHeaderParams> { };
 
 TEST_P(DwarfForms, addr) {
-  StartSingleAttributeDIE(GetParam(), dwarf2reader::DW_TAG_compile_unit,
-                          dwarf2reader::DW_AT_low_pc,
-                          dwarf2reader::DW_FORM_addr);
+  StartSingleAttributeDIE(GetParam(), google_breakpad::DW_TAG_compile_unit,
+                          google_breakpad::DW_AT_low_pc,
+                          google_breakpad::DW_FORM_addr);
   uint64_t value;
   if (GetParam().address_size == 4) {
     value = 0xc8e9ffcc;
@@ -355,9 +355,9 @@ TEST_P(DwarfForms, addr) {
   }
   info.Finish();
 
-  ExpectBeginCompilationUnit(GetParam(), dwarf2reader::DW_TAG_compile_unit);
-  EXPECT_CALL(handler, ProcessAttributeUnsigned(_, dwarf2reader::DW_AT_low_pc, 
-                                                dwarf2reader::DW_FORM_addr,
+  ExpectBeginCompilationUnit(GetParam(), google_breakpad::DW_TAG_compile_unit);
+  EXPECT_CALL(handler, ProcessAttributeUnsigned(_, google_breakpad::DW_AT_low_pc, 
+                                                google_breakpad::DW_FORM_addr,
                                                 value))
       .InSequence(s)
       .WillOnce(Return());
@@ -371,19 +371,19 @@ TEST_P(DwarfForms, strx1) {
     return;
   }
   Label abbrev_table = abbrevs.Here();
-  abbrevs.Abbrev(1, dwarf2reader::DW_TAG_compile_unit,
-                 dwarf2reader::DW_children_no)
-      .Attribute(dwarf2reader::DW_AT_name, dwarf2reader::DW_FORM_strx1)
-      .Attribute(dwarf2reader::DW_AT_low_pc, dwarf2reader::DW_FORM_addr)
-      .Attribute(dwarf2reader::DW_AT_str_offsets_base,
-                 dwarf2reader::DW_FORM_sec_offset)
+  abbrevs.Abbrev(1, google_breakpad::DW_TAG_compile_unit,
+                 google_breakpad::DW_children_no)
+      .Attribute(google_breakpad::DW_AT_name, google_breakpad::DW_FORM_strx1)
+      .Attribute(google_breakpad::DW_AT_low_pc, google_breakpad::DW_FORM_addr)
+      .Attribute(google_breakpad::DW_AT_str_offsets_base,
+                 google_breakpad::DW_FORM_sec_offset)
       .EndAbbrev()
       .EndTable();
 
   info.set_format_size(GetParam().format_size);
   info.set_endianness(GetParam().endianness);
   info.Header(GetParam().version, abbrev_table, GetParam().address_size,
-              dwarf2reader::DW_UT_compile)
+              google_breakpad::DW_UT_compile)
       .ULEB128(1)                                 // abbrev index
       .D8(2);                                     // string index
 
@@ -435,13 +435,13 @@ TEST_P(DwarfForms, strx1) {
   }
 
 
-  ExpectBeginCompilationUnit(GetParam(), dwarf2reader::DW_TAG_compile_unit);
-  EXPECT_CALL(handler, ProcessAttributeString(_, dwarf2reader::DW_AT_name,
-                                              dwarf2reader::DW_FORM_strx1,
+  ExpectBeginCompilationUnit(GetParam(), google_breakpad::DW_TAG_compile_unit);
+  EXPECT_CALL(handler, ProcessAttributeString(_, google_breakpad::DW_AT_name,
+                                              google_breakpad::DW_FORM_strx1,
                                               "bird"))
       .WillOnce(Return());
-  EXPECT_CALL(handler, ProcessAttributeUnsigned(_, dwarf2reader::DW_AT_low_pc,
-                                                dwarf2reader::DW_FORM_addr,
+  EXPECT_CALL(handler, ProcessAttributeUnsigned(_, google_breakpad::DW_AT_low_pc,
+                                                google_breakpad::DW_FORM_addr,
                                                 value))
       .InSequence(s)
       .WillOnce(Return());
@@ -453,13 +453,13 @@ TEST_P(DwarfForms, strx1) {
 TEST_P(DwarfForms, block2_empty) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x16e4d2f7,
                           (DwarfAttribute) 0xe52c4463,
-                          dwarf2reader::DW_FORM_block2);
+                          google_breakpad::DW_FORM_block2);
   info.D16(0);
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x16e4d2f7);
   EXPECT_CALL(handler, ProcessAttributeBuffer(_, (DwarfAttribute) 0xe52c4463,
-                                              dwarf2reader::DW_FORM_block2,
+                                              google_breakpad::DW_FORM_block2,
                                               _, 0))
       .InSequence(s)
       .WillOnce(Return());
@@ -471,7 +471,7 @@ TEST_P(DwarfForms, block2_empty) {
 TEST_P(DwarfForms, block2) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x16e4d2f7,
                           (DwarfAttribute) 0xe52c4463,
-                          dwarf2reader::DW_FORM_block2);
+                          google_breakpad::DW_FORM_block2);
   unsigned char data[258];
   memset(data, '*', sizeof(data));
   info.D16(sizeof(data))
@@ -480,7 +480,7 @@ TEST_P(DwarfForms, block2) {
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x16e4d2f7);
   EXPECT_CALL(handler, ProcessAttributeBuffer(_, (DwarfAttribute) 0xe52c4463,
-                                              dwarf2reader::DW_FORM_block2,
+                                              google_breakpad::DW_FORM_block2,
                                               Pointee('*'), 258))
       .InSequence(s)
       .WillOnce(Return());
@@ -492,14 +492,14 @@ TEST_P(DwarfForms, block2) {
 TEST_P(DwarfForms, flag_present) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x3e449ac2,
                           (DwarfAttribute) 0x359d1972,
-                          dwarf2reader::DW_FORM_flag_present);
+                          google_breakpad::DW_FORM_flag_present);
   // DW_FORM_flag_present occupies no space in the DIE.
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x3e449ac2);
   EXPECT_CALL(handler,
               ProcessAttributeUnsigned(_, (DwarfAttribute) 0x359d1972,
-                                       dwarf2reader::DW_FORM_flag_present,
+                                       google_breakpad::DW_FORM_flag_present,
                                        1))
       .InSequence(s)
       .WillOnce(Return());
@@ -511,7 +511,7 @@ TEST_P(DwarfForms, flag_present) {
 TEST_P(DwarfForms, sec_offset) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x1d971689,
                           (DwarfAttribute) 0xa060bfd1,
-                          dwarf2reader::DW_FORM_sec_offset);
+                          google_breakpad::DW_FORM_sec_offset);
   uint64_t value;
   if (GetParam().format_size == 4) {
     value = 0xacc9c388;
@@ -524,7 +524,7 @@ TEST_P(DwarfForms, sec_offset) {
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x1d971689);
   EXPECT_CALL(handler, ProcessAttributeUnsigned(_, (DwarfAttribute) 0xa060bfd1,
-                                                dwarf2reader::DW_FORM_sec_offset,
+                                                google_breakpad::DW_FORM_sec_offset,
                                                 value))
       .InSequence(s)
       .WillOnce(Return());
@@ -536,14 +536,14 @@ TEST_P(DwarfForms, sec_offset) {
 TEST_P(DwarfForms, exprloc) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0xb6d167bb,
                           (DwarfAttribute) 0xba3ae5cb,
-                          dwarf2reader::DW_FORM_exprloc);
+                          google_breakpad::DW_FORM_exprloc);
   info.ULEB128(29)
       .Append(29, 173);
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0xb6d167bb);
   EXPECT_CALL(handler, ProcessAttributeBuffer(_, (DwarfAttribute) 0xba3ae5cb,
-                                              dwarf2reader::DW_FORM_exprloc,
+                                              google_breakpad::DW_FORM_exprloc,
                                               Pointee(173), 29))
       .InSequence(s)
       .WillOnce(Return());
@@ -555,13 +555,13 @@ TEST_P(DwarfForms, exprloc) {
 TEST_P(DwarfForms, ref_sig8) {
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x253e7b2b,
                           (DwarfAttribute) 0xd708d908,
-                          dwarf2reader::DW_FORM_ref_sig8);
+                          google_breakpad::DW_FORM_ref_sig8);
   info.D64(0xf72fa0cb6ddcf9d6ULL);
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x253e7b2b);
   EXPECT_CALL(handler, ProcessAttributeSignature(_, (DwarfAttribute) 0xd708d908,
-                                                 dwarf2reader::DW_FORM_ref_sig8,
+                                                 google_breakpad::DW_FORM_ref_sig8,
                                                  0xf72fa0cb6ddcf9d6ULL))
       .InSequence(s)
       .WillOnce(Return());
@@ -579,13 +579,13 @@ TEST_P(DwarfForms, ref_sig8_not_first) {
   info.Append(98, '*');
   StartSingleAttributeDIE(GetParam(), (DwarfTag) 0x253e7b2b,
                           (DwarfAttribute) 0xd708d908,
-                          dwarf2reader::DW_FORM_ref_sig8);
+                          google_breakpad::DW_FORM_ref_sig8);
   info.D64(0xf72fa0cb6ddcf9d6ULL);
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x253e7b2b, 98);
   EXPECT_CALL(handler, ProcessAttributeSignature(_, (DwarfAttribute) 0xd708d908,
-                                                 dwarf2reader::DW_FORM_ref_sig8,
+                                                 google_breakpad::DW_FORM_ref_sig8,
                                                  0xf72fa0cb6ddcf9d6ULL))
       .InSequence(s)
       .WillOnce(Return());
@@ -599,23 +599,23 @@ TEST_P(DwarfForms, implicit_const) {
   const uint64_t implicit_constant_value = 0x1234;
   // Create the abbreviation table.
   Label abbrev_table = abbrevs.Here();
-  abbrevs.Abbrev(1, (DwarfTag) 0x253e7b2b, dwarf2reader::DW_children_no)
+  abbrevs.Abbrev(1, (DwarfTag) 0x253e7b2b, google_breakpad::DW_children_no)
       .Attribute((DwarfAttribute) 0xd708d908,
-                 dwarf2reader::DW_FORM_implicit_const)
+                 google_breakpad::DW_FORM_implicit_const)
       .ULEB128(implicit_constant_value);
   abbrevs.EndAbbrev().EndTable();
 
   info.set_format_size(params.format_size);
   info.set_endianness(params.endianness);
   info.Header(params.version, abbrev_table, params.address_size,
-              dwarf2reader::DW_UT_compile)
+              google_breakpad::DW_UT_compile)
           .ULEB128(1);                    // abbrev code
   info.Finish();
 
   ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x253e7b2b);
   EXPECT_CALL(handler,
               ProcessAttributeUnsigned(_, (DwarfAttribute) 0xd708d908,
-                                       dwarf2reader::DW_FORM_implicit_const,
+                                       google_breakpad::DW_FORM_implicit_const,
                                        implicit_constant_value))
       .InSequence(s)
       .WillOnce(Return());
@@ -653,15 +653,15 @@ INSTANTIATE_TEST_SUITE_P(
                       DwarfHeaderParams(kBigEndian,    8, 4, 4, 1),
                       DwarfHeaderParams(kBigEndian,    8, 4, 8, 1)));
 
-class MockRangeListHandler: public dwarf2reader::RangeListHandler {
+class MockRangeListHandler: public google_breakpad::RangeListHandler {
  public:
   MOCK_METHOD(void, AddRange, (uint64_t begin, uint64_t end));
   MOCK_METHOD(void, Finish, ());
 };
 
 TEST(RangeList, Dwarf4ReadRangeList) {
-  using dwarf2reader::RangeListReader;
-  using dwarf2reader::DW_FORM_sec_offset;
+  using google_breakpad::RangeListReader;
+  using google_breakpad::DW_FORM_sec_offset;
 
   // Create a dwarf4 .debug_ranges section.
   google_breakpad::test_assembler::Section ranges(kBigEndian);
@@ -688,7 +688,7 @@ TEST(RangeList, Dwarf4ReadRangeList) {
   cu_info.size_ = section_contents.size();
 
   MockRangeListHandler handler;
-  dwarf2reader::RangeListReader range_list_reader(&byte_reader, &cu_info,
+  google_breakpad::RangeListReader range_list_reader(&byte_reader, &cu_info,
                                                   &handler);
   EXPECT_CALL(handler, AddRange(2, 3));
   EXPECT_CALL(handler, AddRange(4, 5));
@@ -699,17 +699,17 @@ TEST(RangeList, Dwarf4ReadRangeList) {
 }
 
 TEST(RangeList, Dwarf5ReadRangeList_rnglists) {
-  using dwarf2reader::RangeListReader;
-  using dwarf2reader::DW_RLE_base_addressx;
-  using dwarf2reader::DW_RLE_startx_endx;
-  using dwarf2reader::DW_RLE_startx_length;
-  using dwarf2reader::DW_RLE_offset_pair;
-  using dwarf2reader::DW_RLE_end_of_list;
-  using dwarf2reader::DW_RLE_base_address;
-  using dwarf2reader::DW_RLE_start_end;
-  using dwarf2reader::DW_RLE_start_length;
-  using dwarf2reader::DW_FORM_sec_offset;
-  using dwarf2reader::DW_FORM_rnglistx;
+  using google_breakpad::RangeListReader;
+  using google_breakpad::DW_RLE_base_addressx;
+  using google_breakpad::DW_RLE_startx_endx;
+  using google_breakpad::DW_RLE_startx_length;
+  using google_breakpad::DW_RLE_offset_pair;
+  using google_breakpad::DW_RLE_end_of_list;
+  using google_breakpad::DW_RLE_base_address;
+  using google_breakpad::DW_RLE_start_end;
+  using google_breakpad::DW_RLE_start_length;
+  using google_breakpad::DW_FORM_sec_offset;
+  using google_breakpad::DW_FORM_rnglistx;
 
   // Size of header
   const uint64_t header_size = 12;
@@ -814,7 +814,7 @@ TEST(RangeList, Dwarf5ReadRangeList_rnglists) {
   byte_reader.SetOffsetSize(4);
   byte_reader.SetAddressSize(4);
   MockRangeListHandler handler;
-  dwarf2reader::RangeListReader range_list_reader1(&byte_reader, &cu_info,
+  google_breakpad::RangeListReader range_list_reader1(&byte_reader, &cu_info,
                                                    &handler);
   EXPECT_CALL(handler, AddRange(2, 3));
   EXPECT_CALL(handler, AddRange(4, 5));
@@ -830,7 +830,7 @@ TEST(RangeList, Dwarf5ReadRangeList_rnglists) {
 
   // Set to new ranges_base
   cu_info.ranges_base_ = ranges_base_2;
-  dwarf2reader::RangeListReader range_list_reader2(&byte_reader, &cu_info,
+  google_breakpad::RangeListReader range_list_reader2(&byte_reader, &cu_info,
                                                    &handler);
   EXPECT_CALL(handler, AddRange(2, 3));
   EXPECT_CALL(handler, AddRange(4, 5));
@@ -846,17 +846,17 @@ TEST(RangeList, Dwarf5ReadRangeList_rnglists) {
 }
 
 TEST(RangeList, Dwarf5ReadRangeList_sec_offset) {
-  using dwarf2reader::RangeListReader;
-  using dwarf2reader::DW_RLE_base_addressx;
-  using dwarf2reader::DW_RLE_startx_endx;
-  using dwarf2reader::DW_RLE_startx_length;
-  using dwarf2reader::DW_RLE_offset_pair;
-  using dwarf2reader::DW_RLE_end_of_list;
-  using dwarf2reader::DW_RLE_base_address;
-  using dwarf2reader::DW_RLE_start_end;
-  using dwarf2reader::DW_RLE_start_length;
-  using dwarf2reader::DW_FORM_sec_offset;
-  using dwarf2reader::DW_FORM_rnglistx;
+  using google_breakpad::RangeListReader;
+  using google_breakpad::DW_RLE_base_addressx;
+  using google_breakpad::DW_RLE_startx_endx;
+  using google_breakpad::DW_RLE_startx_length;
+  using google_breakpad::DW_RLE_offset_pair;
+  using google_breakpad::DW_RLE_end_of_list;
+  using google_breakpad::DW_RLE_base_address;
+  using google_breakpad::DW_RLE_start_end;
+  using google_breakpad::DW_RLE_start_length;
+  using google_breakpad::DW_FORM_sec_offset;
+  using google_breakpad::DW_FORM_rnglistx;
 
   // Size of length field in header
   const uint64_t length_size = 4;
@@ -936,7 +936,7 @@ TEST(RangeList, Dwarf5ReadRangeList_sec_offset) {
   byte_reader.SetOffsetSize(4);
   byte_reader.SetAddressSize(4);
   MockRangeListHandler handler;
-  dwarf2reader::RangeListReader range_list_reader(&byte_reader, &cu_info,
+  google_breakpad::RangeListReader range_list_reader(&byte_reader, &cu_info,
                                                    &handler);
   EXPECT_CALL(handler, AddRange(2, 3));
   EXPECT_CALL(handler, AddRange(4, 5));
