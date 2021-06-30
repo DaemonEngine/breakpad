@@ -266,7 +266,7 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
     stream << "INFO CODE_ID " << code_id_ << "\n";
   }
 
-  if (symbol_data != ONLY_CFI) {
+  if (symbol_data & SYMBOLS_AND_FILES) {
     AssignSourceIds();
 
     // Write out files.
@@ -324,7 +324,7 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
     }
   }
 
-  if (symbol_data != NO_CFI) {
+  if (symbol_data & CFI) {
     // Write out 'STACK CFI INIT' and 'STACK CFI' records.
     vector<StackFrameEntry*>::const_iterator frame_it;
     for (frame_it = stack_frame_entries_.begin();

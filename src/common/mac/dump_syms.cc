@@ -584,7 +584,7 @@ bool DumpSymbols::LoadCommandDumper::SegmentCommand(const Segment& segment) {
 
   if (segment.name == "__TEXT") {
     module_->SetLoadAddress(segment.vmaddr);
-    if (symbol_data_ != NO_CFI) {
+    if (symbol_data_ & CFI) {
       mach_o::SectionMap::const_iterator eh_frame =
           section_map.find("__eh_frame");
       if (eh_frame != section_map.end()) {
@@ -596,10 +596,10 @@ bool DumpSymbols::LoadCommandDumper::SegmentCommand(const Segment& segment) {
   }
 
   if (segment.name == "__DWARF") {
-    if (symbol_data_ != ONLY_CFI) {
+    if ((symbol_data_ & SYMBOLS_AND_FILES) || (symbol_data_ & INLINES)) {
       dumper_.ReadDwarf(module_, reader_, section_map, handle_inter_cu_refs_);
     }
-    if (symbol_data_ != NO_CFI) {
+    if (symbol_data_ & CFI) {
       mach_o::SectionMap::const_iterator debug_frame
           = section_map.find("__debug_frame");
       if (debug_frame != section_map.end()) {

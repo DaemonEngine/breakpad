@@ -279,11 +279,11 @@ class Module {
   // breakpad symbol format. Return true if all goes well, or false if
   // an error occurs. This method writes out:
   // - a header based on the values given to the constructor,
-  // If symbol_data is not ONLY_CFI then:
+  // If symbol_data is not CFI then:
   // - the source files added via FindFile,
   // - the functions added via AddFunctions, each with its lines,
   // - all public records,
-  // If symbol_data is not NO_CFI then:
+  // If symbol_data is CFI then:
   // - all CFI records.
   // Addresses in the output are all relative to the load address
   // established by SetLoadAddress.
