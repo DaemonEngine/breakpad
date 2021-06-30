@@ -680,7 +680,8 @@ bool LoadSymbols(const string& obj_file,
   bool found_debug_info_section = false;
   bool found_usable_info = false;
 
-  if (options.symbol_data != ONLY_CFI) {
+  if ((options.symbol_data & SYMBOLS_AND_FILES) ||
+      (options.symbol_data & INLINES)) {
 #ifndef NO_STABS_SUPPORT
     // Look for STABS debugging information, and load it if present.
     const Shdr* stab_section =
@@ -789,7 +790,7 @@ bool LoadSymbols(const string& obj_file,
     }
   }
 
-  if (options.symbol_data != NO_CFI) {
+  if (options.symbol_data & CFI) {
     // Dwarf Call Frame Information (CFI) is actually independent from
     // the other DWARF debugging information, and can be used alone.
     const Shdr* dwarf_cfi_section =

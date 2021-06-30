@@ -107,7 +107,8 @@ static void CopyCFIDataBetweenModules(Module* to_module,
 }
 
 static bool Start(const Options& options) {
-  SymbolData symbol_data = options.cfi ? ALL_SYMBOL_DATA : NO_CFI;
+  SymbolData symbol_data =
+      INLINES | (options.cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
   DumpSymbols dump_symbols(symbol_data, options.handle_inter_cu_refs);
 
   // For x86_64 binaries, the CFI data is in the __TEXT,__eh_frame of the
