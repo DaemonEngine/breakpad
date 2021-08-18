@@ -214,7 +214,7 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
   extern int optind;
   signed char ch;
 
-  while ((ch = getopt(argc, (char * const*)argv, "ia:g:chr?")) != -1) {
+  while ((ch = getopt(argc, (char * const*)argv, "ia:g:crd?h")) != -1) {
     switch (ch) {
       case 'i':
         options->header_only = true;
@@ -241,6 +241,7 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
         break;
       case 'd':
         options->handle_inlines = true;
+        break;
       case '?':
       case 'h':
         Usage(argc, argv);
