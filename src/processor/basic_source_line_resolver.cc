@@ -258,7 +258,7 @@ int BasicSourceLineResolver::Module::ConstructInlineFrames(
   new_frame.trust = StackFrame::FRAME_TRUST_INLINE;
   // Must add frames before calling ConstructInlineFrames to get correct order.
   int current_idx = inlined_frames->size();
-  inlined_frames->push_back(std::make_unique<StackFrame>(new_frame));
+  inlined_frames->push_back(unique_ptr<StackFrame>(new StackFrame(new_frame)));
   int source_line = ConstructInlineFrames(&new_frame, address,
                                           in->child_inlines, inlined_frames);
   if (source_line != -1) {

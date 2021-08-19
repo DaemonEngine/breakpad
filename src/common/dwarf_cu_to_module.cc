@@ -766,9 +766,9 @@ void DwarfCUToModule::InlineHandler::Finish() {
   Module::InlineOrigin* origin =
       cu_context_->file_context->file_private_->inline_origin_map
           .GetOrCreateInlineOrigin(specification_offset_, name_);
-  unique_ptr<Module::Inline> in = std::make_unique<Module::Inline>(
-      origin, ranges, call_site_line_, inline_nest_level_,
-      std::move(child_inlines_));
+  unique_ptr<Module::Inline> in(
+      new Module::Inline(origin, ranges, call_site_line_, inline_nest_level_,
+                         std::move(child_inlines_)));
   inlines_.push_back(std::move(in));
 }
 
