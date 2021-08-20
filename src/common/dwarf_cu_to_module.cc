@@ -504,8 +504,6 @@ void DwarfCUToModule::GenericDIEHandler::ProcessAttributeReference(
         abstract_origin_ = &(origin->second);
       } else if (data > offset_) {
         forward_ref_die_offset_ = data;
-      } else {
-        cu_context_->reporter->UnknownAbstractOrigin(offset_, data);
       }
       specification_offset_ = data;
       break;
@@ -750,14 +748,6 @@ void DwarfCUToModule::InlineHandler::Finish() {
     }
   }
 
-  // Malformed DWARF may omit the name, but all Module::Functions must
-  // have names.
-  // If we have a forward reference to a DW_AT_specification or
-  // DW_AT_abstract_origin, then don't warn, the name will be fixed up
-  // later
-  if (name_.empty() && forward_ref_die_offset_ == 0)
-    cu_context_->reporter->UnnamedFunction(offset_);
-
   // Every DW_TAG_inlined_subroutine should have a DW_AT_abstract_origin.
   assert(specification_offset_ != 0);
 
@@ -929,11 +919,6 @@ void DwarfCUToModule::FuncHandler::Finish() {
     if (!name_.empty()) {
       name = name_;
     } else {
-      // If we have a forward reference to a DW_AT_specification or
-      // DW_AT_abstract_origin, then don't warn, the name will be fixed up
-      // later
-      if (forward_ref_die_offset_ == 0)
-        cu_context_->reporter->UnnamedFunction(offset_);
       name = "<name omitted>";
     }
 
