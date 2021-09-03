@@ -1163,7 +1163,6 @@ bool MinidumpContext::Read(uint32_t expected_size) {
         BPLOG(INFO) << "MinidumpContext unknown context type " <<
           HexString(cpu_type);
         return false;
-        break;
       }
     }
     SetContextFlags(context_flags);
