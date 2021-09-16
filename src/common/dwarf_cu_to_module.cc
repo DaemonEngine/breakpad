@@ -766,11 +766,12 @@ void DwarfCUToModule::InlineHandler::Finish() {
 class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
  public:
   FuncHandler(CUContext* cu_context, DIEContext* parent_context,
-              uint64_t offset)
+              uint64_t offset, bool handle_inline)
       : GenericDIEHandler(cu_context, parent_context, offset),
         low_pc_(0), high_pc_(0), high_pc_form_(DW_FORM_addr),
         ranges_form_(DW_FORM_sec_offset), ranges_data_(0),
-        decl_file_data_(UINT64_MAX), inline_(false) { }
+        decl_file_data_(UINT64_MAX), inline_(false), 
+        handle_inline_(handle_inline) { }
 
   void ProcessAttributeUnsigned(enum DwarfAttribute attr,
                                 enum DwarfForm form,
@@ -794,6 +795,7 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
   uint64_t decl_file_data_;
   bool inline_;
   vector<unique_ptr<Module::Inline>> child_inlines_;
+  bool handle_inline_;
 };
 
 void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
@@ -844,8 +846,9 @@ DIEHandler* DwarfCUToModule::FuncHandler::FindChildHandler(
     enum DwarfTag tag) {
   switch (tag) {
     case DW_TAG_inlined_subroutine:
-      return new InlineHandler(cu_context_, new DIEContext(), offset, 0,
-                               child_inlines_);
+      if (handle_inline_)
+        return new InlineHandler(cu_context_, new DIEContext(), offset, 0,
+                                 child_inlines_);
     default:
       return NULL;
   }
@@ -949,7 +952,8 @@ void DwarfCUToModule::FuncHandler::Finish() {
 
   // Only keep track of DW_TAG_subprogram which have the attributes we are
   // interested.
-  if (!empty_range || inline_ || decl_file_data_ != UINT64_MAX) {
+  if (handle_inline_ &&
+      (!empty_range || inline_ || decl_file_data_ != UINT64_MAX)) {
     uint64_t offset =
         specification_offset_ != 0 ? specification_offset_ : offset_;
     cu_context_->file_context->file_private_->inline_origin_map.SetReference(
@@ -967,13 +971,14 @@ void DwarfCUToModule::FuncHandler::Finish() {
 class DwarfCUToModule::NamedScopeHandler: public GenericDIEHandler {
  public:
   NamedScopeHandler(CUContext* cu_context, DIEContext* parent_context,
-                    uint64_t offset)
+                    uint64_t offset, bool handle_inline)
       : GenericDIEHandler(cu_context, parent_context, offset) { }
   bool EndAttributes();
   DIEHandler* FindChildHandler(uint64_t offset, enum DwarfTag tag);
 
  private:
   DIEContext child_context_; // A context for our children.
+  bool handle_inline_;
 };
 
 bool DwarfCUToModule::NamedScopeHandler::EndAttributes() {
@@ -986,12 +991,14 @@ DIEHandler* DwarfCUToModule::NamedScopeHandler::FindChildHandler(
     enum DwarfTag tag) {
   switch (tag) {
     case DW_TAG_subprogram:
-      return new FuncHandler(cu_context_, &child_context_, offset);
+      return new FuncHandler(cu_context_, &child_context_, offset,
+                             handle_inline_);
     case DW_TAG_namespace:
     case DW_TAG_class_type:
     case DW_TAG_structure_type:
     case DW_TAG_union_type:
-      return new NamedScopeHandler(cu_context_, &child_context_, offset);
+      return new NamedScopeHandler(cu_context_, &child_context_, offset,
+                                   handle_inline_);
     default:
       return NULL;
   }
@@ -1101,12 +1108,13 @@ void DwarfCUToModule::WarningReporter::MissingRanges() {
 DwarfCUToModule::DwarfCUToModule(FileContext* file_context,
                                  LineToModuleHandler* line_reader,
                                  RangesHandler* ranges_handler,
-                                 WarningReporter* reporter)
-    : line_reader_(line_reader),
+                                 WarningReporter* reporter,
+                                 bool handle_inline)
+    : RootDIEHandler(handle_inline),
+      line_reader_(line_reader),
       cu_context_(new CUContext(file_context, reporter, ranges_handler)),
       child_context_(new DIEContext()),
-      has_source_line_info_(false) {
-}
+      has_source_line_info_(false) {}
 
 DwarfCUToModule::~DwarfCUToModule() {
 }
@@ -1183,14 +1191,15 @@ DIEHandler* DwarfCUToModule::FindChildHandler(
     enum DwarfTag tag) {
   switch (tag) {
     case DW_TAG_subprogram:
-      return new FuncHandler(cu_context_.get(), child_context_.get(), offset);
+      return new FuncHandler(cu_context_.get(), child_context_.get(), offset,
+                             handle_inline);
     case DW_TAG_namespace:
     case DW_TAG_class_type:
     case DW_TAG_structure_type:
     case DW_TAG_union_type:
     case DW_TAG_module:
       return new NamedScopeHandler(cu_context_.get(), child_context_.get(),
-                                   offset);
+                                   offset, handle_inline);
     default:
       return NULL;
   }
