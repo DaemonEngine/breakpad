@@ -303,8 +303,7 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
   }
 
   if (symbol_data & SYMBOLS_AND_FILES) {
-    if (symbol_data & INLINES)
-      CreateInlineOrigins();
+    CreateInlineOrigins();
     AssignSourceIds();
 
     // Write out files.
@@ -318,13 +317,11 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
       }
     }
     // Write out inline origins.
-    if (symbol_data & INLINES) {
-      for (InlineOrigin* origin : inline_origins_) {
-        stream << "INLINE_ORIGIN " << origin->id << " " << origin->getFileID()
-               << " " << origin->name << "\n";
-        if (!stream.good())
-          return ReportError();
-      }
+    for (InlineOrigin* origin : inline_origins_) {
+      stream << "INLINE_ORIGIN " << origin->id << " " << origin->getFileID()
+             << " " << origin->name << "\n";
+      if (!stream.good())
+        return ReportError();
     }
 
     // Write out functions and their inlines and lines.
@@ -344,19 +341,17 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
           return ReportError();
 
         // Write out inlines.
-        if (symbol_data & INLINES) {
-          auto write_inline = [&](unique_ptr<Inline>& in) {
-            stream << "INLINE ";
-            stream << in->inline_nest_level << " " << in->call_site_line << " "
-                   << in->origin->id << hex;
-            for (const Range& r : in->ranges)
-              stream << " " << (r.address - load_address_) << " " << r.size;
-            stream << dec << "\n";
-          };
-          InlineDFS(func->inlines, write_inline);
-          if (!stream.good())
-            return ReportError();
-        }
+        auto write_inline = [&](unique_ptr<Inline>& in) {
+          stream << "INLINE ";
+          stream << in->inline_nest_level << " " << in->call_site_line << " "
+                 << in->origin->id << hex;
+          for (const Range& r : in->ranges)
+            stream << " " << (r.address - load_address_) << " " << r.size;
+          stream << dec << "\n";
+        };
+        InlineDFS(func->inlines, write_inline);
+        if (!stream.good())
+          return ReportError();
 
         while ((line_it != func->lines.end()) &&
                (line_it->address >= range_it->address) &&
