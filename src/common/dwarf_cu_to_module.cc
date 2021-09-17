@@ -972,7 +972,8 @@ class DwarfCUToModule::NamedScopeHandler: public GenericDIEHandler {
  public:
   NamedScopeHandler(CUContext* cu_context, DIEContext* parent_context,
                     uint64_t offset, bool handle_inline)
-      : GenericDIEHandler(cu_context, parent_context, offset) { }
+      : GenericDIEHandler(cu_context, parent_context, offset), 
+        handle_inline_(handle_inline) { }
   bool EndAttributes();
   DIEHandler* FindChildHandler(uint64_t offset, enum DwarfTag tag);
 
