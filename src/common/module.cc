@@ -49,6 +49,64 @@ using std::dec;
 using std::hex;
 using std::unique_ptr;
 
+Module::InlineOrigin* Module::InlineOriginMap::GetOrCreateInlineOrigin(
+    uint64_t offset,
+    const string& name) {
+  uint64_t specification_offset = references_[offset];
+  // Find the root offset.
+  auto iter = references_.find(specification_offset);
+  while (iter != references_.end() &&
+         specification_offset != references_[specification_offset]) {
+    specification_offset = references_[specification_offset];
+    iter = references_.find(specification_offset);
+  }
+  if (inline_origins_.find(specification_offset) != inline_origins_.end()) {
+    if (inline_origins_[specification_offset]->name == "<name omitted>") {
+      inline_origins_[specification_offset]->name = name;
+    }
+    return inline_origins_[specification_offset];
+  }
+  inline_origins_[specification_offset] = new Module::InlineOrigin(name);
+  return inline_origins_[specification_offset];
+}
+
+void Module::InlineOriginMap::SetReference(uint64_t offset,
+                                           uint64_t specification_offset) {
+  // If we haven't seen this doesn't exist in reference map, always add it.
+  if (references_.find(offset) == references_.end()) {
+    references_[offset] = specification_offset;
+    return;
+  }
+  // If offset equals specification_offset and offset exists in
+  // references_, there is no need to update the references_ map.
+  // This early return is necessary because the call to erase in following if
+  // will remove the entry of specification_offset in inline_origins_. If
+  // specification_offset equals to references_[offset], it might be
+  // duplicate debug info.
+  if (offset == specification_offset ||
+      specification_offset == references_[offset])
+    return;
+
+  // Fix up mapping in inline_origins_.
+  auto remove = inline_origins_.find(references_[offset]);
+  if (remove != inline_origins_.end()) {
+    inline_origins_[specification_offset] = std::move(remove->second);
+    inline_origins_.erase(remove);
+  }
+  references_[offset] = specification_offset;
+}
+
+void Module::InlineOriginMap::AssignFilesToInlineOrigins(
+    vector<uint64_t>& inline_origin_offsets,
+    Module::File* file) {
+  for (uint64_t offset : inline_origin_offsets)
+    if (references_.find(offset) != references_.end()) {
+      auto origin = inline_origins_.find(references_[offset]);
+      if (origin != inline_origins_.end())
+        origin->second->file = file;
+    }
+}
+
 Module::Module(const string& name, const string& os,
                const string& architecture, const string& id,
                const string& code_id /* = "" */) :
@@ -200,7 +258,8 @@ void Module::GetStackFrameEntries(vector<StackFrameEntry*>* vec) const {
   *vec = stack_frame_entries_;
 }
 
-void Module::AssignSourceIds() {
+void Module::AssignSourceIds(
+    set<InlineOrigin*, InlineOriginCompare>& inline_origins) {
   // First, give every source file an id of -1.
   for (FileByNameMap::iterator file_it = files_.begin();
        file_it != files_.end(); ++file_it) {
@@ -218,7 +277,7 @@ void Module::AssignSourceIds() {
   }
   // Also mark all files cited by inline functions by setting each one's source
   // id to zero.
-  for (InlineOrigin* origin : inline_origins_)
+  for (InlineOrigin* origin : inline_origins)
     // There are some artificial inline functions which don't belong to
     // any file. Those will have file id -1.
     if (origin->file)
@@ -245,20 +304,21 @@ static void InlineDFS(
   }
 }
 
-void Module::CreateInlineOrigins() {
+void Module::CreateInlineOrigins(
+    set<InlineOrigin*, InlineOriginCompare>& inline_origins) {
   // Only add origins that have file and deduplicate origins with same name and
   // file id by doing a DFS.
-  auto addInlineOrigins = [&](unique_ptr<Inline> &in) {
-    auto it = inline_origins_.find(in->origin);
-    if (it == inline_origins_.end())
-      inline_origins_.insert(in->origin);
+  auto addInlineOrigins = [&](unique_ptr<Inline>& in) {
+    auto it = inline_origins.find(in->origin);
+    if (it == inline_origins.end())
+      inline_origins.insert(in->origin);
     else
       in->origin = *it;
   };
   for (Function* func : functions_)
     InlineDFS(func->inlines, addInlineOrigins);
   int next_id = 0;
-  for (InlineOrigin* origin: inline_origins_) {
+  for (InlineOrigin* origin : inline_origins) {
     origin->id = next_id++;
   }
 }
@@ -303,8 +363,10 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
   }
 
   if (symbol_data & SYMBOLS_AND_FILES) {
-    CreateInlineOrigins();
-    AssignSourceIds();
+    // Get all referenced inline origins.
+    set<InlineOrigin*, InlineOriginCompare> inline_origins;
+    CreateInlineOrigins(inline_origins);
+    AssignSourceIds(inline_origins);
 
     // Write out files.
     for (FileByNameMap::iterator file_it = files_.begin();
@@ -317,7 +379,7 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
       }
     }
     // Write out inline origins.
-    for (InlineOrigin* origin : inline_origins_) {
+    for (InlineOrigin* origin : inline_origins) {
       stream << "INLINE_ORIGIN " << origin->id << " " << origin->getFileID()
              << " " << origin->name << "\n";
       if (!stream.good())

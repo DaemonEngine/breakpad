@@ -100,71 +100,6 @@ struct AbstractOrigin {
 
 typedef map<uint64_t, AbstractOrigin> AbstractOriginByOffset;
 
-using InlineOriginByOffset = map<uint64_t, Module::InlineOrigin*>;
-
-class InlineOriginMap {
- public:
-  Module::InlineOrigin* GetOrCreateInlineOrigin(uint64_t offset,
-                                                const string& name) {
-    uint64_t specification_offset = references_[offset];
-    if (inline_origins_.find(specification_offset) != inline_origins_.end()) {
-      if (inline_origins_[specification_offset]->name == "<name omitted>") {
-        inline_origins_[specification_offset]->name = name;
-      }
-      return inline_origins_[specification_offset];
-    }
-    inline_origins_[specification_offset] = new Module::InlineOrigin(name);
-    return inline_origins_[specification_offset];
-  }
-
-  // offset is the offset of a DW_TAG_subprogram. specification_offset is the
-  // value of its DW_AT_specification or equals to offset if DW_AT_specification
-  // doesn't exist in that DIE.
-  void SetReference(uint64_t offset, uint64_t specification_offset) {
-    // If we haven't seen this doesn't exist in reference map, always add it.
-    if (references_.find(offset) == references_.end()) {
-      references_[offset] = specification_offset;
-      return;
-    }
-    // If offset equals specification_offset and offset exists in references_,
-    // there is no need to update the references_ map. This early return is
-    // necessary because the call to erase in following if will remove the entry
-    // of specification_offset in inline_origins_.
-    // If specification_offset equals to references_[offset], it might be
-    // duplicate debug info.
-    if (offset == specification_offset ||
-        specification_offset == references_[offset])
-      return;
-
-    // Fix up mapping in inline_origins_.
-    auto remove = inline_origins_.find(references_[offset]);
-    if (remove != inline_origins_.end()) {
-      inline_origins_[specification_offset] = remove->second;
-      inline_origins_.erase(remove);
-    }
-    references_[offset] = specification_offset;
-  }
-
-  void AssignFilesToInlineOrigins(vector<uint64_t>& inline_origin_offsets,
-                                  Module::File* file) {
-    for (uint64_t offset : inline_origin_offsets)
-      if (references_.find(offset) != references_.end()) {
-        auto origin = inline_origins_.find(references_[offset]);
-        if (origin != inline_origins_.end())
-          origin->second->file = file;
-      }
-  }
-
- private:
-  // A map from a DW_TAG_subprogram's offset to the DW_TAG_subprogram.
-  InlineOriginByOffset inline_origins_;
-
-  // A map from a DW_TAG_subprogram's offset to the offset of its specification
-  // or abstract origin subprogram. The set of values in this map should always
-  // be the same set of keys in inline_origins_.
-  map<uint64_t, uint64_t> references_;
-};
-
 // Data global to the DWARF-bearing file that is private to the
 // DWARF-to-Module process.
 struct DwarfCUToModule::FilePrivate {
@@ -197,8 +132,6 @@ struct DwarfCUToModule::FilePrivate {
   // Keep a list of forward references from DW_AT_abstract_origin and
   // DW_AT_specification attributes so names can be fixed up.
   std::map<uint64_t, Module::Function*> forward_ref_die_to_func;
-
-  InlineOriginMap inline_origin_map;
 };
 
 DwarfCUToModule::FileContext::FileContext(const string& filename,
@@ -751,10 +684,10 @@ void DwarfCUToModule::InlineHandler::Finish() {
   // Every DW_TAG_inlined_subroutine should have a DW_AT_abstract_origin.
   assert(specification_offset_ != 0);
 
-  cu_context_->file_context->file_private_->inline_origin_map.SetReference(
+  cu_context_->file_context->module_->inline_origin_map.SetReference(
       specification_offset_, specification_offset_);
   Module::InlineOrigin* origin =
-      cu_context_->file_context->file_private_->inline_origin_map
+      cu_context_->file_context->module_->inline_origin_map
           .GetOrCreateInlineOrigin(specification_offset_, name_);
   unique_ptr<Module::Inline> in(
       new Module::Inline(origin, ranges, call_site_line_, inline_nest_level_,
@@ -956,9 +889,9 @@ void DwarfCUToModule::FuncHandler::Finish() {
       (!empty_range || inline_ || decl_file_data_ != UINT64_MAX)) {
     uint64_t offset =
         specification_offset_ != 0 ? specification_offset_ : offset_;
-    cu_context_->file_context->file_private_->inline_origin_map.SetReference(
-        offset_, offset);
-    cu_context_->file_context->file_private_->inline_origin_map
+    cu_context_->file_context->module_->inline_origin_map.SetReference(offset_,
+                                                                       offset);
+    cu_context_->file_context->module_->inline_origin_map
         .GetOrCreateInlineOrigin(offset_,
                                  name_.empty() ? "<name omitted>" : name_);
     if (decl_file_data_ != UINT64_MAX)
@@ -1546,7 +1479,7 @@ void DwarfCUToModule::AssignLinesToFunctions() {
 
 void DwarfCUToModule::AssignFilesToInlines() {
   for (auto iter : files_) {
-    cu_context_->file_context->file_private_->inline_origin_map
+    cu_context_->file_context->module_->inline_origin_map
         .AssignFilesToInlineOrigins(cu_context_->inline_origins[iter.first],
                                     iter.second);
   }
