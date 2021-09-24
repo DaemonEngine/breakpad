@@ -97,7 +97,7 @@ void Module::InlineOriginMap::SetReference(uint64_t offset,
 }
 
 void Module::InlineOriginMap::AssignFilesToInlineOrigins(
-    vector<uint64_t>& inline_origin_offsets,
+    const vector<uint64_t>& inline_origin_offsets,
     Module::File* file) {
   for (uint64_t offset : inline_origin_offsets)
     if (references_.find(offset) != references_.end()) {
