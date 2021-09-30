@@ -32,6 +32,7 @@
 // module.cc: Implement google_breakpad::Module.  See module.h.
 
 #include "common/module.h"
+#include "common/string_view.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -51,7 +52,7 @@ using std::unique_ptr;
 
 Module::InlineOrigin* Module::InlineOriginMap::GetOrCreateInlineOrigin(
     uint64_t offset,
-    const string& name) {
+    StringView name) {
   uint64_t specification_offset = references_[offset];
   // Find the root offset.
   auto iter = references_.find(specification_offset);
