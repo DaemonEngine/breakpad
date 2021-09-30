@@ -46,7 +46,9 @@
 #include <string>
 #include <vector>
 
+#include "common/string_view.h"
 #include "common/symbol_data.h"
+#include "common/unordered.h"
 #include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 
@@ -101,7 +103,7 @@ class Module {
 
   // A function.
   struct Function {
-    Function(const string& name_input, const Address& address_input) :
+    Function(StringView name_input, const Address& address_input) :
         name(name_input), address(address_input), parameter_size(0) {}
 
     // For sorting by address.  (Not style-guide compliant, but it's
@@ -111,7 +113,7 @@ class Module {
     }
 
     // The function's name.
-    string name;
+    StringView name;
 
     // The start address and the address ranges covered by the function.
     const Address address;
@@ -129,15 +131,14 @@ class Module {
   };
 
   struct InlineOrigin {
-    explicit InlineOrigin(const string& name)
-        : id(-1), name(name), file(nullptr) {}
+    explicit InlineOrigin(StringView name): id(-1), name(name), file(nullptr) {}
 
     // A unique id for each InlineOrigin object. INLINE records use the id to
     // refer to its INLINE_ORIGIN record.
     int id;
 
     // The inlined function's name.
-    string name;
+    StringView name;
 
     File* file;
 
@@ -175,7 +176,7 @@ class Module {
   class InlineOriginMap {
    public:
     // Add INLINE ORIGIN to the module. Return a pointer to origin .
-    InlineOrigin* GetOrCreateInlineOrigin(uint64_t offset, const string& name);
+    InlineOrigin* GetOrCreateInlineOrigin(uint64_t offset, StringView name);
 
     // offset is the offset of a DW_TAG_subprogram. specification_offset is the
     // value of its DW_AT_specification or equals to offset if
@@ -382,6 +383,13 @@ class Module {
   // established by SetLoadAddress.
   bool Write(std::ostream& stream, SymbolData symbol_data);
 
+  // Place the name in the global set of strings. Return a StringView points to
+  // a string inside the pool.
+  StringView AddStringToPool(const string& str) {
+    auto result = common_strings_.insert(str);
+    return *(result.first);
+  }
+
   string name() const { return name_; }
   string os() const { return os_; }
   string architecture() const { return architecture_; }
@@ -443,6 +451,8 @@ class Module {
   // The module owns all the externs that have been added to it;
   // destroying the module frees the Externs these point to.
   ExternSet externs_;
+
+  unordered_set<string> common_strings_;
 };
 
 }  // namespace google_breakpad
