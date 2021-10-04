@@ -52,7 +52,7 @@ class StringView {
   StringView() = default;
 
   // Disallow construct StringView from nullptr.
-  StringView(nullptr_t) = delete;
+  StringView(std::nullptr_t) = delete;
 
   // Construct a StringView from a cstring.
   StringView(const char* str) : data_(str) {
