@@ -35,7 +35,6 @@
 #ifndef GOOGLE_BREAKPAD_PROCESSOR_STACK_FRAME_SYMBOLIZER_H__
 #define GOOGLE_BREAKPAD_PROCESSOR_STACK_FRAME_SYMBOLIZER_H__
 
-#include <deque>
 #include <memory>
 #include <set>
 #include <string>
@@ -83,7 +82,7 @@ class StackFrameSymbolizer {
       const CodeModules* unloaded_modules,
       const SystemInfo* system_info,
       StackFrame* stack_frame,
-      std::deque<std::unique_ptr<StackFrame>>* inlined_frames);
+      std::vector<std::unique_ptr<StackFrame>>* inlined_frames);
 
   virtual WindowsFrameInfo* FindWindowsFrameInfo(const StackFrame* frame);
 
