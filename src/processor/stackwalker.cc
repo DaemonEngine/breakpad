@@ -138,7 +138,7 @@ bool Stackwalker::Walk(
     // frame_pointer fields.  The frame structure comes from either the
     // context frame (above) or a caller frame (below).
 
-    std::deque<std::unique_ptr<StackFrame>> inlined_frames;
+    vector<std::unique_ptr<StackFrame>> inlined_frames;
     // Resolve the module information, if a module map was provided.
     StackFrameSymbolizer::SymbolizerResult symbolizer_result =
         frame_symbolizer_->FillSourceLineInfo(modules_, unloaded_modules_,
@@ -174,10 +174,10 @@ bool Stackwalker::Walk(
       default:
         break;
     }
-    // Add all nested inlined frames belonging to this frame from left to right.
+    // Add all nested inlined frames belonging to this frame in reverse order.
     while (!inlined_frames.empty()) {
-      stack->frames_.push_back(inlined_frames.front().release());
-      inlined_frames.pop_front();
+      stack->frames_.push_back(inlined_frames.back().release());
+      inlined_frames.pop_back();
     }
     // Add the frame to the call stack.  Relinquish the ownership claim
     // over the frame, because the stack now owns it.
