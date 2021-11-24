@@ -730,7 +730,8 @@ bool SymbolParseHelper::ParseInline(
   inline_line += 7; // skip prefix
 
   vector<char*> tokens;
-  Tokenize(inline_line, kWhitespace, std::numeric_limits<int>::max(), &tokens);
+  // Increase max_tokens if necessary.
+  Tokenize(inline_line, kWhitespace, 512, &tokens);
 
   // Determine the version of INLINE record by parity of the vector length.
   *has_call_site_file_id = tokens.size() % 2 == 0;
