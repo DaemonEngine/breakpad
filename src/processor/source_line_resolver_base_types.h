@@ -103,7 +103,6 @@ struct SourceLineResolverBase::Inline {
   int32_t call_site_file_id;
   int32_t origin_id;
   InlineRanges inline_ranges;
-  RangeMap<MemAddr, linked_ptr<Inline>> child_inlines;
 };
 
 struct SourceLineResolverBase::Line {
