@@ -128,6 +128,7 @@ bool BasicSourceLineResolver::Module::LoadMapFromMemory(
   linked_ptr<Function> cur_func;
   int line_number = 0;
   int num_errors = 0;
+  int inline_num_errors = 0;
   char* save_ptr;
 
   // If the length is 0, we can still pretend we have a symbol file. This is
@@ -208,12 +209,13 @@ bool BasicSourceLineResolver::Module::LoadMapFromMemory(
     } else if (strncmp(buffer, "INLINE ", 7) == 0) {
       linked_ptr<Inline> in = ParseInline(buffer);
       if (!in.get())
-        LogParseError("ParseInline failed", line_number, &num_errors);
+        LogParseError("ParseInline failed", line_number, &inline_num_errors);
       else
         cur_func->AppendInline(in);
     } else if (strncmp(buffer, "INLINE_ORIGIN ", 14) == 0) {
       if (!ParseInlineOrigin(buffer)) {
-        LogParseError("ParseInlineOrigin failed", line_number, &num_errors);
+        LogParseError("ParseInlineOrigin failed", line_number,
+                      &inline_num_errors);
       }
     } else {
       if (!cur_func.get()) {
