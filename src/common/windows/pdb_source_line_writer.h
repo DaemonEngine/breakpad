@@ -62,7 +62,7 @@ class PDBSourceLineWriter {
     ANY_FILE   // try PDB_FILE and then EXE_FILE
   };
 
-  explicit PDBSourceLineWriter(bool handle_inline);
+  explicit PDBSourceLineWriter(bool handle_inline = false);
   ~PDBSourceLineWriter();
 
   // Opens the given file.  For executable files, the corresponding pdb
