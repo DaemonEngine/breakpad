@@ -1449,7 +1449,7 @@ bool MinidumpGenerator::WriteCVRecord(MDRawModule* module, int cpu_type,
   unsigned char identifier[16];
   bool result = false;
   if (in_memory) {
-    MacFileUtilities::MachoID macho(module_path,
+    MacFileUtilities::MachoID macho(
         reinterpret_cast<void*>(module->base_of_image),
         static_cast<size_t>(module->size_of_image));
     result = macho.UUIDCommand(cpu_type, CPU_SUBTYPE_MULTIPLE, identifier);
