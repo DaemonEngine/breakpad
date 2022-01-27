@@ -39,6 +39,7 @@
 #include <stddef.h>
 
 namespace google_breakpad {
+namespace mach_o {
 
 class FileID {
  public:
@@ -85,6 +86,7 @@ class FileID {
   size_t size_;
 };
 
+}  // namespace mach_o
 }  // namespace google_breakpad
 
 #endif  // COMMON_MAC_FILE_ID_H__

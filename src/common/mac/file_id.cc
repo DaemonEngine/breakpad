@@ -45,7 +45,7 @@
 using MacFileUtilities::MachoID;
 
 namespace google_breakpad {
-
+namespace mach_o {
 // Constructs a FileID given a path to a file
 FileID::FileID(const char* path) : memory_(nullptr), size_(0) {
   snprintf(path_, sizeof(path_), "%s", path);
@@ -91,4 +91,5 @@ void FileID::ConvertIdentifierToString(const unsigned char identifier[16],
   buffer[(buffer_idx < buffer_length) ? buffer_idx : buffer_idx - 1] = 0;
 }
 
+}  // namespace mach_o
 }  // namespace google_breakpad

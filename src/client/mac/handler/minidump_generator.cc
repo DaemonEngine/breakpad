@@ -62,6 +62,8 @@ using MacStringUtils::IntegerValueAtIndex;
 
 namespace google_breakpad {
 
+using mach_o::FileID;
+
 #if defined(__LP64__) && __LP64__
 #define LC_SEGMENT_ARCH LC_SEGMENT_64
 #else
