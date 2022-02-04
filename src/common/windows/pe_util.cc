@@ -35,6 +35,7 @@
 #include <ImageHlp.h>
 
 #include <functional>
+#include <memory>
 
 #include "common/windows/string_utils-inl.h"
 #include "common/windows/guid_string.h"
