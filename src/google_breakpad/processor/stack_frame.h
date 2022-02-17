@@ -63,7 +63,8 @@ struct StackFrame {
         source_file_name(),
         source_line(0),
         source_line_base(),
-        trust(FRAME_TRUST_NONE){}
+        trust(FRAME_TRUST_NONE),
+        is_multiple(false) {}
   virtual ~StackFrame() {}
 
   // Return a string describing how this stack frame was found
@@ -140,6 +141,12 @@ struct StackFrame {
   // Amount of trust the stack walker has in the instruction pointer
   // of this frame.
   FrameTrust trust;
+
+  // True if the frame corresponds to multiple functions, for example as the
+  // result of identical code folding by the linker. In that case the function
+  // name, filename, etc. information above represents the state of an arbitrary
+  // one of these functions.
+  bool is_multiple;
 };
 
 }  // namespace google_breakpad
