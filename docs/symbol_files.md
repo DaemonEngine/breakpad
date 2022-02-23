@@ -405,14 +405,14 @@ func+22:     pc = *sp; sp += 4       ; pop return address and jump to it
 
 The following table would describe the function above:
 
-**code address** | **.cfa** | **r0 (on Google Code)** | **r1 (on Google Code)** | ... | **.ra**
-:--------------- | :------- | :---------------------- | :---------------------- | :-- | :-------
-func+0           | sp       |                         |                         |     | `cfa[0]`
-func+1           | sp+16    |                         |                         |     | `cfa[0]`
-func+2           | sp+16    | `cfa[-4]`               |                         |     | `cfa[0]`
-func+11          | sp+20    | `cfa[-4]`               |                         |     | `cfa[0]`
-func+21          | sp+20    |                         |                         |     | `cfa[0]`
-func+22          | sp       |                         |                         |     | `cfa[0]`
+| **code address** | **.cfa** | **r0 (on Google Code)** | **r1 (on Google Code)** | ... | **.ra**  |
+|:-----------------|:---------|:------------------------|:------------------------|:----|:---------|
+| func+0           | sp       |                         |                         |     | `cfa[0]` |
+| func+1           | sp+16    |                         |                         |     | `cfa[0]` |
+| func+2           | sp+16    | `cfa[-4]`               |                         |     | `cfa[0]` |
+| func+11          | sp+20    | `cfa[-4]`               |                         |     | `cfa[0]` |
+| func+21          | sp+20    |                         |                         |     | `cfa[0]` |
+| func+22          | sp       |                         |                         |     | `cfa[0]` |
 
 Some things to note here:
 
@@ -447,14 +447,14 @@ To save space, the most common type of CFI record only mentions the table
 entries at which changes take place. So for the above, the CFI data would only
 actually mention the non-blank entries here:
 
-**insn** | **cfa** | **r0 (on Google Code)** | **r1 (on Google Code)** | ... | **ra**
-:------- | :------ | :---------------------- | :---------------------- | :-- | :-------
-func+0   | sp      |                         |                         |     | `cfa[0]`
-func+1   | sp+16   |                         |                         |     |
-func+2   |         | `cfa[-4]`               |                         |     |
-func+11  | sp+20   |                         |                         |     |
-func+21  |         | r0 (on Google Code)     |                         |     |
-func+22  | sp      |                         |                         |     |
+| **insn** | **cfa** | **r0 (on Google Code)** | **r1 (on Google Code)** | ... | **ra**   |
+|:---------|:--------|:------------------------|:------------------------|:----|:---------|
+| func+0   | sp      |                         |                         |     | `cfa[0]` |
+| func+1   | sp+16   |                         |                         |     |          |
+| func+2   |         | `cfa[-4]`               |                         |     |          |
+| func+11  | sp+20   |                         |                         |     |          |
+| func+21  |         | r0 (on Google Code)     |                         |     |          |
+| func+22  | sp      |                         |                         |     |          |
 
 A `STACK CFI INIT` record indicates that, at the machine instruction at
 _address_, belonging to some function, the value that _register<sub>n</sub>_ had
