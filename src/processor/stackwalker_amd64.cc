@@ -289,7 +289,10 @@ StackFrame* StackwalkerAMD64::GetCallerFrame(const CallStack* stack,
     new_frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));
 
   // If CFI was not available or failed, try using frame pointer recovery.
-  if (!new_frame.get()) {
+  // Never try to use frame pointer unwinding on Windows x64 stack. MSVC never
+  // generates code that works with frame pointer chasing, and LLVM does the
+  // same. Stack scanning would be better.
+  if (!new_frame.get() && system_info_->os_short != "windows") {
     new_frame.reset(GetCallerByFramePointerRecovery(frames));
   }
 
