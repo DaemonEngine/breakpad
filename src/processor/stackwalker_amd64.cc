@@ -223,7 +223,7 @@ StackFrameAMD64* StackwalkerAMD64::GetCallerByFramePointerRecovery(
 
 StackFrameAMD64* StackwalkerAMD64::GetCallerBySimulatingReturn(
     const vector<StackFrame*>& frames) {
-  assert(frames.size() == 1);
+  assert(frames.back()->trust == StackFrame::FRAME_TRUST_CONTEXT);
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
   uint64_t last_rsp = last_frame->context.rsp;
   uint64_t caller_rip_address, caller_rip;
@@ -257,7 +257,8 @@ StackFrameAMD64* StackwalkerAMD64::GetCallerByStackScan(
   uint64_t caller_rip_address, caller_rip;
 
   if (!ScanForReturnAddress(last_rsp, &caller_rip_address, &caller_rip,
-                            frames.size() == 1 /* is_context_frame */)) {
+                            /*is_context_frame=*/last_frame->trust ==
+                                StackFrame::FRAME_TRUST_CONTEXT)) {
     // No plausible return address was found.
     return NULL;
   }
@@ -322,7 +323,8 @@ StackFrame* StackwalkerAMD64::GetCallerFrame(const CallStack* stack,
   // According to https://reviews.llvm.org/D24748, LLVM doesn't generate unwind
   // info for such functions. According to MSDN, leaf functions can be unwound
   // simply by simulating a return.
-  if (!new_frame.get() && stack->frames()->size() == 1 &&
+  if (!new_frame.get() &&
+      last_frame->trust == StackFrame::FRAME_TRUST_CONTEXT &&
       system_info_->os_short == "windows") {
     new_frame.reset(GetCallerBySimulatingReturn(frames));
   }
@@ -356,7 +358,9 @@ StackFrame* StackwalkerAMD64::GetCallerFrame(const CallStack* stack,
 
   // Should we terminate the stack walk? (end-of-stack or broken invariant)
   if (TerminateWalk(new_frame->context.rip, new_frame->context.rsp,
-                    last_frame->context.rsp, frames.size() == 1)) {
+                    last_frame->context.rsp,
+                    /*first_unwind=*/last_frame->trust ==
+                        StackFrame::FRAME_TRUST_CONTEXT)) {
     return NULL;
   }
 
