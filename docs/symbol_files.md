@@ -33,7 +33,14 @@ restrictions, these may appear in any order.
 *   A `FILE` record gives a source file name, and assigns it a number by which
     other records can refer to it.
 
+*   An `INLINE_ORIGIN` record holds an inline function name for `INLINE` records
+    to refer to.
+
 *   A `FUNC` record describes a function present in the source code.
+
+*   An `INLINE` record describes the inline function's nest level, call site
+    line and call site source file to which the given ranges of machine code
+    should be attributed.
 
 *   A line record indicates to which source file and line a given range of
     machine code should be attributed. The line is attributed to the function
