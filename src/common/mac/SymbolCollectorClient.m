@@ -199,7 +199,7 @@
 
   NSMutableDictionary* jsonDictionary = [@{
     @"symbol_id" : @{@"debug_file" : debugFile, @"debug_id" : debugID},
-    @"symbol_upload_type" : type
+    @"symbol_upload_type" : type, @"use_async_processing" : @"true"
   } mutableCopy];
 
   if (productName != nil) {
