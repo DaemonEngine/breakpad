@@ -39,12 +39,13 @@
 #include <string>
 #include <vector>
 
+#include "common/windows/http_upload.h"
+#include "common/windows/string_utils-inl.h"
+#include "common/windows/sym_upload_v2_protocol.h"
+#include "tools/windows/converter/ms_symbol_server_converter.h"
 #include "tools/windows/converter_exe/escaping.h"
 #include "tools/windows/converter_exe/http_download.h"
 #include "tools/windows/converter_exe/tokenizer.h"
-#include "common/windows/http_upload.h"
-#include "common/windows/string_utils-inl.h"
-#include "tools/windows/converter/ms_symbol_server_converter.h"
 
 using strings::WebSafeBase64Unescape;
 using strings::WebSafeBase64Escape;
@@ -208,28 +209,37 @@ static bool MissingSymbolInfoToParameters(const MissingSymbolInfo& missing_info,
 // to the symbol server rooted at |upload_symbol_url|.  Returns true on
 // success and false on failure, printing an error message.
 static bool UploadSymbolFile(const wstring& upload_symbol_url,
+                             const wstring& api_key,
                              const MissingSymbolInfo& missing_info,
                              const string& converted_file) {
-  map<wstring, wstring> parameters;
-  if (!MissingSymbolInfoToParameters(missing_info,& parameters)) {
-    // MissingSymbolInfoToParameters or a callee will have printed an error.
-    return false;
-  }
-
-  wstring converted_file_w;
-
-  if (!WindowsStringUtils::safe_mbstowcs(converted_file,& converted_file_w)) {
+  wstring debug_file_w;
+  if (!WindowsStringUtils::safe_mbstowcs(missing_info.debug_file,
+                                         &debug_file_w)) {
     FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
                  converted_file.c_str());
     return false;
   }
-  map<wstring, wstring> files;
-  files[L"symbol_file"] = converted_file_w;
 
+  wstring debug_id_w;
+  if (!WindowsStringUtils::safe_mbstowcs(missing_info.debug_identifier,
+                                         &debug_id_w)) {
+    FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
+                 converted_file.c_str());
+    return false;
+  }
+
+  wstring converted_file_w;
+  if (!WindowsStringUtils::safe_mbstowcs(converted_file, &converted_file_w)) {
+    FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
+                 converted_file.c_str());
+    return false;
+  }
+
+  int timeout_ms = 60 * 1000;
   FprintfFlush(stderr, "Uploading %s\n", converted_file.c_str());
-  if (!HTTPUpload::SendMultipartPostRequest(
-      upload_symbol_url, parameters,
-      files, NULL, NULL, NULL)) {
+  if (!google_breakpad::SymUploadV2ProtocolSend(
+          upload_symbol_url.c_str(), api_key.c_str(), &timeout_ms, debug_file_w,
+          debug_id_w, converted_file_w, true)) {
     FprintfFlush(stderr, "UploadSymbolFile: HTTPUpload::SendRequest failed "
                          "for %s %s %s\n",
                  missing_info.debug_file.c_str(),
@@ -318,6 +328,9 @@ struct ConverterOptions {
 
   // URL for uploading symbols.
   wstring upload_symbols_url;
+
+  // API key to use when uploading symbols.
+  wstring api_key;
 
   // URL to fetch list of missing symbols.
   wstring missing_symbols_url;
@@ -413,8 +426,8 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
         // If it fails, something will print an error message indicating
         // the cause of the failure, and the item will remain on the
         // missing symbol list.
-        UploadSymbolFile(options.upload_symbols_url, missing_info,
-                         converted_file);
+        UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                         missing_info, converted_file);
         remove(converted_file.c_str());
 
         // Note: this does leave some directories behind that could be
@@ -495,8 +508,8 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
       // If it fails, something will print an error message indicating
       // the cause of the failure, and the item will remain on the
       // missing symbol list.
-      UploadSymbolFile(options.upload_symbols_url, missing_info,
-                       converted_file);
+      UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                       missing_info, converted_file);
       remove(converted_file.c_str());
 
       // Note: this does leave some directories behind that could be
@@ -648,12 +661,14 @@ static bool ConvertMissingSymbolsList(const ConverterOptions& options) {
 // usage prints the usage message.  It returns 1 as a convenience, to be used
 // as a return value from main.
 static int usage(const char* program_name) {
-  FprintfFlush(stderr,
+  FprintfFlush(
+      stderr,
       "usage: %s [options]\n"
       "    -f  <full_msss_server>     MS servers to ask for all symbols\n"
       "    -n  <no_exe_msss_server>   same, but prevent asking for EXEs\n"
       "    -l  <local_cache_path>     Temporary local storage for symbols\n"
       "    -s  <upload_url>           URL for uploading symbols\n"
+      "    -k  <api_key>              API key to use when uploading symbols\n"
       "    -m  <missing_symbols_url>  URL to fetch list of missing symbols\n"
       "    -mf <missing_symbols_file> File containing the list of missing\n"
       "                               symbols.  Fetch failures are not\n"
@@ -729,6 +744,12 @@ int main(int argc, char** argv) {
                      value.c_str());
         return 1;
       }
+    } else if (option == "-k") {
+      if (!WindowsStringUtils::safe_mbstowcs(value, &options.api_key)) {
+        FprintfFlush(stderr, "main: safe_mbstowcs failed for %s\n",
+                     value.c_str());
+        return 1;
+      }
     } else if (option == "-m") {
       if (!WindowsStringUtils::safe_mbstowcs(value,
                                             & options.missing_symbols_url)) {
@@ -778,6 +799,10 @@ int main(int argc, char** argv) {
 
   if (options.upload_symbols_url.empty()) {
     FprintfFlush(stderr, "No upload symbols URL specified.\n");
+    return usage(argv[0]);
+  }
+  if (options.api_key.empty()) {
+    FprintfFlush(stderr, "No API key specified.\n");
     return usage(argv[0]);
   }
   if (options.missing_symbols_url.empty() &&
