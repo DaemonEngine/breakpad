@@ -66,6 +66,7 @@ using google_breakpad::WindowsStringUtils;
 const char* kMissingStringDelimiters = "|";
 const char* kLocalCachePath = "c:\\symbols";
 const char* kNoExeMSSSServer = "http://msdl.microsoft.com/download/symbols/";
+const wchar_t* kSymbolUploadTypeBreakpad = L"BREAKPAD";
 
 // Windows stdio doesn't do line buffering.  Use this function to flush after
 // writing to stdout and stderr so that a log will be available if the
@@ -239,7 +240,8 @@ static bool UploadSymbolFile(const wstring& upload_symbol_url,
   FprintfFlush(stderr, "Uploading %s\n", converted_file.c_str());
   if (!google_breakpad::SymUploadV2ProtocolSend(
           upload_symbol_url.c_str(), api_key.c_str(), &timeout_ms, debug_file_w,
-          debug_id_w, converted_file_w, true)) {
+          debug_id_w, converted_file_w, kSymbolUploadTypeBreakpad,
+          /*force=*/true)) {
     FprintfFlush(stderr, "UploadSymbolFile: HTTPUpload::SendRequest failed "
                          "for %s %s %s\n",
                  missing_info.debug_file.c_str(),
