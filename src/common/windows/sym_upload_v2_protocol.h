@@ -37,14 +37,26 @@ namespace google_breakpad {
 // Sends file at |symbol_filename| using the sym-upload-v2 protocol to
 // |api_url| using key |api_key|, and using identifiers |debug_file| and
 // |debug_id|. |timeout_ms| is the number of milliseconds to wait before
-// terminating the upload attempt. If |force| is set then it will overwrite an
-// existing file with the same |debug_file| and |debug_id| in the store.
+// terminating the upload attempt. |symbol_type| is the type of the symbol
+// file, which is one of:
+//   "BREAKPAD"
+//   "ELF"
+//   "PE"
+//   "MACHO"
+//   "DEBUG_ONLY"
+//   "DWP"
+//   "DSYM"
+//   "PDB"
+//   "SOURCE_MAP"
+// If |force| is set then it will overwrite an existing file with the
+// same |debug_file| and |debug_id| in the store.
 bool SymUploadV2ProtocolSend(const wchar_t* api_url,
                              const wchar_t* api_key,
                              int* timeout_ms,
                              const std::wstring& debug_file,
                              const std::wstring& debug_id,
                              const std::wstring& symbol_filename,
+                             const std::wstring& symbol_type,
                              bool force);
 
 }  // namespace google_breakpad

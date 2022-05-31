@@ -68,6 +68,8 @@ using std::string;
 using std::vector;
 using std::wstring;
 
+const wchar_t* kSymbolUploadTypeBreakpad = L"BREAKPAD";
+
 // Extracts the file version information for the given filename,
 // as a string, for example, "1.2.3.4".  Returns true on success.
 static bool GetFileVersionString(const wchar_t* filename, wstring* version) {
@@ -251,7 +253,8 @@ int wmain(int argc, wchar_t* argv[]) {
 
       success = google_breakpad::SymUploadV2ProtocolSend(
           api_url, api_key, timeout == -1 ? nullptr : &timeout,
-          pdb_info.debug_file, pdb_info.debug_identifier, symbol_file, force);
+          pdb_info.debug_file, pdb_info.debug_identifier, symbol_file,
+          kSymbolUploadTypeBreakpad, force);
     } else {
       printUsageAndExit();
     }
