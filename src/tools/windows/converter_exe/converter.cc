@@ -67,6 +67,8 @@ const char* kMissingStringDelimiters = "|";
 const char* kLocalCachePath = "c:\\symbols";
 const char* kNoExeMSSSServer = "http://msdl.microsoft.com/download/symbols/";
 const wchar_t* kSymbolUploadTypeBreakpad = L"BREAKPAD";
+const wchar_t* kSymbolUploadTypePE = L"PE";
+const wchar_t* kSymbolUploadTypePDB = L"PDB";
 
 // Windows stdio doesn't do line buffering.  Use this function to flush after
 // writing to stdout and stderr so that a log will be available if the
@@ -206,47 +208,46 @@ static bool MissingSymbolInfoToParameters(const MissingSymbolInfo& missing_info,
   return true;
 }
 
-// UploadSymbolFile sends |converted_file| as identified by |missing_info|
-// to the symbol server rooted at |upload_symbol_url|.  Returns true on
-// success and false on failure, printing an error message.
+// UploadSymbolFile sends |converted_file| as identified by |debug_file| and
+// |debug_identifier|, to the symbol server rooted at |upload_symbol_url|.
+// Returns true on success and false on failure, printing an error message.
 static bool UploadSymbolFile(const wstring& upload_symbol_url,
                              const wstring& api_key,
-                             const MissingSymbolInfo& missing_info,
-                             const string& converted_file) {
+                             const string& debug_file,
+                             const string& debug_identifier,
+                             const string& symbol_file,
+                             const wstring& symbol_type) {
   wstring debug_file_w;
-  if (!WindowsStringUtils::safe_mbstowcs(missing_info.debug_file,
-                                         &debug_file_w)) {
+  if (!WindowsStringUtils::safe_mbstowcs(debug_file, &debug_file_w)) {
     FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
-                 converted_file.c_str());
+                 symbol_file.c_str());
     return false;
   }
 
   wstring debug_id_w;
-  if (!WindowsStringUtils::safe_mbstowcs(missing_info.debug_identifier,
-                                         &debug_id_w)) {
+  if (!WindowsStringUtils::safe_mbstowcs(debug_identifier, &debug_id_w)) {
     FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
-                 converted_file.c_str());
+                 symbol_file.c_str());
     return false;
   }
 
-  wstring converted_file_w;
-  if (!WindowsStringUtils::safe_mbstowcs(converted_file, &converted_file_w)) {
+  wstring symbol_file_w;
+  if (!WindowsStringUtils::safe_mbstowcs(symbol_file, &symbol_file_w)) {
     FprintfFlush(stderr, "UploadSymbolFile: safe_mbstowcs failed for %s\n",
-                 converted_file.c_str());
+                 symbol_file.c_str());
     return false;
   }
 
   int timeout_ms = 60 * 1000;
-  FprintfFlush(stderr, "Uploading %s\n", converted_file.c_str());
+  FprintfFlush(stderr, "Uploading %s\n", symbol_file.c_str());
   if (!google_breakpad::SymUploadV2ProtocolSend(
           upload_symbol_url.c_str(), api_key.c_str(), &timeout_ms, debug_file_w,
-          debug_id_w, converted_file_w, kSymbolUploadTypeBreakpad,
+          debug_id_w, symbol_file_w, symbol_type,
           /*force=*/true)) {
-    FprintfFlush(stderr, "UploadSymbolFile: HTTPUpload::SendRequest failed "
-                         "for %s %s %s\n",
-                 missing_info.debug_file.c_str(),
-                 missing_info.debug_identifier.c_str(),
-                 missing_info.version.c_str());
+    FprintfFlush(stderr,
+                 "UploadSymbolFile: HTTPUpload::SendRequest failed "
+                 "for %s %s\n",
+                 debug_file.c_str(), debug_identifier.c_str());
     return false;
   }
 
@@ -408,29 +409,46 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
   MSSymbolServerConverter::LocateResult located =
       MSSymbolServerConverter::LOCATE_FAILURE;
   string converted_file;
+  string symbol_file;
+  string pe_file;
   if (msss_servers.size() > 0) {
     // Attempt to fetch the symbol file and convert it.
     FprintfFlush(stderr, "Making internal request for %s (%s)\n",
                    missing_info.debug_file.c_str(),
                    missing_info.debug_identifier.c_str());
     MSSymbolServerConverter converter(options.local_cache_path, msss_servers);
-    located = converter.LocateAndConvertSymbolFile(missing_info,
-                                                   false,  // keep_symbol_file
-                                                   false,  // keep_pe_file
-                                                  & converted_file,
-                                                   NULL,   // symbol_file
-                                                   NULL);  // pe_file
+    located = converter.LocateAndConvertSymbolFile(
+        missing_info,
+        /*keep_symbol_file=*/true,
+        /*keep_pe_file=*/true, &converted_file, &symbol_file, &pe_file);
     switch (located) {
       case MSSymbolServerConverter::LOCATE_SUCCESS:
         FprintfFlush(stderr, "LocateResult = LOCATE_SUCCESS\n");
-        // Upload it.  Don't bother checking the return value.  If this
+        // Upload it. Don't bother checking the return value. If this
         // succeeds, it should disappear from the missing symbol list.
         // If it fails, something will print an error message indicating
         // the cause of the failure, and the item will remain on the
         // missing symbol list.
         UploadSymbolFile(options.upload_symbols_url, options.api_key,
-                         missing_info, converted_file);
+                         missing_info.debug_file, missing_info.debug_identifier,
+                         converted_file, kSymbolUploadTypeBreakpad);
         remove(converted_file.c_str());
+
+        // Upload PDB/PE if we have them
+        if (!symbol_file.empty()) {
+          UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                           missing_info.debug_file,
+                           missing_info.debug_identifier, symbol_file,
+                           kSymbolUploadTypePDB);
+          remove(symbol_file.c_str());
+        }
+        if (!pe_file.empty()) {
+          UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                           missing_info.code_file,
+                           missing_info.debug_identifier, pe_file,
+                           kSymbolUploadTypePE);
+          remove(pe_file.c_str());
+        }
 
         // Note: this does leave some directories behind that could be
         // cleaned up.  The directories inside options.local_cache_path for
@@ -489,11 +507,8 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
                                                  msss_servers);
       located = external_converter.LocateAndConvertSymbolFile(
           missing_info,
-          false,  // keep_symbol_file
-          false,  // keep_pe_file
-         & converted_file,
-          NULL,   // symbol_file
-          NULL);  // pe_file
+          /*keep_symbol_file=*/true,
+          /*keep_pe_file=*/true, &converted_file, &symbol_file, &pe_file);
     } else {
       FprintfFlush(stderr, "ERROR: No suitable external symbol servers.\n");
     }
@@ -505,14 +520,29 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
   switch (located) {
     case MSSymbolServerConverter::LOCATE_SUCCESS:
       FprintfFlush(stderr, "LocateResult = LOCATE_SUCCESS\n");
-      // Upload it.  Don't bother checking the return value.  If this
+      // Upload it. Don't bother checking the return value. If this
       // succeeds, it should disappear from the missing symbol list.
       // If it fails, something will print an error message indicating
       // the cause of the failure, and the item will remain on the
       // missing symbol list.
       UploadSymbolFile(options.upload_symbols_url, options.api_key,
-                       missing_info, converted_file);
+                       missing_info.debug_file, missing_info.debug_identifier,
+                       converted_file, kSymbolUploadTypeBreakpad);
       remove(converted_file.c_str());
+
+      // Upload PDB/PE if we have them
+      if (!symbol_file.empty()) {
+        UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                         missing_info.debug_file, missing_info.debug_identifier,
+                         symbol_file, kSymbolUploadTypePDB);
+        remove(symbol_file.c_str());
+      }
+      if (!pe_file.empty()) {
+        UploadSymbolFile(options.upload_symbols_url, options.api_key,
+                         missing_info.code_file, missing_info.debug_identifier,
+                         pe_file, kSymbolUploadTypePE);
+        remove(pe_file.c_str());
+      }
 
       // Note: this does leave some directories behind that could be
       // cleaned up.  The directories inside options.local_cache_path for
