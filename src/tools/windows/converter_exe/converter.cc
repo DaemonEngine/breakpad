@@ -303,9 +303,7 @@ static bool SafeToMakeExternalRequest(const MissingSymbolInfo& missing_info,
 
 // Converter options derived from command line parameters.
 struct ConverterOptions {
-  ConverterOptions()
-      : report_fetch_failures(true) {
-  }
+  ConverterOptions() : report_fetch_failures(true), trace_symsrv(false) {}
 
   ~ConverterOptions() {
   }
@@ -351,6 +349,9 @@ struct ConverterOptions {
   // Regex used to blacklist files to prevent external symbol requests.
   // Owned and cleaned up by this struct.
   std::regex blacklist_regex;
+
+  // If set then SymSrv callbacks are logged to stderr.
+  bool trace_symsrv;
 
  private:
   // DISABLE_COPY_AND_ASSIGN
@@ -416,7 +417,8 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
     FprintfFlush(stderr, "Making internal request for %s (%s)\n",
                    missing_info.debug_file.c_str(),
                    missing_info.debug_identifier.c_str());
-    MSSymbolServerConverter converter(options.local_cache_path, msss_servers);
+    MSSymbolServerConverter converter(options.local_cache_path, msss_servers,
+                                      options.trace_symsrv);
     located = converter.LocateAndConvertSymbolFile(
         missing_info,
         /*keep_symbol_file=*/true,
@@ -470,6 +472,16 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
         // a record.
         break;
 
+      case MSSymbolServerConverter::LOCATE_HTTP_HTTPS_REDIR:
+        FprintfFlush(
+            stderr,
+            "LocateResult = LOCATE_HTTP_HTTPS_REDIR\n"
+            "One of the specified URLs is using HTTP, which causes a redirect "
+            "from the server to HTTPS, which causes the SymSrv lookup to "
+            "fail.\n"
+            "This URL must be replaced with the correct HTTPS URL.\n");
+        break;
+
       case MSSymbolServerConverter::LOCATE_FAILURE:
         FprintfFlush(stderr, "LocateResult = LOCATE_FAILURE\n");
         // LocateAndConvertSymbolFile printed an error message.
@@ -503,8 +515,8 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
       FprintfFlush(stderr, "Making external request for %s (%s)\n",
                    missing_info.debug_file.c_str(),
                    missing_info.debug_identifier.c_str());
-      MSSymbolServerConverter external_converter(options.local_cache_path,
-                                                 msss_servers);
+      MSSymbolServerConverter external_converter(
+          options.local_cache_path, msss_servers, options.trace_symsrv);
       located = external_converter.LocateAndConvertSymbolFile(
           missing_info,
           /*keep_symbol_file=*/true,
@@ -575,6 +587,15 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
                    missing_info.debug_file.c_str(),
                    missing_info.debug_identifier.c_str(),
                    missing_info.version.c_str());
+      break;
+
+    case MSSymbolServerConverter::LOCATE_HTTP_HTTPS_REDIR:
+      FprintfFlush(
+          stderr,
+          "LocateResult = LOCATE_HTTP_HTTPS_REDIR\n"
+          "One of the specified URLs is using HTTP, which causes a redirect "
+          "from the server to HTTPS, which causes the SymSrv lookup to fail.\n"
+          "This URL must be replaced with the correct HTTPS URL.\n");
       break;
 
     case MSSymbolServerConverter::LOCATE_FAILURE:
@@ -708,6 +729,8 @@ static int usage(const char* program_name) {
       "    -t  <fetch_failure_url>    URL to report symbol fetch failure\n"
       "    -b  <regex>                Regex used to blacklist files to\n"
       "                               prevent external symbol requests\n"
+      "    -tss                       If set then SymSrv callbacks will be\n"
+      "                               traced to stderr.\n"
       " Note that any server specified by -f or -n that starts with \\filer\n"
       " will be treated as internal, and all others as external.\n",
       program_name);
@@ -794,6 +817,9 @@ int main(int argc, char** argv) {
       printf("Getting the list of missing symbols from a file.  Fetch failures"
              " will not be reported.\n");
       options.report_fetch_failures = false;
+    } else if (option == "-tss") {
+      printf("Tracing SymSrv callbacks to stderr.\n");
+      options.trace_symsrv = true;
     } else if (option == "-t") {
       if (!WindowsStringUtils::safe_mbstowcs(
           value,
