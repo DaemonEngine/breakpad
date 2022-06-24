@@ -65,6 +65,10 @@ class CrashGenerator {
   // Returns the directory of a copy of proc files of the child process.
   string GetDirectoryOfProcFilesCopy() const;
 
+  // Returns whether current resource limits would prevent `CreateChildCrash`
+  // from operating.
+  bool HasResourceLimitsAmenableToCrashCollection() const;
+
   // Creates a crash (and a core dump file) by creating a child process with
   // |num_threads| threads, and the terminating the child process by sending
   // a signal with number |crash_signal| to the |crash_thread|-th thread.

@@ -169,6 +169,15 @@ bool CrashGenerator::SetCoreFileSizeLimit(rlim_t limit) const {
   return true;
 }
 
+bool CrashGenerator::HasResourceLimitsAmenableToCrashCollection() const {
+  struct rlimit limits;
+  if (getrlimit(RLIMIT_CORE, &limits) == -1) {
+    perror("CrashGenerator: Failed to get core file size limit");
+    return false;
+  }
+  return limits.rlim_max >= kCoreSizeLimit;
+}
+
 bool CrashGenerator::CreateChildCrash(
     unsigned num_threads, unsigned crash_thread, int crash_signal,
     pid_t* child_pid) {
