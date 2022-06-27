@@ -1626,8 +1626,6 @@ TEST_F(Specifications, UnhandledInterCU) {
 
 TEST_F(Specifications, BadOffset) {
   PushLine(0xa0277efd7ce83771ULL, 0x149554a184c730c1ULL, "line-file", 56636272);
-  EXPECT_CALL(reporter_, UnknownSpecification(_, 0x2be953efa6f9a996ULL))
-    .WillOnce(Return());
 
   StartCU();
   DeclarationDIE(&root_handler_, 0xefd7f7752c27b7e4ULL,
