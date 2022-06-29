@@ -53,21 +53,12 @@ dnl This must come before all the feature tests below.
 AC_ARG_ENABLE(m32,
               AS_HELP_STRING([--enable-m32],
                              [Compile/build with -m32]
-                             [(default is no)]),
-              [case "${enableval}" in
-                 yes)
-                   CFLAGS="${CFLAGS} -m32"
-                   CXXFLAGS="${CXXFLAGS} -m32"
-                   usem32=true
-                   ;;
-                 no)
-                   usem32=false
-                   ;;
-                 *)
-                   AC_MSG_ERROR(bad value ${enableval} for --enable-m32)
-                   ;;
-               esac],
-              [usem32=false])
+                             [(default is no)]),,
+              [enable_m32=no])
+if test "x$enable_m32" = xyes; then
+  CFLAGS="${CFLAGS} -m32"
+  CXXFLAGS="${CXXFLAGS} -m32"
+fi
 
 AC_HEADER_STDC
 AC_SYS_LARGEFILE
@@ -134,66 +125,33 @@ AM_CONDITIONAL(X86_HOST, test x$X86_HOST = xtrue)
 AC_ARG_ENABLE(processor,
               AS_HELP_STRING([--disable-processor],
                              [Don't build processor library]
-                             [(default is no)]),
-              [case "${enableval}" in
-                 yes)
-                   disable_processor=false
-                   ;;
-                 no)
-                   disable_processor=true
-                   ;;
-                 *)
-                   AC_MSG_ERROR(bad value ${enableval} for --disable-processor)
-                   ;;
-               esac],
-              [disable_processor=false])
-AM_CONDITIONAL(DISABLE_PROCESSOR, test x$disable_processor = xtrue)
+                             [(default is no)]),,
+              [enable_processor=yes])
+AM_CONDITIONAL(DISABLE_PROCESSOR, test "x$enable_processor" != xyes)
 
 AC_ARG_ENABLE(tools,
               AS_HELP_STRING([--disable-tools],
                              [Don't build tool binaries]
-                             [(default is no)]),
-              [case "${enableval}" in
-                 yes)
-                   disable_tools=false
-                   ;;
-                 no)
-                   disable_tools=true
-                   ;;
-                 *)
-                   AC_MSG_ERROR(bad value ${enableval} for --disable-tools)
-                   ;;
-               esac],
-              [disable_tools=false])
-AM_CONDITIONAL(DISABLE_TOOLS, test x$disable_tools = xtrue)
+                             [(default is no)]),,
+              [enable_tools=yes])
+AM_CONDITIONAL(DISABLE_TOOLS, test "x$enable_tools" != xyes)
 
-if test x$LINUX_HOST = xfalse -a x$disable_processor = xtrue -a x$disable_tools = xtrue; then
-   AC_MSG_ERROR([--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!])
+if test x$LINUX_HOST = xfalse -a "x$enable_processor" != xyes -a "x$enable_tools" != xyes; then
+  AC_MSG_ERROR([--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!])
 fi
 
 AC_ARG_ENABLE(system-test-libs,
               AS_HELP_STRING([--enable-system-test-libs],
                              [Use gtest/gmock/etc... from the system instead ]
-                             [of the local copies (default is local)]),
-              [case "${enableval}" in
-                 yes)
-                   system_test_libs=true
-                   ;;
-                 no)
-                   system_test_libs=false
-                   ;;
-                 *)
-                   AC_MSG_ERROR(bad value ${enableval} for --enable-system-test-libs)
-                   ;;
-               esac],
-              [system_test_libs=false])
-AM_CONDITIONAL(SYSTEM_TEST_LIBS, test x$system_test_libs = xtrue)
+                             [of the local copies (default is local)]),,
+              [enable_system_test_libs=no])
+AM_CONDITIONAL(SYSTEM_TEST_LIBS, test "x$enable_system_test_libs" = xyes)
 
 AC_ARG_VAR([GMOCK_CFLAGS], [Compiler flags for gmock])
 AC_ARG_VAR([GMOCK_LIBS], [Linker flags for gmock])
 AC_ARG_VAR([GTEST_CFLAGS], [Compiler flags for gtest])
 AC_ARG_VAR([GTEST_LIBS], [Linker flags for gtest])
-if test x$system_test_libs = xtrue; then
+if test "x$enable_system_test_libs" = xyes; then
   : "${GMOCK_CFLAGS:=-pthread}"
   : "${GMOCK_LIBS:=-lgmock -lgtest -pthread -lpthread}"
   : "${GTEST_CFLAGS:=-pthread}"
@@ -204,43 +162,24 @@ AC_ARG_ENABLE(selftest,
               AS_HELP_STRING([--enable-selftest],
                              [Run extra tests with "make check" ]
                              [(may conflict with optimizations) ]
-                             [(default is no)]),
-              [case "${enableval}" in
-                 yes)
-                   selftest=true
-                   ;;
-                 no)
-                   selftest=false
-                   ;;
-                 *)
-                   AC_MSG_ERROR(bad value ${enableval} for --enable-selftest)
-                   ;;
-               esac],
-              [selftest=false])
-AM_CONDITIONAL(SELFTEST, test x$selftest = xtrue)
+                             [(default is no)]),,
+              [enable_selftest=no])
+AM_CONDITIONAL(SELFTEST, test "x$enable_selftest" = xyes)
 
 AC_ARG_WITH(rustc-demangle,
             AS_HELP_STRING([--with-rustc-demangle=/path/to/rustc-demangle],
                              [Link against the rustc-demangle library]
                              [to demangle Rust language symbols during]
                              [symbol dumping (default is no)]
-                             [Pass the path to the crate root.]),
-            [case "${withval}" in
-               yes)
-                 AC_MSG_ERROR(You must pass the path to the rustc-demangle crate for --with-rustc-demangle)
-                 ;;
-               no)
-                 rustc_demangle=false
-                 ;;
-               *)
-                 if ! test -f "${withval}/Cargo.toml"; then
-                   AC_MSG_ERROR(You must pass the path to the rustc-demangle crate for --with-rustc-demangle)
-                 fi
-                 RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${withval}/crates/capi/include"
-                 RUSTC_DEMANGLE_LIBS="-L${withval}/target/release -lrustc_demangle -lpthread -ldl"
-                 ;;
-             esac],
-            [rustc_demangle=false])
+                             [Pass the path to the crate root.]),,
+            [with_rustc_demangle=no])
+if test "x${with_rustc_demangle}" != xno; then
+  if ! test -f "${with_rustc_demangle}/Cargo.toml"; then
+    AC_MSG_ERROR(You must pass the path to the rustc-demangle crate for --with-rustc-demangle)
+  fi
+  RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${with_rustc_demangle}/crates/capi/include"
+  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release -lrustc_demangle -lpthread -ldl"
+fi
 AC_ARG_VAR([RUSTC_DEMANGLE_CFLAGS], [Compiler flags for rustc-demangle])
 AC_ARG_VAR([RUSTC_DEMANGLE_LIBS], [Linker flags for rustc-demangle])
 
@@ -248,20 +187,9 @@ AC_ARG_WITH(tests-as-root,
             AS_HELP_STRING([--with-tests-as-root],
                            [Run the tests as root. Use this on platforms]
                            [like travis-ci.org that require root privileges]
-                           [to use ptrace (default is no)]),
-            [case "${withval}" in
-               yes)
-                 tests_as_root=true
-                 ;;
-               no)
-                 tests_as_root=false
-                 ;;
-               *)
-                 AC_MSG_ERROR(--with-tests-as-root can only be "yes" or "no")
-                 ;;
-             esac],
-            [tests_as_root=false])
-AM_CONDITIONAL(TESTS_AS_ROOT, test x$tests_as_root = xtrue)
+                           [to use ptrace (default is no)]),,
+            [with_tests_as_root=no])
+AM_CONDITIONAL(TESTS_AS_ROOT, test "x$with_tests_as_root" = xyes)
 
 AC_CONFIG_FILES(m4_flatten([
   breakpad.pc

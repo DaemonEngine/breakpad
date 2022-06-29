@@ -5832,23 +5832,15 @@ fi
 
 # Check whether --enable-m32 was given.
 if test "${enable_m32+set}" = set; then :
-  enableval=$enable_m32; case "${enableval}" in
-                 yes)
-                   CFLAGS="${CFLAGS} -m32"
-                   CXXFLAGS="${CXXFLAGS} -m32"
-                   usem32=true
-                   ;;
-                 no)
-                   usem32=false
-                   ;;
-                 *)
-                   as_fn_error $? "bad value ${enableval} for --enable-m32" "$LINENO" 5
-                   ;;
-               esac
+  enableval=$enable_m32;
 else
-  usem32=false
+  enable_m32=no
 fi
 
+if test "x$enable_m32" = xyes; then
+  CFLAGS="${CFLAGS} -m32"
+  CXXFLAGS="${CXXFLAGS} -m32"
+fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
@@ -7584,22 +7576,12 @@ fi
 
 # Check whether --enable-processor was given.
 if test "${enable_processor+set}" = set; then :
-  enableval=$enable_processor; case "${enableval}" in
-                 yes)
-                   disable_processor=false
-                   ;;
-                 no)
-                   disable_processor=true
-                   ;;
-                 *)
-                   as_fn_error $? "bad value ${enableval} for --disable-processor" "$LINENO" 5
-                   ;;
-               esac
+  enableval=$enable_processor;
 else
-  disable_processor=false
+  enable_processor=yes
 fi
 
- if test x$disable_processor = xtrue; then
+ if test "x$enable_processor" != xyes; then
   DISABLE_PROCESSOR_TRUE=
   DISABLE_PROCESSOR_FALSE='#'
 else
@@ -7610,22 +7592,12 @@ fi
 
 # Check whether --enable-tools was given.
 if test "${enable_tools+set}" = set; then :
-  enableval=$enable_tools; case "${enableval}" in
-                 yes)
-                   disable_tools=false
-                   ;;
-                 no)
-                   disable_tools=true
-                   ;;
-                 *)
-                   as_fn_error $? "bad value ${enableval} for --disable-tools" "$LINENO" 5
-                   ;;
-               esac
+  enableval=$enable_tools;
 else
-  disable_tools=false
+  enable_tools=yes
 fi
 
- if test x$disable_tools = xtrue; then
+ if test "x$enable_tools" != xyes; then
   DISABLE_TOOLS_TRUE=
   DISABLE_TOOLS_FALSE='#'
 else
@@ -7634,28 +7606,18 @@ else
 fi
 
 
-if test x$LINUX_HOST = xfalse -a x$disable_processor = xtrue -a x$disable_tools = xtrue; then
-   as_fn_error $? "--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!" "$LINENO" 5
+if test x$LINUX_HOST = xfalse -a "x$enable_processor" != xyes -a "x$enable_tools" != xyes; then
+  as_fn_error $? "--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!" "$LINENO" 5
 fi
 
 # Check whether --enable-system-test-libs was given.
 if test "${enable_system_test_libs+set}" = set; then :
-  enableval=$enable_system_test_libs; case "${enableval}" in
-                 yes)
-                   system_test_libs=true
-                   ;;
-                 no)
-                   system_test_libs=false
-                   ;;
-                 *)
-                   as_fn_error $? "bad value ${enableval} for --enable-system-test-libs" "$LINENO" 5
-                   ;;
-               esac
+  enableval=$enable_system_test_libs;
 else
-  system_test_libs=false
+  enable_system_test_libs=no
 fi
 
- if test x$system_test_libs = xtrue; then
+ if test "x$enable_system_test_libs" = xyes; then
   SYSTEM_TEST_LIBS_TRUE=
   SYSTEM_TEST_LIBS_FALSE='#'
 else
@@ -7668,7 +7630,7 @@ fi
 
 
 
-if test x$system_test_libs = xtrue; then
+if test "x$enable_system_test_libs" = xyes; then
   : "${GMOCK_CFLAGS:=-pthread}"
   : "${GMOCK_LIBS:=-lgmock -lgtest -pthread -lpthread}"
   : "${GTEST_CFLAGS:=-pthread}"
@@ -7677,22 +7639,12 @@ fi
 
 # Check whether --enable-selftest was given.
 if test "${enable_selftest+set}" = set; then :
-  enableval=$enable_selftest; case "${enableval}" in
-                 yes)
-                   selftest=true
-                   ;;
-                 no)
-                   selftest=false
-                   ;;
-                 *)
-                   as_fn_error $? "bad value ${enableval} for --enable-selftest" "$LINENO" 5
-                   ;;
-               esac
+  enableval=$enable_selftest;
 else
-  selftest=false
+  enable_selftest=no
 fi
 
- if test x$selftest = xtrue; then
+ if test "x$enable_selftest" = xyes; then
   SELFTEST_TRUE=
   SELFTEST_FALSE='#'
 else
@@ -7704,47 +7656,30 @@ fi
 
 # Check whether --with-rustc-demangle was given.
 if test "${with_rustc_demangle+set}" = set; then :
-  withval=$with_rustc_demangle; case "${withval}" in
-               yes)
-                 as_fn_error $? "You must pass the path to the rustc-demangle crate for --with-rustc-demangle" "$LINENO" 5
-                 ;;
-               no)
-                 rustc_demangle=false
-                 ;;
-               *)
-                 if ! test -f "${withval}/Cargo.toml"; then
-                   as_fn_error $? "You must pass the path to the rustc-demangle crate for --with-rustc-demangle" "$LINENO" 5
-                 fi
-                 RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${withval}/crates/capi/include"
-                 RUSTC_DEMANGLE_LIBS="-L${withval}/target/release -lrustc_demangle -lpthread -ldl"
-                 ;;
-             esac
+  withval=$with_rustc_demangle;
 else
-  rustc_demangle=false
+  with_rustc_demangle=no
 fi
 
+if test "x${with_rustc_demangle}" != xno; then
+  if ! test -f "${with_rustc_demangle}/Cargo.toml"; then
+    as_fn_error $? "You must pass the path to the rustc-demangle crate for --with-rustc-demangle" "$LINENO" 5
+  fi
+  RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${with_rustc_demangle}/crates/capi/include"
+  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release -lrustc_demangle -lpthread -ldl"
+fi
 
 
 
 
 # Check whether --with-tests-as-root was given.
 if test "${with_tests_as_root+set}" = set; then :
-  withval=$with_tests_as_root; case "${withval}" in
-               yes)
-                 tests_as_root=true
-                 ;;
-               no)
-                 tests_as_root=false
-                 ;;
-               *)
-                 as_fn_error $? "--with-tests-as-root can only be \"yes\" or \"no\"" "$LINENO" 5
-                 ;;
-             esac
+  withval=$with_tests_as_root;
 else
-  tests_as_root=false
+  with_tests_as_root=no
 fi
 
- if test x$tests_as_root = xtrue; then
+ if test "x$with_tests_as_root" = xyes; then
   TESTS_AS_ROOT_TRUE=
   TESTS_AS_ROOT_FALSE='#'
 else
