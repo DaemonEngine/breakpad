@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-AC_PREREQ(2.64)
+AC_PREREQ(2.69)
 
 AC_INIT(breakpad, 0.1, google-breakpad-dev@googlegroups.com)
 dnl Sanity check: the argument is just a file that should exist.
@@ -37,7 +37,7 @@ AC_CONFIG_AUX_DIR(autotools)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(subdir-objects tar-ustar 1.11.1)
+AM_INIT_AUTOMAKE(subdir-objects tar-ustar 1.13)
 AM_CONFIG_HEADER(src/config.h)
 AM_MAINTAINER_MODE
 
