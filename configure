@@ -785,6 +785,7 @@ enable_tools
 enable_system_test_libs
 enable_selftest
 with_rustc_demangle
+enable_system_rustc_demangle
 with_tests_as_root
 '
       ac_precious_vars='build_alias
@@ -1454,6 +1455,12 @@ Optional Features:
                           the local copies (default is local)
   --enable-selftest       Run extra tests with "make check" (may conflict with
                           optimizations) (default is no)
+  --enable-system-rustc-demangle
+                          Link against the rustc-demangle library to demangle
+                          Rust language symbols during symbol dumping (default
+                          is no). This assumes that rustc-demangle is
+                          installed in your sysroot, and all headers from it
+                          are available in your standard include path
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -7661,13 +7668,97 @@ else
   with_rustc_demangle=no
 fi
 
+
+RUSTC_DEMANGLE_BASE_CFLAGS="-DHAVE_RUSTC_DEMANGLE"
+RUSTC_DEMANGLE_BASE_LIBS="-lrustc_demangle -lpthread -ldl"
+
 if test "x${with_rustc_demangle}" != xno; then
   if ! test -f "${with_rustc_demangle}/Cargo.toml"; then
     as_fn_error $? "You must pass the path to the rustc-demangle crate for --with-rustc-demangle" "$LINENO" 5
   fi
-  RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${with_rustc_demangle}/crates/capi/include"
-  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release -lrustc_demangle -lpthread -ldl"
+  RUSTC_DEMANGLE_CFLAGS="-I${with_rustc_demangle}/crates/capi/include ${RUSTC_DEMANGLE_BASE_CFLAGS}"
+  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release ${RUSTC_DEMANGLE_BASE_LIBS}"
 fi
+
+# Check whether --enable-system-rustc-demangle was given.
+if test "${enable_system_rustc_demangle+set}" = set; then :
+  enableval=$enable_system_rustc_demangle;
+else
+  enable_system_rustc_demangle=no
+fi
+
+
+if test "x${enable_system_rustc_demangle}" != xno; then
+  if test "x${with_rustc_demangle}" != xno; then
+    as_fn_error $? "--enable-system-rustc-demangle and --with-rustc-demangle are mutually exclusive." "$LINENO" 5
+  fi
+
+  RUSTC_DEMANGLE_CFLAGS="${RUSTC_DEMANGLE_BASE_CFLAGS}"
+  RUSTC_DEMANGLE_LIBS="${RUSTC_DEMANGLE_BASE_LIBS}"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rustc_demangle in -lrustc_demangle" >&5
+$as_echo_n "checking for rustc_demangle in -lrustc_demangle... " >&6; }
+if ${ac_cv_lib_rustc_demangle_rustc_demangle+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lrustc_demangle $RUSTC_DEMANGLE_LIBS $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char rustc_demangle ();
+int
+main ()
+{
+return rustc_demangle ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_rustc_demangle_rustc_demangle=yes
+else
+  ac_cv_lib_rustc_demangle_rustc_demangle=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rustc_demangle_rustc_demangle" >&5
+$as_echo "$ac_cv_lib_rustc_demangle_rustc_demangle" >&6; }
+if test "x$ac_cv_lib_rustc_demangle_rustc_demangle" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBRUSTC_DEMANGLE 1
+_ACEOF
+
+  LIBS="-lrustc_demangle $LIBS"
+
+else
+  as_fn_error $? "librustc_demangle.a must be present when --enable-system-rustc-demangle is specified" "$LINENO" 5
+fi
+
+  for ac_header in rustc_demangle.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "rustc_demangle.h" "ac_cv_header_rustc_demangle_h" "$ac_includes_default"
+if test "x$ac_cv_header_rustc_demangle_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_RUSTC_DEMANGLE_H 1
+_ACEOF
+
+else
+  as_fn_error $? "rustc_demangle.h must be present when --enable-system-rustc-demangle is specified" "$LINENO" 5
+fi
+
+done
+
+fi
+
 
 
 

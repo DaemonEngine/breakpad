@@ -173,13 +173,44 @@ AC_ARG_WITH(rustc-demangle,
                              [symbol dumping (default is no)]
                              [Pass the path to the crate root.]),,
             [with_rustc_demangle=no])
+
+RUSTC_DEMANGLE_BASE_CFLAGS="-DHAVE_RUSTC_DEMANGLE"
+RUSTC_DEMANGLE_BASE_LIBS="-lrustc_demangle -lpthread -ldl"
+
 if test "x${with_rustc_demangle}" != xno; then
   if ! test -f "${with_rustc_demangle}/Cargo.toml"; then
     AC_MSG_ERROR(You must pass the path to the rustc-demangle crate for --with-rustc-demangle)
   fi
-  RUSTC_DEMANGLE_CFLAGS="-DHAVE_RUSTC_DEMANGLE -I${with_rustc_demangle}/crates/capi/include"
-  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release -lrustc_demangle -lpthread -ldl"
+  RUSTC_DEMANGLE_CFLAGS="-I${with_rustc_demangle}/crates/capi/include ${RUSTC_DEMANGLE_BASE_CFLAGS}"
+  RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release ${RUSTC_DEMANGLE_BASE_LIBS}"
 fi
+
+AC_ARG_ENABLE(system-rustc-demangle,
+              AS_HELP_STRING([--enable-system-rustc-demangle],
+                             [Link against the rustc-demangle library]
+                             [to demangle Rust language symbols during]
+                             [symbol dumping (default is no). This assumes]
+                             [that rustc-demangle is installed in your sysroot,]
+                             [and all headers from it are available in your]
+                             [standard include path]
+                             ),,
+               [enable_system_rustc_demangle=no])
+
+if test "x${enable_system_rustc_demangle}" != xno; then
+  if test "x${with_rustc_demangle}" != xno; then
+    AC_MSG_ERROR([--enable-system-rustc-demangle and --with-rustc-demangle are mutually exclusive.])
+  fi
+
+  RUSTC_DEMANGLE_CFLAGS="${RUSTC_DEMANGLE_BASE_CFLAGS}"
+  RUSTC_DEMANGLE_LIBS="${RUSTC_DEMANGLE_BASE_LIBS}"
+
+  AC_CHECK_LIB([rustc_demangle], [rustc_demangle], [],
+               [AC_MSG_ERROR(librustc_demangle.a must be present when --enable-system-rustc-demangle is specified)],
+               [$RUSTC_DEMANGLE_LIBS])
+  AC_CHECK_HEADERS(rustc_demangle.h, [],
+                   [AC_MSG_ERROR(rustc_demangle.h must be present when --enable-system-rustc-demangle is specified)])
+fi
+
 AC_ARG_VAR([RUSTC_DEMANGLE_CFLAGS], [Compiler flags for rustc-demangle])
 AC_ARG_VAR([RUSTC_DEMANGLE_LIBS], [Linker flags for rustc-demangle])
 
