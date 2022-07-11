@@ -418,7 +418,10 @@ TEST(Construct, DuplicateFunctions) {
   Module::Function* function2 = generate_duplicate_function("_without_form");
 
   m.AddFunction(function1);
-  m.AddFunction(function2);
+  // If this succeeds, we'll have a double-free with the `delete` below. Avoid
+  // that.
+  ASSERT_FALSE(m.AddFunction(function2));
+  delete function2;
 
   m.Write(s, ALL_SYMBOL_DATA);
   string contents = s.str();
