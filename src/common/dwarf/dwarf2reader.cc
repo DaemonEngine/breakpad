@@ -2721,23 +2721,32 @@ bool CallFrameInfo::State::DoInstruction() {
     case DW_CFA_nop:
       break;
 
-    // A SPARC register window save: Registers 8 through 15 (%o0-%o7)
-    // are saved in registers 24 through 31 (%i0-%i7), and registers
-    // 16 through 31 (%l0-%l7 and %i0-%i7) are saved at CFA offsets
-    // (0-15 * the register size). The register numbers must be
-    // hard-coded. A GNU extension, and not a pretty one.
+    // case DW_CFA_AARCH64_negate_ra_state
     case DW_CFA_GNU_window_save: {
-      // Save %o0-%o7 in %i0-%i7.
-      for (int i = 8; i < 16; i++)
-        if (!DoRule(i, new RegisterRule(i + 16)))
-          return false;
-      // Save %l0-%l7 and %i0-%i7 at the CFA.
-      for (int i = 16; i < 32; i++)
-        // Assume that the byte reader's address size is the same as
-        // the architecture's register size. !@#%*^ hilarious.
-        if (!DoRule(i, new OffsetRule(Handler::kCFARegister,
-                                      (i - 16) * reader_->AddressSize())))
-          return false;
+      if (handler_->Architecture() == "arm64") {
+        // Indicates that the return address, x30 has been signed.
+        // Breakpad will speculatively remove pointer-authentication codes when
+        // interpreting return addresses, regardless of this bit.
+      } else if (handler_->Architecture() == "sparc" ||
+                 handler_->Architecture() == "sparcv9") {
+        // A SPARC register window save: Registers 8 through 15 (%o0-%o7)
+        // are saved in registers 24 through 31 (%i0-%i7), and registers
+        // 16 through 31 (%l0-%l7 and %i0-%i7) are saved at CFA offsets
+        // (0-15 * the register size). The register numbers must be
+        // hard-coded. A GNU extension, and not a pretty one.
+
+        // Save %o0-%o7 in %i0-%i7.
+        for (int i = 8; i < 16; i++)
+          if (!DoRule(i, new RegisterRule(i + 16)))
+            return false;
+        // Save %l0-%l7 and %i0-%i7 at the CFA.
+        for (int i = 16; i < 32; i++)
+          // Assume that the byte reader's address size is the same as
+          // the architecture's register size. !@#%*^ hilarious.
+          if (!DoRule(i, new OffsetRule(Handler::kCFARegister,
+                                        (i - 16) * reader_->AddressSize())))
+            return false;
+      }
       break;
     }
 
