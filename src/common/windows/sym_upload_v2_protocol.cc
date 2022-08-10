@@ -21,6 +21,7 @@ static bool SymUploadV2ProtocolSend(const wchar_t* api_url,
                                     const wstring& debug_id,
                                     const wstring& symbol_filename,
                                     const wstring& symbol_type,
+                                    const wstring& product_name,
                                     bool force) {
   wstring url(api_url);
   wstring key(api_key);
@@ -70,7 +71,8 @@ static bool SymUploadV2ProtocolSend(const wchar_t* api_url,
 
   CompleteUploadResult completeUploadResult =
       SymbolCollectorClient::CompleteUpload(url, key, timeout_ms, upload_key,
-                                            debug_file, debug_id, symbol_type);
+                                            debug_file, debug_id, symbol_type,
+                                            product_name);
   if (completeUploadResult == CompleteUploadResult::Error) {
     wprintf(L"Failed to complete upload.\n");
     return false;

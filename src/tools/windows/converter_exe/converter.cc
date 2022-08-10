@@ -69,6 +69,7 @@ const char* kNoExeMSSSServer = "http://msdl.microsoft.com/download/symbols/";
 const wchar_t* kSymbolUploadTypeBreakpad = L"BREAKPAD";
 const wchar_t* kSymbolUploadTypePE = L"PE";
 const wchar_t* kSymbolUploadTypePDB = L"PDB";
+const wchar_t* kConverterProductName = L"WinSymConv";
 
 // Windows stdio doesn't do line buffering.  Use this function to flush after
 // writing to stdout and stderr so that a log will be available if the
@@ -242,7 +243,7 @@ static bool UploadSymbolFile(const wstring& upload_symbol_url,
   FprintfFlush(stderr, "Uploading %s\n", symbol_file.c_str());
   if (!google_breakpad::SymUploadV2ProtocolSend(
           upload_symbol_url.c_str(), api_key.c_str(), &timeout_ms, debug_file_w,
-          debug_id_w, symbol_file_w, symbol_type,
+          debug_id_w, symbol_file_w, symbol_type, kConverterProductName,
           /*force=*/true)) {
     FprintfFlush(stderr,
                  "UploadSymbolFile: HTTPUpload::SendRequest failed "
@@ -647,7 +648,7 @@ static bool ReadFile(string file_name, string* contents) {
 static bool ConvertMissingSymbolsList(const ConverterOptions& options) {
   // Set param to indicate requesting for encoded response.
   map<wstring, wstring> parameters;
-  parameters[L"product"] = L"WinSymConv";
+  parameters[L"product"] = kConverterProductName;
   parameters[L"encoded"] = L"true";
   // Get the missing symbol list.
   string missing_symbol_list;

@@ -250,11 +250,12 @@ int wmain(int argc, wchar_t* argv[]) {
     if (argc >= currentarg + 2) {
       api_url = argv[currentarg++];
       api_key = argv[currentarg++];
+      wstring product_name = product ? wstring(product) : L"";
 
       success = google_breakpad::SymUploadV2ProtocolSend(
           api_url, api_key, timeout == -1 ? nullptr : &timeout,
           pdb_info.debug_file, pdb_info.debug_identifier, symbol_file,
-          kSymbolUploadTypeBreakpad, force);
+          kSymbolUploadTypeBreakpad, product_name, force);
     } else {
       printUsageAndExit();
     }
