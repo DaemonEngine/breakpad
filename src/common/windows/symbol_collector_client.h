@@ -75,7 +75,8 @@ namespace google_breakpad {
                                                const wstring& upload_key,
                                                const wstring& debug_file,
                                                const wstring& debug_id,
-                                               const wstring& type);
+                                               const wstring& type,
+                                               const wstring& product_name);
 
     // Returns whether or not a symbol file corresponding to the debug_file/
     // debug_id pair is already present in symbol storage.
