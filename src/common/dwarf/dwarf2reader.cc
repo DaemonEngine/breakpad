@@ -956,7 +956,8 @@ void CompilationUnit::ProcessDIEs() {
       if (!dieptr) {
         fprintf(stderr,
                 "An error happens when skipping a DIE's attributes at offset "
-                "%lx. Stopped processing following DIEs in this CU.\n",
+                "0x%" PRIx64
+                ". Stopped processing following DIEs in this CU.\n",
                 absolute_offset);
         exit(1);
       }
@@ -964,8 +965,8 @@ void CompilationUnit::ProcessDIEs() {
       dieptr = ProcessDIE(absolute_offset, dieptr, abbrev);
       if (!dieptr) {
         fprintf(stderr,
-                "An error happens when processing a DIE at offset %lx. Stopped "
-                "processing following DIEs in this CU.\n",
+                "An error happens when processing a DIE at offset 0x%" PRIx64
+                ". Stopped processing following DIEs in this CU.\n",
                 absolute_offset);
         exit(1);
       }
