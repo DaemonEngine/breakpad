@@ -138,7 +138,7 @@ class MicrodumpWriter {
                   const MicrodumpExtraInfo& microdump_extra_info,
                   LinuxDumper* dumper)
       : ucontext_(context ? &context->context : NULL),
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
         float_state_(context ? &context->float_state : NULL),
 #endif
         dumper_(dumper),
@@ -409,7 +409,7 @@ class MicrodumpWriter {
   void DumpCPUState() {
     RawContextCPU cpu;
     my_memset(&cpu, 0, sizeof(RawContextCPU));
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
     UContextReader::FillCPUContext(&cpu, ucontext_, float_state_);
 #else
     UContextReader::FillCPUContext(&cpu, ucontext_);
@@ -605,7 +605,7 @@ class MicrodumpWriter {
   void* Alloc(unsigned bytes) { return dumper_->allocator()->Alloc(bytes); }
 
   const ucontext_t* const ucontext_;
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
   const google_breakpad::fpstate_t* const float_state_;
 #endif
   LinuxDumper* dumper_;
