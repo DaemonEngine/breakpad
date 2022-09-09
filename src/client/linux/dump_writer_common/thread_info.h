@@ -67,7 +67,7 @@ struct ThreadInfo {
   // Use the structures defined in <sys/user.h>
   struct user_regs_struct regs;
   struct user_fpsimd_struct fpregs;
-#elif defined(__mips__)
+#elif defined(__mips__) || defined(__riscv)
   // Use the structure defined in <sys/ucontext.h>.
   mcontext_t mcontext;
 #endif

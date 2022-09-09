@@ -53,14 +53,16 @@ class DumpContext : public DumpObject {
 
   // Returns raw CPU-specific context data for the named CPU type.  If the
   // context data does not match the CPU type or does not exist, returns NULL.
-  const MDRawContextAMD64* GetContextAMD64() const;
-  const MDRawContextARM*   GetContextARM() const;
-  const MDRawContextARM64* GetContextARM64() const;
-  const MDRawContextMIPS*  GetContextMIPS() const;
-  const MDRawContextPPC*   GetContextPPC() const;
-  const MDRawContextPPC64* GetContextPPC64() const;
-  const MDRawContextSPARC* GetContextSPARC() const;
-  const MDRawContextX86*   GetContextX86() const;
+  const MDRawContextAMD64*   GetContextAMD64() const;
+  const MDRawContextARM*     GetContextARM() const;
+  const MDRawContextARM64*   GetContextARM64() const;
+  const MDRawContextMIPS*    GetContextMIPS() const;
+  const MDRawContextPPC*     GetContextPPC() const;
+  const MDRawContextPPC64*   GetContextPPC64() const;
+  const MDRawContextSPARC*   GetContextSPARC() const;
+  const MDRawContextX86*     GetContextX86() const;
+  const MDRawContextRISCV*   GetContextRISCV() const;
+  const MDRawContextRISCV64* GetContextRISCV64() const;
 
   // A convenience method to get the instruction pointer out of the
   // MDRawContext, since it varies per-CPU architecture.
@@ -86,6 +88,8 @@ class DumpContext : public DumpObject {
   void SetContextARM(MDRawContextARM* arm);
   void SetContextARM64(MDRawContextARM64* arm64);
   void SetContextMIPS(MDRawContextMIPS* ctx_mips);
+  void SetContextRISCV(MDRawContextRISCV* riscv);
+  void SetContextRISCV64(MDRawContextRISCV64* riscv64);
 
   // Free the CPU-specific context structure.
   void FreeContext();
@@ -93,17 +97,19 @@ class DumpContext : public DumpObject {
  private:
   // The CPU-specific context structure.
   union {
-    MDRawContextBase*  base;
-    MDRawContextX86*   x86;
-    MDRawContextPPC*   ppc;
-    MDRawContextPPC64* ppc64;
-    MDRawContextAMD64* amd64;
+    MDRawContextBase*    base;
+    MDRawContextX86*     x86;
+    MDRawContextPPC*     ppc;
+    MDRawContextPPC64*   ppc64;
+    MDRawContextAMD64*   amd64;
     // on Solaris SPARC, sparc is defined as a numeric constant,
     // so variables can NOT be named as sparc
-    MDRawContextSPARC* ctx_sparc;
-    MDRawContextARM*   arm;
-    MDRawContextARM64* arm64;
-    MDRawContextMIPS*  ctx_mips;
+    MDRawContextSPARC*   ctx_sparc;
+    MDRawContextARM*     arm;
+    MDRawContextARM64*   arm64;
+    MDRawContextMIPS*    ctx_mips;
+    MDRawContextRISCV*   riscv;
+    MDRawContextRISCV64* riscv64;
   } context_;
 
   // Store this separately because of the weirdo AMD64 context

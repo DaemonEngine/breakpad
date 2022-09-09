@@ -43,7 +43,7 @@
 #include "common/using_std_string.h"
 #include "google_breakpad/common/minidump_format.h"
 
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if !defined(__ARM_EABI__) && !defined(__mips__) && !defined(__riscv)
 // FP state is not part of user ABI for Linux ARM.
 // In case of MIPS and RISCV Linux FP state is already part of ucontext_t
 // so 'float_state' is not required.

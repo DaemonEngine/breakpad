@@ -43,6 +43,14 @@ typedef MDRawContextARM RawContextCPU;
 typedef MDRawContextARM64_Old RawContextCPU;
 #elif defined(__mips__)
 typedef MDRawContextMIPS RawContextCPU;
+#elif defined(__riscv)
+# if __riscv_xlen == 32
+typedef MDRawContextRISCV RawContextCPU;
+# elif __riscv_xlen == 64
+typedef MDRawContextRISCV64 RawContextCPU;
+# else
+#  error "Unexpected __riscv_xlen"
+# endif
 #else
 #error "This code has not been ported to your platform yet."
 #endif

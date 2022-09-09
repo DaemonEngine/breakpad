@@ -113,6 +113,25 @@ TEST(AndroidUContext, GRegsOffset) {
 
   ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPC_CSR),
             offsetof(ucontext_t,uc_mcontext.fpc_csr));
+#elif defined(__riscv)
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_GREGS_OFFSET),
+            offsetof(ucontext_t,uc_mcontext.__gregs[0]));
+
+#define CHECK_REG(x) \
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_##x##_OFFSET),         \
+            offsetof(ucontext_t,uc_mcontext.__gregs[REG_##x]))
+  CHECK_REG(PC)
+  CHECK_REG(RA)
+  CHECK_REG(SP)
+  CHECK_REG(S0)
+  CHECK_REG(S1)
+  CHECK_REG(S2)
+
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPREGS_OFFSET),
+            offsetof(ucontext_t,uc_mcontext.__fpregs));
+
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPC_CSR),
+            offsetof(ucontext_t,uc_mcontext.__fpregs.__fcsr));
 #elif defined(__x86_64__)
 
   COMPILE_ASSERT_EQ(static_cast<size_t>(MCONTEXT_GREGS_OFFSET),

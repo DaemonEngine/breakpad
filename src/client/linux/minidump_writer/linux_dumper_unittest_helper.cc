@@ -50,6 +50,8 @@
 #define TID_PTR_REGISTER "rcx"
 #elif defined(__mips__)
 #define TID_PTR_REGISTER "$1"
+#elif defined(__riscv)
+#define TID_PTR_REGISTER "x4"
 #else
 #error This test has not been ported to this platform.
 #endif

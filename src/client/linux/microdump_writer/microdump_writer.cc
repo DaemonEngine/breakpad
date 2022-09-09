@@ -335,9 +335,17 @@ class MicrodumpWriter {
     const char kArch[] = "mips64";
 # else
 #  error "This mips ABI is currently not supported (n32)"
-#endif
+# endif
+#elif defined(__riscv)
+# if __riscv_xlen == 32
+    const char kArch[] = "riscv32";
+# elif __riscv_xlen == 64
+    const char kArch[] = "riscv64";
+# else
+#  error "Unexpected __riscv_xlen"
+# endif
 #else
-#error "This code has not been ported to your platform yet"
+# error "This code has not been ported to your platform yet"
 #endif
 
     LogAppend("O ");

@@ -716,6 +716,9 @@ TEST(MinidumpWriterTest, InvalidStackPointer) {
 #elif defined(__mips__)
   context.context.uc_mcontext.gregs[MD_CONTEXT_MIPS_REG_SP] =
       invalid_stack_pointer;
+#elif defined(__riscv)
+  context.context.uc_mcontext.__gregs[MD_CONTEXT_RISCV_REG_SP] =
+      invalid_stack_pointer;
 #else
 # error "This code has not been ported to your platform yet."
 #endif
