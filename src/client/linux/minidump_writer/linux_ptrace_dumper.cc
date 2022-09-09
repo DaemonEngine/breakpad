@@ -297,8 +297,11 @@ bool LinuxPtraceDumper::GetThreadInfoByIndex(size_t index, ThreadInfo* info) {
 #elif defined(__mips__)
   stack_pointer =
       reinterpret_cast<uint8_t*>(info->mcontext.gregs[MD_CONTEXT_MIPS_REG_SP]);
+#elif defined(__riscv)
+  stack_pointer = reinterpret_cast<uint8_t*>(
+      info->mcontext.__gregs[MD_CONTEXT_RISCV_REG_SP]);
 #else
-#error "This code hasn't been ported to your platform yet."
+# error "This code hasn't been ported to your platform yet."
 #endif
   info->stack_pointer = reinterpret_cast<uintptr_t>(stack_pointer);
 
