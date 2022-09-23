@@ -506,6 +506,34 @@ TEST(Module, ConstructFunctionsWithSameAddress) {
                contents.c_str());
 }
 
+// If multiple fields are enabled, only one function is included per address.
+// The entry will be tagged with `m` to show that there are multiple symbols
+// at that address.
+// TODO(lgrey): Remove the non-multiple versions of these tests and remove the
+// suffixes from the suffxed ones when removing `enable_multiple_field_`.
+TEST(Module, ConstructFunctionsWithSameAddressMultiple) {
+  stringstream s;
+  Module m(MODULE_NAME, MODULE_OS, MODULE_ARCH, MODULE_ID, "", true);
+
+  // Two functions.
+  Module::Function* function1 = generate_duplicate_function("_without_form");
+  Module::Function* function2 = generate_duplicate_function("_and_void");
+
+  m.AddFunction(function1);
+  // If this succeeds, we'll have a double-free with the `delete` below. Avoid
+  // that.
+  ASSERT_FALSE(m.AddFunction(function2));
+  delete function2;
+
+  m.Write(s, ALL_SYMBOL_DATA);
+  string contents = s.str();
+  EXPECT_STREQ(
+      "MODULE os-name architecture id-string name with spaces\n"
+      "FUNC m d35402aac7a7ad5c 200b26e605f99071 f14ac4fed48c4a99"
+      " _without_form\n",
+      contents.c_str());
+}
+
 // Externs should be written out as PUBLIC records, sorted by
 // address.
 TEST(Module, ConstructExterns) {
@@ -554,6 +582,29 @@ TEST(Module, ConstructDuplicateExterns) {
                "PUBLIC ffff 0 _xyz\n",
                contents.c_str());
 }
+// Externs with the same address  have the `m` tag if the multiple field are
+// enabled.
+TEST(Module, ConstructDuplicateExternsMultiple) {
+  stringstream s;
+  Module m(MODULE_NAME, MODULE_OS, MODULE_ARCH, MODULE_ID, "", true);
+
+  // Two externs.
+  Module::Extern* extern1 = new Module::Extern(0xffff);
+  extern1->name = "_xyz";
+  Module::Extern* extern2 = new Module::Extern(0xffff);
+  extern2->name = "_abc";
+
+  m.AddExtern(extern1);
+  m.AddExtern(extern2);
+
+  m.Write(s, ALL_SYMBOL_DATA);
+  string contents = s.str();
+
+  EXPECT_STREQ("MODULE " MODULE_OS " " MODULE_ARCH " " MODULE_ID " " MODULE_NAME
+               "\n"
+               "PUBLIC m ffff 0 _xyz\n",
+               contents.c_str());
+}
 
 // If there exists an extern and a function at the same address, only write
 // out the FUNC entry.
@@ -582,6 +633,37 @@ TEST(Module, ConstructFunctionsAndExternsWithSameAddress) {
   EXPECT_STREQ("MODULE " MODULE_OS " " MODULE_ARCH " "
                MODULE_ID " " MODULE_NAME "\n"
                "FUNC fff0 10 0 _xyz\n"
+               "PUBLIC abc0 0 abc\n",
+               contents.c_str());
+}
+
+// If there exists an extern and a function at the same address, only write
+// out the FUNC entry, and mark it with `m` if the multiple field is enabled.
+TEST(Module, ConstructFunctionsAndExternsWithSameAddressMultiple) {
+  stringstream s;
+  Module m(MODULE_NAME, MODULE_OS, MODULE_ARCH, MODULE_ID, "", true);
+
+  // Two externs.
+  Module::Extern* extern1 = new Module::Extern(0xabc0);
+  extern1->name = "abc";
+  Module::Extern* extern2 = new Module::Extern(0xfff0);
+  extern2->name = "xyz";
+
+  m.AddExtern(extern1);
+  m.AddExtern(extern2);
+
+  Module::Function* function = new Module::Function("_xyz", 0xfff0);
+  Module::Range range(0xfff0, 0x10);
+  function->ranges.push_back(range);
+  function->parameter_size = 0;
+  m.AddFunction(function);
+
+  m.Write(s, ALL_SYMBOL_DATA);
+  string contents = s.str();
+
+  EXPECT_STREQ("MODULE " MODULE_OS " " MODULE_ARCH " " MODULE_ID " " MODULE_NAME
+               "\n"
+               "FUNC m fff0 10 0 _xyz\n"
                "PUBLIC abc0 0 abc\n",
                contents.c_str());
 }
