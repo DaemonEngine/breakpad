@@ -96,15 +96,19 @@ void Module::InlineOriginMap::SetReference(uint64_t offset,
   references_[offset] = specification_offset;
 }
 
-Module::Module(const string& name, const string& os,
-               const string& architecture, const string& id,
-               const string& code_id /* = "" */) :
-    name_(name),
-    os_(os),
-    architecture_(architecture),
-    id_(id),
-    code_id_(code_id),
-    load_address_(0) { }
+Module::Module(const string& name,
+               const string& os,
+               const string& architecture,
+               const string& id,
+               const string& code_id /* = "" */,
+               bool enable_multiple_field /* = false*/)
+    : name_(name),
+      os_(os),
+      architecture_(architecture),
+      id_(id),
+      code_id_(code_id),
+      load_address_(0),
+      enable_multiple_field_(enable_multiple_field) {}
 
 Module::~Module() {
   for (FileByNameMap::iterator it = files_.begin(); it != files_.end(); ++it)
@@ -150,6 +154,12 @@ bool Module::AddFunction(Function* function) {
     it_ext = externs_.find(&arm_thumb_ext);
   }
   if (it_ext != externs_.end()) {
+    if (enable_multiple_field_) {
+      Extern* found_ext = *it_ext;
+      // If the PUBLIC is for the same symbol as the FUNC, don't mark multiple.
+      function->is_multiple |=
+          found_ext->name != function->name || found_ext->is_multiple;
+    }
     delete *it_ext;
     externs_.erase(it_ext);
   }
@@ -164,12 +174,26 @@ bool Module::AddFunction(Function* function) {
     }
   }
 #endif
-
-  std::pair<FunctionSet::iterator,bool> ret = functions_.insert(function);
-  if (!ret.second && (*ret.first != function)) {
-    // Free the duplicate that was not inserted because this Module
-    // now owns it.
-    return false;
+  if (enable_multiple_field_) {
+    FunctionSet::iterator existing_function = std::find_if(
+        functions_.begin(), functions_.end(),
+        [&](Function* other) { return other->address == function->address; });
+    if (existing_function != functions_.end()) {
+      (*existing_function)->is_multiple = true;
+      // Free the duplicate that was not inserted because this Module
+      // now owns it.
+      return false;
+    }
+    std::pair<FunctionSet::iterator, bool> ret = functions_.insert(function);
+    // We just checked!
+    assert(ret.second);
+  } else {
+    std::pair<FunctionSet::iterator, bool> ret = functions_.insert(function);
+    if (!ret.second && (*ret.first != function)) {
+      // Free the duplicate that was not inserted because this Module
+      // now owns it.
+      return false;
+    }
   }
   return true;
 }
@@ -188,7 +212,8 @@ void Module::AddExtern(Extern* ext) {
   }
 
   std::pair<ExternSet::iterator,bool> ret = externs_.insert(ext);
-  if (!ret.second) {
+  if (!ret.second && enable_multiple_field_) {
+    (*ret.first)->is_multiple = true;
     // Free the duplicate that was not inserted because this Module
     // now owns it.
     delete ext;
@@ -378,11 +403,10 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
       vector<Line>::iterator line_it = func->lines.begin();
       for (auto range_it = func->ranges.cbegin();
            range_it != func->ranges.cend(); ++range_it) {
-        stream << "FUNC " << hex
-               << (range_it->address - load_address_) << " "
-               << range_it->size << " "
-               << func->parameter_size << " "
-               << func->name << dec << "\n";
+        stream << "FUNC " << (func->is_multiple ? "m " : "") << hex
+               << (range_it->address - load_address_) << " " << range_it->size
+               << " " << func->parameter_size << " " << func->name << dec
+               << "\n";
 
         if (!stream.good())
           return ReportError();
@@ -422,9 +446,9 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
     for (ExternSet::const_iterator extern_it = externs_.begin();
          extern_it != externs_.end(); ++extern_it) {
       Extern* ext = *extern_it;
-      stream << "PUBLIC " << hex
-             << (ext->address - load_address_) << " 0 "
-             << ext->name << dec << "\n";
+      stream << "PUBLIC " << (ext->is_multiple ? "m " : "") << hex
+             << (ext->address - load_address_) << " 0 " << ext->name << dec
+             << "\n";
     }
   }
 
