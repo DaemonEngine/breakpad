@@ -799,6 +799,25 @@ TEST_F(MinidumpProcessorTest, TestFastFailException) {
   ASSERT_EQ(state.crash_reason(), "FAST_FAIL_FATAL_APP_EXIT");
 }
 
+#ifdef __linux__
+TEST_F(MinidumpProcessorTest, TestNonCanonicalAddress) {
+  // This tests if we can correctly fixup non-canonical address GPF fault
+  // addresses.
+  // Dump is captured from a toy executable and is readable by windbg.
+  MinidumpProcessor processor(nullptr, nullptr /*&supplier, &resolver*/);
+  processor.set_enable_objdump(true);
+
+  string minidump_file = GetTestDataPath()
+                         + "write_av_non_canonical.dmp";
+
+  ProcessState state;
+  ASSERT_EQ(processor.Process(minidump_file, &state),
+            google_breakpad::PROCESS_OK);
+  ASSERT_TRUE(state.crashed());
+  ASSERT_EQ(state.crash_address(), 0xfefefefefefefefeU);
+}
+#endif // __linux__
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
