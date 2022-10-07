@@ -237,6 +237,8 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/contained_range_map.h \
 	src/processor/convert_old_arm64_context.cc \
 	src/processor/convert_old_arm64_context.h \
+	src/processor/disassembler_objdump.h \
+	src/processor/disassembler_objdump.cc \
 	src/processor/disassembler_x86.h \
 	src/processor/disassembler_x86.cc \
 	src/processor/dump_context.cc \
@@ -390,6 +392,7 @@ check_PROGRAMS += \
 	src/processor/basic_source_line_resolver_unittest \
 	src/processor/cfi_frame_info_unittest \
 	src/processor/contained_range_map_unittest \
+	src/processor/disassembler_objdump_unittest \
 	src/processor/disassembler_x86_unittest \
 	src/processor/exploitability_unittest \
 	src/processor/fast_source_line_resolver_unittest \
@@ -873,6 +876,7 @@ src_processor_exploitability_unittest_LDADD = \
 	src/processor/convert_old_arm64_context.o \
 	src/processor/minidump_processor.o \
 	src/processor/process_state.o \
+	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/exploitability.o \
 	src/processor/exploitability_linux.o \
@@ -906,6 +910,19 @@ src_processor_exploitability_unittest_LDADD = \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o \
 	src/third_party/libdisasm/libdisasm.a \
+	$(TEST_LIBS) \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+
+src_processor_disassembler_objdump_unittest_SOURCES = \
+	src/processor/disassembler_objdump_unittest.cc
+src_processor_disassembler_objdump_unittest_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+src_processor_disassembler_objdump_unittest_LDADD = \
+	src/processor/disassembler_objdump.o \
+	src/processor/dump_context.o \
+	src/processor/dump_object.o \
+	src/processor/logging.o \
+	src/processor/pathname_stripper.o \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
@@ -992,6 +1009,7 @@ src_processor_minidump_processor_unittest_LDADD = \
 	src/processor/call_stack.o \
 	src/processor/cfi_frame_info.o \
 	src/processor/convert_old_arm64_context.o \
+	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
@@ -1141,6 +1159,7 @@ src_processor_stackwalker_selftest_LDADD = \
 	src/processor/basic_code_modules.o \
 	src/processor/basic_source_line_resolver.o \
 	src/processor/call_stack.o \
+	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/exploitability.o \
 	src/processor/exploitability_linux.o \
@@ -1366,6 +1385,7 @@ src_processor_minidump_stackwalk_LDADD = \
 	src/processor/call_stack.o \
 	src/processor/cfi_frame_info.o \
 	src/processor/convert_old_arm64_context.o \
+	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
