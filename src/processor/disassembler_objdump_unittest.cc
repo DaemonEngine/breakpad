@@ -147,7 +147,7 @@ class TestDumpContext : public DumpContext {
 TestDumpContext::TestDumpContext(bool x86_64) {
   if (!x86_64) {
     MDRawContextX86* raw_context = new MDRawContextX86();
-    memset(raw_context, 0, sizeof(raw_context));
+    memset(raw_context, 0, sizeof(*raw_context));
 
     raw_context->context_flags = MD_CONTEXT_X86_FULL;
 
@@ -170,7 +170,7 @@ TestDumpContext::TestDumpContext(bool x86_64) {
     this->valid_ = true;
   } else {
     MDRawContextAMD64* raw_context = new MDRawContextAMD64();
-    memset(raw_context, 0, sizeof(raw_context));
+    memset(raw_context, 0, sizeof(*raw_context));
 
     raw_context->context_flags = MD_CONTEXT_AMD64_FULL;
 
