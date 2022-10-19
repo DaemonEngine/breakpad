@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <sys/types.h>
 
+#include <cstdint>
 #include <string>
 
 #include "client/linux/handler/microdump_extra_info.h"
