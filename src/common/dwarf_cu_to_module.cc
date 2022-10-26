@@ -123,11 +123,21 @@ DwarfCUToModule::FileContext::FileContext(const string& filename,
 }
 
 DwarfCUToModule::FileContext::~FileContext() {
+  for (std::vector<uint8_t *>::iterator i = uncompressed_sections_.begin();
+        i != uncompressed_sections_.end(); ++i) {
+    delete[] *i;
+  }
 }
 
 void DwarfCUToModule::FileContext::AddSectionToSectionMap(
     const string& name, const uint8_t* contents, uint64_t length) {
   section_map_[name] = std::make_pair(contents, length);
+}
+
+void DwarfCUToModule::FileContext::AddManagedSectionToSectionMap(
+    const string& name, uint8_t* contents, uint64_t length) {
+  section_map_[name] = std::make_pair(contents, length);
+  uncompressed_sections_.push_back(contents);
 }
 
 void DwarfCUToModule::FileContext::ClearSectionMapForTest() {
