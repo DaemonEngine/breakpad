@@ -46,8 +46,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <zlib.h>
 
-#include <iostream>
 #include <set>
 #include <string>
 #include <utility>
@@ -282,6 +282,55 @@ class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
 };
 
 template<typename ElfClass>
+bool IsCompressedHeader(const typename ElfClass::Shdr* section) {
+  return (section->sh_flags & SHF_COMPRESSED) != 0;
+}
+
+template<typename ElfClass>
+uint32_t GetCompressionHeader(
+    typename ElfClass::Chdr& compression_header,
+    const uint8_t* content, uint64_t size) {
+  const typename ElfClass::Chdr* header =
+      reinterpret_cast<const typename ElfClass::Chdr *>(content);
+
+  if (size < sizeof (*header)) {
+    return 0;
+  }
+
+  compression_header = *header;
+  return sizeof (*header);
+}
+
+std::pair<uint8_t *, uint64_t> UncompressSectionContents(
+    const uint8_t* compressed_buffer, uint64_t compressed_size, uint64_t uncompressed_size) {
+  z_stream stream;
+  memset(&stream, 0, sizeof stream);
+
+  stream.avail_in = compressed_size;
+  stream.avail_out = uncompressed_size;
+  stream.next_in = const_cast<uint8_t *>(compressed_buffer);
+
+  google_breakpad::scoped_array<uint8_t> uncompressed_buffer(
+    new uint8_t[uncompressed_size]);
+
+  int status = inflateInit(&stream);
+  while (stream.avail_in != 0 && status == Z_OK) {
+    stream.next_out =
+      uncompressed_buffer.get() + uncompressed_size - stream.avail_out;
+
+    if ((status = inflate(&stream, Z_FINISH)) != Z_STREAM_END) {
+      break;
+    }
+
+    status = inflateReset(&stream);
+  }
+
+  return inflateEnd(&stream) != Z_OK || status != Z_OK || stream.avail_out != 0
+    ? std::make_pair(nullptr, 0)
+    : std::make_pair(uncompressed_buffer.release(), uncompressed_size);
+}
+
+template<typename ElfClass>
 bool LoadDwarf(const string& dwarf_filename,
                const typename ElfClass::Ehdr* elf_header,
                const bool big_endian,
@@ -311,7 +360,31 @@ bool LoadDwarf(const string& dwarf_filename,
                   section->sh_name;
     const uint8_t* contents = GetOffset<ElfClass, uint8_t>(elf_header,
                                                            section->sh_offset);
-    file_context.AddSectionToSectionMap(name, contents, section->sh_size);
+    uint64_t size = section->sh_size;
+
+    if (!IsCompressedHeader<ElfClass>(section)) {
+      file_context.AddSectionToSectionMap(name, contents, size);
+      continue;
+    }
+
+    typename ElfClass::Chdr chdr;
+
+    uint32_t compression_header_size =
+      GetCompressionHeader<ElfClass>(chdr, contents, size);
+
+    if (compression_header_size == 0 || chdr.ch_size == 0) {
+      continue;
+    }
+
+    contents += compression_header_size;
+    size -= compression_header_size;
+
+    std::pair<uint8_t *, uint64_t> uncompressed =
+      UncompressSectionContents(contents, size, chdr.ch_size);
+
+    if (uncompressed.first != nullptr && uncompressed.second != 0) {
+      file_context.AddManagedSectionToSectionMap(name, uncompressed.first, uncompressed.second);
+    }
   }
 
   // .debug_ranges and .debug_rnglists reader

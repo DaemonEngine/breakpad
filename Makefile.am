@@ -636,7 +636,8 @@ src_tools_linux_dump_syms_dump_syms_SOURCES = \
 src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 	$(RUSTC_DEMANGLE_CFLAGS)
 src_tools_linux_dump_syms_dump_syms_LDADD = \
-	$(RUSTC_DEMANGLE_LIBS)
+	$(RUSTC_DEMANGLE_LIBS) \
+	-lz
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
@@ -773,7 +774,8 @@ src_common_dumper_unittest_CPPFLAGS = \
 src_common_dumper_unittest_LDADD = \
 	$(TEST_LIBS) \
 	$(RUSTC_DEMANGLE_LIBS) \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
+	-lz
 
 src_common_mac_macho_reader_unittest_SOURCES = \
 	src/common/dwarf_cfi_to_module.cc \
