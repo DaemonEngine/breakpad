@@ -40,7 +40,7 @@
 
 namespace google_breakpad {
 
-typedef struct {
+typedef struct Elf32_Chdr {
   typedef Elf32_Word Type;
   typedef Elf32_Word Size;
   typedef Elf32_Addr Addr;
@@ -56,7 +56,7 @@ typedef struct {
 
 static_assert(sizeof (Elf32_Chdr) == 12);
 
-typedef struct {
+typedef struct Elf64_Chdr {
   typedef Elf64_Word  Type;
   typedef Elf64_Xword Size;
   typedef Elf64_Addr  Addr;
