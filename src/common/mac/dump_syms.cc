@@ -678,18 +678,6 @@ bool DumpSymbols::ReadSymbolData(Module** out_module) {
   return true;
 }
 
-bool DumpSymbols::WriteSymbolFile(std::ostream& stream) {
-  Module* module = NULL;
-
-  if (ReadSymbolData(&module) && module) {
-    bool res = module->Write(stream, symbol_data_);
-    delete module;
-    return res;
-  }
-
-  return false;
-}
-
 // Read the selected object file's debugging information, and write out the
 // header only to |stream|. Return true on success; if an error occurs, report
 // it and return false.
