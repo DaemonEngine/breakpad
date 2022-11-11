@@ -507,12 +507,12 @@ DisassemblerObjdump::DisassemblerObjdump(const uint32_t cpu,
                                          uint64_t address) {}
 
 bool DisassemblerObjdump::CalculateSrcAddress(const DumpContext& context,
-                                              uint64_t* address) {
+                                              uint64_t& address) {
   return false;
 }
 
 bool DisassemblerObjdump::CalculateDestAddress(const DumpContext& context,
-                                               uint64_t* address) {
+                                               uint64_t& address) {
   return false;
 }
 }  // namespace google_breakpad
