@@ -174,26 +174,22 @@ bool Module::AddFunction(Function* function) {
     }
   }
 #endif
-  if (enable_multiple_field_) {
+  if (enable_multiple_field_ && function_addresses_.count(function->address)) {
     FunctionSet::iterator existing_function = std::find_if(
         functions_.begin(), functions_.end(),
         [&](Function* other) { return other->address == function->address; });
-    if (existing_function != functions_.end()) {
-      (*existing_function)->is_multiple = true;
-      // Free the duplicate that was not inserted because this Module
-      // now owns it.
-      return false;
-    }
-    std::pair<FunctionSet::iterator, bool> ret = functions_.insert(function);
-    // We just checked!
-    assert(ret.second);
-  } else {
-    std::pair<FunctionSet::iterator, bool> ret = functions_.insert(function);
-    if (!ret.second && (*ret.first != function)) {
-      // Free the duplicate that was not inserted because this Module
-      // now owns it.
-      return false;
-    }
+    assert(existing_function != functions_.end());
+    (*existing_function)->is_multiple = true;
+    // Free the duplicate that was not inserted because this Module
+    // now owns it.
+    return false;
+  }
+  function_addresses_.emplace(function->address);
+  std::pair<FunctionSet::iterator, bool> ret = functions_.insert(function);
+  if (!ret.second && (*ret.first != function)) {
+    // Free the duplicate that was not inserted because this Module
+    // now owns it.
+    return false;
   }
   return true;
 }
