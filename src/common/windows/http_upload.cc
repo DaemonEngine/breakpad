@@ -390,7 +390,6 @@ namespace {
     if (!contents.empty()) {
       request_body->append(&(contents[0]), contents.size());
     }
-    request_body->append("\r\n");
 
     return true;
   }
