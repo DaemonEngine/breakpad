@@ -71,7 +71,7 @@ config.h
 /Makefile
 stamp-h1
 
-# Ignore GYP generated Visual Studio artifacts.
+# Ignore generated Visual Studio artifacts.
 *.filters
 *.opendb
 *.opensdf
@@ -83,7 +83,7 @@ stamp-h1
 *.vcxproj
 *.vcxproj.user
 
-# Ignore GYP generated Makefiles
+# Ignore generated Makefiles
 src/Makefile
 *.Makefile
 *.target.mk
@@ -95,7 +95,6 @@ src/Makefile
 src/testing
 # src/third_party/lss
 src/third_party/protobuf
-src/tools/gyp
 
 # Ignore autotoools files
 *.Makefile
