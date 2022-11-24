@@ -43,11 +43,6 @@ deps = {
     "https://github.com/google/protobuf.git" +
       "@cb6dd4ef5f82e41e06179dcd57d3b1d9246ad6ac",
 
-  # GYP project generator.
-  "src/src/tools/gyp":
-    "https://chromium.googlesource.com/external/gyp/" +
-      "@324dd166b7c0b39d513026fa52d6280ac6d56770",
-
   # Linux syscall support.
   "src/src/third_party/lss":
     "https://chromium.googlesource.com/linux-syscall-support/" +
@@ -61,24 +56,3 @@ hooks = [
                "src/DEPS", "src/default.xml"],
   },
 ]
-
-hooks_os = {
-  'win': [
-    {
-      # TODO(chrisha): Fix the GYP files so that they work without
-      # --no-circular-check.
-      "pattern": ".",
-      "action": ["python",
-                 "src/src/tools/gyp/gyp_main.py",
-                 "--no-circular-check",
-                 "src/src/client/windows/breakpad_client.gyp"],
-    },
-    {
-      # XXX: this and above should all be wired into build/all.gyp ?
-      "action": ["python",
-                 "src/src/tools/gyp/gyp_main.py",
-                 "--no-circular-check",
-                 "src/src/tools/windows/tools_windows.gyp"],
-    },
-  ],
-}

@@ -3403,13 +3403,10 @@ EXTRA_DIST = \
 	src/client/solaris/handler/minidump_test.cc \
 	src/client/solaris/handler/solaris_lwp.cc \
 	src/client/solaris/handler/solaris_lwp.h \
-	src/client/windows/breakpad_client.gyp \
 	src/client/windows/handler/exception_handler.cc \
 	src/client/windows/handler/exception_handler.h \
-	src/client/windows/handler/exception_handler.gyp \
 	src/client/windows/sender/crash_report_sender.cc \
 	src/client/windows/sender/crash_report_sender.h \
-	src/client/windows/sender/crash_report_sender.gyp \
 	src/common/dwarf/dwarf2diehandler.h \
 	src/common/dwarf/dwarf2enums.h \
 	src/common/dwarf/line_state_machine.h \
@@ -3619,9 +3616,7 @@ EXTRA_DIST = \
 	src/tools/solaris/dump_syms/testdata/dump_syms_regtest.sym \
 	src/tools/windows/converter/ms_symbol_server_converter.cc \
 	src/tools/windows/converter/ms_symbol_server_converter.h \
-	src/tools/windows/converter/ms_symbol_server_converter.gyp \
 	src/tools/windows/dump_syms/dump_syms.cc \
-	src/tools/windows/dump_syms/dump_syms.gyp \
 	src/tools/windows/dump_syms/run_regtest.sh \
 	src/tools/windows/dump_syms/testdata/dump_syms_regtest.cc \
 	src/tools/windows/dump_syms/testdata/dump_syms_regtest.pdb \
@@ -3631,8 +3626,7 @@ EXTRA_DIST = \
 	src/tools/windows/dump_syms/testdata/omap_reorder_funcs.sym \
 	src/tools/windows/dump_syms/testdata/omap_stretched.sym \
 	src/tools/windows/dump_syms/testdata/omap_stretched_filled.sym \
-	src/tools/windows/symupload/symupload.cc \
-	src/tools/windows/symupload/symupload.gyp
+	src/tools/windows/symupload/symupload.cc
 
 all: all-am
 
