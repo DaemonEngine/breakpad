@@ -53,7 +53,9 @@ namespace google_breakpad {
 
 class DumpSymbols {
  public:
-  DumpSymbols(SymbolData symbol_data, bool handle_inter_cu_refs)
+  DumpSymbols(SymbolData symbol_data,
+              bool handle_inter_cu_refs,
+              bool enable_multiple = false)
       : symbol_data_(symbol_data),
         handle_inter_cu_refs_(handle_inter_cu_refs),
         object_filename_(),
@@ -62,9 +64,9 @@ class DumpSymbols {
         from_disk_(false),
         object_files_(),
         selected_object_file_(),
-        selected_object_name_() {}
-  ~DumpSymbols() {
-  }
+        selected_object_name_(),
+        enable_multiple_(enable_multiple) {}
+  ~DumpSymbols() = default;
 
   // Prepare to read debugging information from |filename|. |filename| may be
   // the name of a fat file, a Mach-O file, or a dSYM bundle containing either
@@ -201,6 +203,12 @@ class DumpSymbols {
   // fat binary, it includes an indication of the particular architecture
   // within that binary.
   string selected_object_name_;
+
+  // Whether symbols sharing an address should be collapsed into a single entry
+  // and marked with an `m` in the output. 
+  // See: https://crbug.com/google-breakpad/751 and docs at 
+  // docs/symbol_files.md#records-3
+  bool enable_multiple_;
 };
 
 }  // namespace google_breakpad

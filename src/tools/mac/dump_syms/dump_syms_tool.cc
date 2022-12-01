@@ -50,8 +50,14 @@ using std::vector;
 
 struct Options {
   Options()
-      : srcPath(), dsymPath(), arch(), header_only(false),
-        cfi(true), handle_inter_cu_refs(true), handle_inlines(false) {}
+      : srcPath(),
+        dsymPath(),
+        arch(),
+        header_only(false),
+        cfi(true),
+        handle_inter_cu_refs(true),
+        handle_inlines(false),
+        enable_multiple(false) {}
 
   string srcPath;
   string dsymPath;
@@ -60,6 +66,7 @@ struct Options {
   bool cfi;
   bool handle_inter_cu_refs;
   bool handle_inlines;
+  bool enable_multiple;
 };
 
 static bool StackFrameEntryComparator(const Module::StackFrameEntry* a,
@@ -139,7 +146,8 @@ static bool Start(const Options& options) {
   SymbolData symbol_data =
       (options.handle_inlines ? INLINES : NO_DATA) |
       (options.cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
-  DumpSymbols dump_symbols(symbol_data, options.handle_inter_cu_refs);
+  DumpSymbols dump_symbols(symbol_data, options.handle_inter_cu_refs,
+                           options.enable_multiple);
 
   // For x86_64 binaries, the CFI data is in the __TEXT,__eh_frame of the
   // Mach-O file, which is not copied into the dSYM. Whereas in i386, the CFI
@@ -215,6 +223,9 @@ static void Usage(int argc, const char *argv[]) {
   fprintf(stderr, "\t-c: Do not generate CFI section\n");
   fprintf(stderr, "\t-r: Do not handle inter-compilation unit references\n");
   fprintf(stderr, "\t-d: Generate INLINE and INLINE_ORIGIN records\n");
+  fprintf(stderr,
+          "\t-m: Enable writing the optional 'm' field on FUNC "
+          "and PUBLIC, denoting multiple symbols for the address.\n");
   fprintf(stderr, "\t-h: Usage\n");
   fprintf(stderr, "\t-?: Usage\n");
 }
@@ -224,7 +235,7 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
   extern int optind;
   signed char ch;
 
-  while ((ch = getopt(argc, (char * const*)argv, "ia:g:crd?h")) != -1) {
+  while ((ch = getopt(argc, (char* const*)argv, "ia:g:crdm?h")) != -1) {
     switch (ch) {
       case 'i':
         options->header_only = true;
@@ -251,6 +262,9 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
         break;
       case 'd':
         options->handle_inlines = true;
+        break;
+      case 'm':
+        options->enable_multiple = true;
         break;
       case '?':
       case 'h':
