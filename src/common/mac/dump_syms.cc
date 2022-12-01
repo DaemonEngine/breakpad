@@ -441,10 +441,8 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
     return false;
 
   // Create a module to hold the debugging information.
-  module.reset(new Module(module_name,
-                          "mac",
-                          selected_arch_name,
-                          identifier));
+  module.reset(new Module(module_name, "mac", selected_arch_name, identifier,
+                          "", enable_multiple_));
   return true;
 }
 
