@@ -1024,7 +1024,8 @@ template<typename ElfClass>
 bool InitModuleForElfClass(const typename ElfClass::Ehdr* elf_header,
                            const string& obj_filename,
                            const string& obj_os,
-                           scoped_ptr<Module>& module) {
+                           scoped_ptr<Module>& module,
+                           bool enable_multiple_field) {
   PageAllocator allocator;
   wasteful_vector<uint8_t> identifier(&allocator, kDefaultBuildIdSize);
   if (!FileID::ElfFileIdentifierFromMappedFile(elf_header, identifier)) {
@@ -1053,7 +1054,8 @@ bool InitModuleForElfClass(const typename ElfClass::Ehdr* elf_header,
   // This is just the raw Build ID in hex.
   string code_id = FileID::ConvertIdentifierToString(identifier);
 
-  module.reset(new Module(name, obj_os, architecture, id, code_id));
+  module.reset(new Module(name, obj_os, architecture, id, code_id,
+                          enable_multiple_field));
 
   return true;
 }
@@ -1070,8 +1072,8 @@ bool ReadSymbolDataElfClass(const typename ElfClass::Ehdr* elf_header,
   *out_module = NULL;
 
   scoped_ptr<Module> module;
-  if (!InitModuleForElfClass<ElfClass>(elf_header, obj_filename, obj_os,
-                                       module)) {
+  if (!InitModuleForElfClass<ElfClass>(elf_header, obj_filename, obj_os, module,
+                                       options.enable_multiple_field)) {
     return false;
   }
 
@@ -1183,14 +1185,14 @@ bool WriteSymbolFileHeader(const string& load_path,
   if (elfclass == ELFCLASS32) {
     if (!InitModuleForElfClass<ElfClass32>(
         reinterpret_cast<const Elf32_Ehdr*>(elf_header), obj_file, obj_os,
-        module)) {
+        module, /*enable_multiple_field=*/false)) {
       fprintf(stderr, "Failed to load ELF module: %s\n", obj_file.c_str());
       return false;
     }
   } else if (elfclass == ELFCLASS64) {
     if (!InitModuleForElfClass<ElfClass64>(
         reinterpret_cast<const Elf64_Ehdr*>(elf_header), obj_file, obj_os,
-        module)) {
+        module, /*enable_multiple_field=*/false)) {
       fprintf(stderr, "Failed to load ELF module: %s\n", obj_file.c_str());
       return false;
     }
