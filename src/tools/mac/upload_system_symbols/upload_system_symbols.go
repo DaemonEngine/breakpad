@@ -113,6 +113,11 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
+	// If `apiKey` is set, we're using the v2 protocol.
+	if len(*apiKey) > 0 {
+		uploadServers = uploadServersV2
+	}
+
 	var uq *UploadQueue
 
 	if *uploadOnlyPath != "" {
@@ -148,10 +153,6 @@ func main() {
 			dumpPath = p
 			defer os.RemoveAll(p)
 		}
-	}
-	// If `apiKey` is set, we're using the v2 protocol.
-	if len(*apiKey) > 0 {
-		uploadServers = uploadServersV2
 	}
 
 	dq := StartDumpQueue(*systemRoot, dumpPath, uq)
