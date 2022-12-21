@@ -229,6 +229,11 @@ func (uq *UploadQueue) worker() {
 					// Success. No retry needed.
 					fmt.Printf("Uploaded %s to %s\n", symfile, server)
 					break
+				} else if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 2 && *apiKey != "" {
+					// Exit code 2 in protocol v2 means the file already exists on the server.
+					// No point retrying.
+					fmt.Printf("File %s already exists on %s\n", symfile, server)
+					break
 				} else {
 					log.Printf("Error running symupload(%s, %s), attempt %d: %v: %s\n", symfile, server, i, err, output)
 					time.Sleep(1 * time.Second)
