@@ -151,7 +151,6 @@ CLEANFILES =
 #
 if !SYSTEM_TEST_LIBS
 check_LIBRARIES += src/testing/libtesting.a
-endif
 src_testing_libtesting_a_SOURCES = \
 	src/breakpad_googletest_includes.h \
 	src/testing/googletest/src/gtest-all.cc \
@@ -159,6 +158,7 @@ src_testing_libtesting_a_SOURCES = \
 	src/testing/googlemock/src/gmock-all.cc
 src_testing_libtesting_a_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+endif
 
 #
 # General

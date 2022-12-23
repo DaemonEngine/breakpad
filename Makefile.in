@@ -482,10 +482,14 @@ am_src_libbreakpad_a_OBJECTS =  \
 src_libbreakpad_a_OBJECTS = $(am_src_libbreakpad_a_OBJECTS)
 src_testing_libtesting_a_AR = $(AR) $(ARFLAGS)
 src_testing_libtesting_a_LIBADD =
-am_src_testing_libtesting_a_OBJECTS =  \
-	src/testing/googletest/src/libtesting_a-gtest-all.$(OBJEXT) \
-	src/testing/googletest/src/libtesting_a-gtest_main.$(OBJEXT) \
-	src/testing/googlemock/src/libtesting_a-gmock-all.$(OBJEXT)
+am__src_testing_libtesting_a_SOURCES_DIST =  \
+	src/breakpad_googletest_includes.h \
+	src/testing/googletest/src/gtest-all.cc \
+	src/testing/googletest/src/gtest_main.cc \
+	src/testing/googlemock/src/gmock-all.cc
+@SYSTEM_TEST_LIBS_FALSE@am_src_testing_libtesting_a_OBJECTS = src/testing/googletest/src/libtesting_a-gtest-all.$(OBJEXT) \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googletest/src/libtesting_a-gtest_main.$(OBJEXT) \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googlemock/src/libtesting_a-gmock-all.$(OBJEXT)
 src_testing_libtesting_a_OBJECTS =  \
 	$(am_src_testing_libtesting_a_OBJECTS)
 src_third_party_libdisasm_libdisasm_a_AR = $(AR) $(ARFLAGS)
@@ -549,9 +553,9 @@ am__src_client_linux_linux_client_unittest_shlib_SOURCES_DIST =  \
 	src/processor/proc_maps_linux.cc \
 	src/common/linux/breakpad_getcontext.S \
 	src/common/linux/breakpad_getcontext_unittest.cc
-am__objects_2 = src/testing/googletest/src/client_linux_linux_client_unittest_shlib-gtest-all.$(OBJEXT) \
-	src/testing/googletest/src/client_linux_linux_client_unittest_shlib-gtest_main.$(OBJEXT) \
-	src/testing/googlemock/src/client_linux_linux_client_unittest_shlib-gmock-all.$(OBJEXT)
+@SYSTEM_TEST_LIBS_FALSE@am__objects_2 = src/testing/googletest/src/client_linux_linux_client_unittest_shlib-gtest-all.$(OBJEXT) \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googletest/src/client_linux_linux_client_unittest_shlib-gtest_main.$(OBJEXT) \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googlemock/src/client_linux_linux_client_unittest_shlib-gmock-all.$(OBJEXT)
 @HAVE_GETCONTEXT_FALSE@am__objects_3 = src/common/linux/client_linux_linux_client_unittest_shlib-breakpad_getcontext.$(OBJEXT) \
 @HAVE_GETCONTEXT_FALSE@	src/common/linux/client_linux_linux_client_unittest_shlib-breakpad_getcontext_unittest.$(OBJEXT)
 am_src_client_linux_linux_client_unittest_shlib_OBJECTS =  \
@@ -1664,7 +1668,7 @@ SOURCES = $(src_client_linux_libbreakpad_client_a_SOURCES) \
 DIST_SOURCES =  \
 	$(am__src_client_linux_libbreakpad_client_a_SOURCES_DIST) \
 	$(src_libbreakpad_a_SOURCES) \
-	$(src_testing_libtesting_a_SOURCES) \
+	$(am__src_testing_libtesting_a_SOURCES_DIST) \
 	$(src_third_party_libdisasm_libdisasm_a_SOURCES) \
 	$(src_client_linux_linux_client_unittest_SOURCES) \
 	$(am__src_client_linux_linux_client_unittest_shlib_SOURCES_DIST) \
@@ -2155,14 +2159,14 @@ noinst_LIBRARIES = $(am__append_7)
 lib_LIBRARIES = $(am__append_5) $(am__append_11)
 noinst_SCRIPTS = $(check_SCRIPTS)
 CLEANFILES = $(am__append_15)
-src_testing_libtesting_a_SOURCES = \
-	src/breakpad_googletest_includes.h \
-	src/testing/googletest/src/gtest-all.cc \
-	src/testing/googletest/src/gtest_main.cc \
-	src/testing/googlemock/src/gmock-all.cc
+@SYSTEM_TEST_LIBS_FALSE@src_testing_libtesting_a_SOURCES = \
+@SYSTEM_TEST_LIBS_FALSE@	src/breakpad_googletest_includes.h \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googletest/src/gtest-all.cc \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googletest/src/gtest_main.cc \
+@SYSTEM_TEST_LIBS_FALSE@	src/testing/googlemock/src/gmock-all.cc
 
-src_testing_libtesting_a_CPPFLAGS = \
-	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+@SYSTEM_TEST_LIBS_FALSE@src_testing_libtesting_a_CPPFLAGS = \
+@SYSTEM_TEST_LIBS_FALSE@	$(AM_CPPFLAGS) $(TEST_CFLAGS)
 
 @DISABLE_PROCESSOR_FALSE@check_SCRIPTS = \
 @DISABLE_PROCESSOR_FALSE@	src/processor/microdump_stackwalk_test \
