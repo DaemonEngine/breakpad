@@ -208,8 +208,10 @@ void Module::AddExtern(Extern* ext) {
   }
 
   std::pair<ExternSet::iterator,bool> ret = externs_.insert(ext);
-  if (!ret.second && enable_multiple_field_) {
-    (*ret.first)->is_multiple = true;
+  if (!ret.second) {
+    if (enable_multiple_field_) {
+      (*ret.first)->is_multiple = true;
+    }
     // Free the duplicate that was not inserted because this Module
     // now owns it.
     delete ext;
