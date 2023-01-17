@@ -1243,6 +1243,14 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address,
           reason = "EXC_RPC_ALERT / ";
           reason.append(flags_string);
           break;
+        case MD_EXCEPTION_MAC_RESOURCE:
+          reason = "EXC_RESOURCE / ";
+          reason.append(flags_string);
+          break;
+        case MD_EXCEPTION_MAC_GUARD:
+          reason = "EXC_GUARD / ";
+          reason.append(flags_string);
+          break;
         case MD_EXCEPTION_MAC_SIMULATED:
           reason = "Simulated Exception";
           break;
