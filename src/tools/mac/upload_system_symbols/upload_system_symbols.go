@@ -69,7 +69,6 @@ var (
 var (
 	// pathsToScan are the subpaths in the systemRoot that should be scanned for shared libraries.
 	pathsToScan = []string{
-		"/System/Library/Components",
 		"/System/Library/Frameworks",
 		"/System/Library/PrivateFrameworks",
 		"/usr/lib",
@@ -79,6 +78,8 @@ var (
 	optionalPathsToScan = []string{
 		// Gone in 10.15.
 		"/Library/QuickTime",
+		// Not present in dumped dyld_shared_caches
+		"/System/Library/Components",
 	}
 
 	// uploadServersV1 are the list of servers to which symbols should be
