@@ -5267,15 +5267,51 @@ MinidumpCrashpadInfo::MinidumpCrashpadInfo(Minidump* minidump)
 bool MinidumpCrashpadInfo::Read(uint32_t expected_size) {
   valid_ = false;
 
-  if (expected_size != sizeof(crashpad_info_)) {
-    BPLOG(ERROR) << "MinidumpCrashpadInfo size mismatch, " << expected_size <<
-                    " != " << sizeof(crashpad_info_);
+  // Support old minidumps that do not implement newer crashpad_info_
+  // fields, currently limited to the address mask.
+  static_assert(sizeof(crashpad_info_) == 64,
+                "Updated ::Read for new crashpad_info field.");
+
+  constexpr size_t crashpad_info_min_size =
+      offsetof(decltype(crashpad_info_), reserved);
+  if (expected_size < crashpad_info_min_size) {
+    BPLOG(ERROR) << "MinidumpCrashpadInfo size mismatch, " << expected_size
+                 << " < " << crashpad_info_min_size;
     return false;
   }
 
-  if (!minidump_->ReadBytes(&crashpad_info_, sizeof(crashpad_info_))) {
+  if (!minidump_->ReadBytes(&crashpad_info_, crashpad_info_min_size)) {
     BPLOG(ERROR) << "MinidumpCrashpadInfo cannot read Crashpad info";
     return false;
+  }
+  expected_size -= crashpad_info_min_size;
+
+  // Read `reserved` if available.
+  size_t crashpad_reserved_size = sizeof(crashpad_info_.reserved);
+  if (expected_size >= crashpad_reserved_size) {
+    if (!minidump_->ReadBytes(
+            &crashpad_info_.reserved,
+            crashpad_reserved_size)) {
+      BPLOG(ERROR) << "MinidumpCrashpadInfo cannot read reserved";
+      return false;
+    }
+    expected_size -= crashpad_reserved_size;
+  } else {
+    crashpad_info_.reserved = 0;
+  }
+
+  // Read `address_mask` if available.
+  size_t crashpad_address_mask_size = sizeof(crashpad_info_.address_mask);
+  if (expected_size >= crashpad_address_mask_size) {
+    if (!minidump_->ReadBytes(
+            &crashpad_info_.address_mask,
+            crashpad_address_mask_size)) {
+      BPLOG(ERROR) << "MinidumpCrashpadInfo cannot read address mask";
+      return false;
+    }
+    expected_size -= crashpad_address_mask_size;
+  } else {
+    crashpad_info_.address_mask = 0;
   }
 
   if (minidump_->swap()) {
@@ -5284,6 +5320,8 @@ bool MinidumpCrashpadInfo::Read(uint32_t expected_size) {
     Swap(&crashpad_info_.client_id);
     Swap(&crashpad_info_.simple_annotations);
     Swap(&crashpad_info_.module_list);
+    Swap(&crashpad_info_.reserved);
+    Swap(&crashpad_info_.address_mask);
   }
 
   if (crashpad_info_.simple_annotations.data_size) {
@@ -5420,6 +5458,7 @@ void MinidumpCrashpadInfo::Print() {
       printf("  module_list[%d].simple_annotations[\"%s\"] = %s\n",
              module_index, annot.first.c_str(), annot.second.c_str());
     }
+    printf("  address_mask = %llu\n", crashpad_info_.address_mask);
   }
 
   printf("\n");
