@@ -36,6 +36,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <string.h>
 #include <time.h>
@@ -5458,7 +5459,7 @@ void MinidumpCrashpadInfo::Print() {
       printf("  module_list[%d].simple_annotations[\"%s\"] = %s\n",
              module_index, annot.first.c_str(), annot.second.c_str());
     }
-    printf("  address_mask = %llu\n", crashpad_info_.address_mask);
+    printf("  address_mask = %" PRIu64 "\n", crashpad_info_.address_mask);
   }
 
   printf("\n");
