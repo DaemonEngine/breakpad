@@ -49,6 +49,7 @@ LibcurlWrapper::LibcurlWrapper()
 LibcurlWrapper::~LibcurlWrapper() {
   if (init_ok_) {
     (*easy_cleanup_)(curl_);
+    (*global_cleanup_)();
     dlclose(curl_lib_);
   }
 }
@@ -264,6 +265,10 @@ bool LibcurlWrapper::SetFunctionPointers() {
   SET_AND_CHECK_FUNCTION_POINTER(formfree_,
                                  "curl_formfree",
                                  void(*)(curl_httppost*));
+
+  SET_AND_CHECK_FUNCTION_POINTER(global_cleanup_,
+                                 "curl_global_cleanup",
+                                 void(*)(void));
   return true;
 }
 
