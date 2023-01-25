@@ -216,6 +216,12 @@ inline void Swap(MDRawSimpleStringDictionaryEntry* entry) {
   Swap(&entry->value);
 }
 
+inline void Swap(MDRawCrashpadAnnotation* annotation) {
+  Swap(&annotation->name);
+  Swap(&annotation->type);
+  Swap(&annotation->value);
+}
+
 inline void Swap(uint16_t* data, size_t size_in_bytes) {
   size_t data_length = size_in_bytes / sizeof(data[0]);
   for (size_t i = 0; i < data_length; i++) {
@@ -5261,6 +5267,7 @@ MinidumpCrashpadInfo::MinidumpCrashpadInfo(Minidump* minidump)
       module_crashpad_info_(),
       module_crashpad_info_list_annotations_(),
       module_crashpad_info_simple_annotations_(),
+      module_crashpad_info_annotation_objects_(),
       simple_annotations_() {
 }
 
@@ -5386,6 +5393,7 @@ bool MinidumpCrashpadInfo::Read(uint32_t expected_size) {
         Swap(&module_crashpad_info.version);
         Swap(&module_crashpad_info.list_annotations);
         Swap(&module_crashpad_info.simple_annotations);
+        Swap(&module_crashpad_info.annotation_objects);
       }
 
       std::vector<std::string> list_annotations;
@@ -5410,11 +5418,23 @@ bool MinidumpCrashpadInfo::Read(uint32_t expected_size) {
         }
       }
 
+      std::vector<MinidumpCrashpadInfo::AnnotationObject> annotation_objects;
+      if (module_crashpad_info.annotation_objects.data_size) {
+        if (!minidump_->ReadCrashpadAnnotationsList(
+                module_crashpad_info.annotation_objects.rva,
+                &annotation_objects)) {
+          BPLOG(ERROR)
+              << "MinidumpCrashpadInfo cannot read Crashpad annotations list";
+          return false;
+        }
+      }
+
       module_crashpad_info_links_.push_back(
           module_crashpad_info_links[index].minidump_module_list_index);
       module_crashpad_info_.push_back(module_crashpad_info);
       module_crashpad_info_list_annotations_.push_back(list_annotations);
       module_crashpad_info_simple_annotations_.push_back(simple_annotations);
+      module_crashpad_info_annotation_objects_.push_back(annotation_objects);
     }
   }
 
@@ -6265,6 +6285,73 @@ bool Minidump::ReadSimpleStringDictionary(
   return true;
 }
 
+bool Minidump::ReadCrashpadAnnotationsList(
+    off_t offset,
+    std::vector<MinidumpCrashpadInfo::AnnotationObject>* annotations_list) {
+  annotations_list->clear();
+
+  if (!SeekSet(offset)) {
+    BPLOG(ERROR) << "Minidump cannot seek to annotations_list";
+    return false;
+  }
+
+  uint32_t count;
+  if (!ReadBytes(&count, sizeof(count))) {
+    BPLOG(ERROR) << "Minidump cannot read annotations_list count";
+    return false;
+  }
+
+  if (swap_) {
+    Swap(&count);
+  }
+
+  scoped_array<MDRawCrashpadAnnotation> objects(
+      new MDRawCrashpadAnnotation[count]);
+
+  // Read the entire array in one fell swoop, instead of reading one entry
+  // at a time in the loop.
+  if (!ReadBytes(&objects[0], sizeof(MDRawCrashpadAnnotation) * count)) {
+    BPLOG(ERROR) << "Minidump could not read annotations_list";
+    return false;
+  }
+
+  for (uint32_t index = 0; index < count; ++index) {
+    MDRawCrashpadAnnotation annotation = objects[index];
+
+    if (swap_) {
+      Swap(&annotation);
+    }
+
+    string name;
+    if (!ReadUTF8String(annotation.name, &name)) {
+      BPLOG(ERROR) << "Minidump could not read annotation name";
+      return false;
+    }
+
+    if (!SeekSet(annotation.value)) {
+      BPLOG(ERROR) << "Minidump cannot seek to annotations value";
+      return false;
+    }
+
+    uint32_t value_length;
+    if (!ReadBytes(&value_length, sizeof(value_length))) {
+      BPLOG(ERROR) << "Minidump could not read annotation value length";
+      return false;
+    }
+
+    std::vector<uint8_t> value_data(value_length);
+    if (!ReadBytes(value_data.data(), value_length)) {
+      BPLOG(ERROR) << "Minidump could not read annotation value";
+      return false;
+    }
+
+    MinidumpCrashpadInfo::AnnotationObject object = {annotation.type, name,
+                                                     value_data};
+    annotations_list->push_back(object);
+  }
+
+  return true;
+}
 
 bool Minidump::SeekToStreamType(uint32_t  stream_type,
                                 uint32_t* stream_length) {
