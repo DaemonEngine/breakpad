@@ -193,7 +193,8 @@ EXTRA_PROGRAMS = $(am__EXEEXT_1)
 @DISABLE_PROCESSOR_FALSE@	src/processor/synth_minidump_unittest
 
 @DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@am__append_10 = \
-@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@	src/processor/disassembler_objdump_unittest
+@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@	src/processor/disassembler_objdump_unittest \
+@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile_unittest
 
 @DISABLE_PROCESSOR_FALSE@@SELFTEST_TRUE@am__append_11 = \
 @DISABLE_PROCESSOR_FALSE@@SELFTEST_TRUE@	src/processor/stackwalker_selftest
@@ -351,7 +352,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libexecdir)" \
 @DISABLE_PROCESSOR_FALSE@	src/processor/stackwalker_riscv64_unittest$(EXEEXT) \
 @DISABLE_PROCESSOR_FALSE@	src/processor/stackwalker_x86_unittest$(EXEEXT) \
 @DISABLE_PROCESSOR_FALSE@	src/processor/synth_minidump_unittest$(EXEEXT)
-@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@am__EXEEXT_6 = src/processor/disassembler_objdump_unittest$(EXEEXT)
+@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@am__EXEEXT_6 = src/processor/disassembler_objdump_unittest$(EXEEXT) \
+@DISABLE_PROCESSOR_FALSE@@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile_unittest$(EXEEXT)
 @DISABLE_PROCESSOR_FALSE@@SELFTEST_TRUE@am__EXEEXT_7 = src/processor/stackwalker_selftest$(EXEEXT)
 @LINUX_HOST_TRUE@am__EXEEXT_8 = src/client/linux/linux_client_unittest$(EXEEXT) \
 @LINUX_HOST_TRUE@	src/common/linux/google_crashdump_uploader_test$(EXEEXT)
@@ -672,7 +674,8 @@ am__src_client_linux_linux_client_unittest_shlib_SOURCES_DIST =  \
 	src/client/linux/minidump_writer/proc_cpuinfo_reader_unittest.cc \
 	src/common/linux/elf_core_dump.cc \
 	src/common/linux/linux_libc_support_unittest.cc \
-	src/common/linux/tests/auto_testfile.h \
+	src/common/linux/scoped_tmpfile.h \
+	src/common/linux/scoped_tmpfile.cc \
 	src/common/linux/tests/crash_generator.cc \
 	src/common/memory_allocator_unittest.cc \
 	src/common/tests/auto_tempdir.h src/common/tests/file_utils.cc \
@@ -706,6 +709,7 @@ am_src_client_linux_linux_client_unittest_shlib_OBJECTS =  \
 	src/client/linux/minidump_writer/linux_client_unittest_shlib-proc_cpuinfo_reader_unittest.$(OBJEXT) \
 	src/common/linux/client_linux_linux_client_unittest_shlib-elf_core_dump.$(OBJEXT) \
 	src/common/linux/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.$(OBJEXT) \
+	src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.$(OBJEXT) \
 	src/common/linux/tests/client_linux_linux_client_unittest_shlib-crash_generator.$(OBJEXT) \
 	src/common/client_linux_linux_client_unittest_shlib-memory_allocator_unittest.$(OBJEXT) \
 	src/common/tests/client_linux_linux_client_unittest_shlib-file_utils.$(OBJEXT) \
@@ -809,6 +813,12 @@ src_common_linux_google_crashdump_uploader_test_OBJECTS =  \
 src_common_linux_google_crashdump_uploader_test_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+am_src_common_linux_scoped_tmpfile_unittest_OBJECTS = src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.$(OBJEXT)
+src_common_linux_scoped_tmpfile_unittest_OBJECTS =  \
+	$(am_src_common_linux_scoped_tmpfile_unittest_OBJECTS)
+src_common_linux_scoped_tmpfile_unittest_DEPENDENCIES =  \
+	src/common/linux/scoped_tmpfile.o $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_src_common_mac_macho_reader_unittest_OBJECTS = src/common/mac_macho_reader_unittest-dwarf_cfi_to_module.$(OBJEXT) \
 	src/common/mac_macho_reader_unittest-dwarf_cu_to_module.$(OBJEXT) \
 	src/common/mac_macho_reader_unittest-dwarf_line_to_module.$(OBJEXT) \
@@ -1521,6 +1531,7 @@ am__depfiles_remade = src/client/$(DEPDIR)/minidump_file_writer.Po \
 	src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-breakpad_getcontext_unittest.Po \
 	src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-elf_core_dump.Po \
 	src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.Po \
+	src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po \
 	src/common/linux/$(DEPDIR)/dumper_unittest-crc32.Po \
 	src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols.Po \
 	src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols_unittest.Po \
@@ -1550,6 +1561,7 @@ am__depfiles_remade = src/client/$(DEPDIR)/minidump_file_writer.Po \
 	src/common/linux/$(DEPDIR)/linux_libc_support.Po \
 	src/common/linux/$(DEPDIR)/memory_mapped_file.Po \
 	src/common/linux/$(DEPDIR)/safe_readlink.Po \
+	src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po \
 	src/common/linux/$(DEPDIR)/symbol_collector_client.Po \
 	src/common/linux/$(DEPDIR)/symbol_upload.Po \
 	src/common/linux/$(DEPDIR)/tools_linux_dump_syms_dump_syms-crc32.Po \
@@ -1744,6 +1756,7 @@ SOURCES = $(src_client_linux_libbreakpad_client_a_SOURCES) \
 	$(src_common_dwarf_dwarf2reader_lineinfo_unittest_SOURCES) \
 	$(src_common_dwarf_dwarf2reader_splitfunctions_unittest_SOURCES) \
 	$(src_common_linux_google_crashdump_uploader_test_SOURCES) \
+	$(src_common_linux_scoped_tmpfile_unittest_SOURCES) \
 	$(src_common_mac_macho_reader_unittest_SOURCES) \
 	$(src_common_safe_math_unittest_SOURCES) \
 	$(src_common_test_assembler_unittest_SOURCES) \
@@ -1804,6 +1817,7 @@ DIST_SOURCES =  \
 	$(src_common_dwarf_dwarf2reader_lineinfo_unittest_SOURCES) \
 	$(src_common_dwarf_dwarf2reader_splitfunctions_unittest_SOURCES) \
 	$(src_common_linux_google_crashdump_uploader_test_SOURCES) \
+	$(src_common_linux_scoped_tmpfile_unittest_SOURCES) \
 	$(src_common_mac_macho_reader_unittest_SOURCES) \
 	$(src_common_safe_math_unittest_SOURCES) \
 	$(src_common_test_assembler_unittest_SOURCES) \
@@ -2523,7 +2537,8 @@ src_client_linux_linux_client_unittest_shlib_SOURCES =  \
 	src/client/linux/minidump_writer/proc_cpuinfo_reader_unittest.cc \
 	src/common/linux/elf_core_dump.cc \
 	src/common/linux/linux_libc_support_unittest.cc \
-	src/common/linux/tests/auto_testfile.h \
+	src/common/linux/scoped_tmpfile.h \
+	src/common/linux/scoped_tmpfile.cc \
 	src/common/linux/tests/crash_generator.cc \
 	src/common/memory_allocator_unittest.cc \
 	src/common/tests/auto_tempdir.h src/common/tests/file_utils.cc \
@@ -2912,6 +2927,17 @@ src_processor_exploitability_unittest_LDADD =  \
 	src/processor/tokenize.o src/third_party/libdisasm/libdisasm.a \
 	$(TEST_LIBS) $(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
 	$(am__append_27)
+src_common_linux_scoped_tmpfile_unittest_SOURCES = \
+	src/common/linux/scoped_tmpfile_unittest.cc
+
+src_common_linux_scoped_tmpfile_unittest_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+
+src_common_linux_scoped_tmpfile_unittest_LDADD = \
+	src/common/linux/scoped_tmpfile.o \
+	$(TEST_LIBS) \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+
 src_processor_disassembler_objdump_unittest_SOURCES = \
 	src/processor/disassembler_objdump_unittest.cc
 
@@ -4293,6 +4319,9 @@ src/common/linux/client_linux_linux_client_unittest_shlib-elf_core_dump.$(OBJEXT
 src/common/linux/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.$(OBJEXT):  \
 	src/common/linux/$(am__dirstamp) \
 	src/common/linux/$(DEPDIR)/$(am__dirstamp)
+src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.$(OBJEXT):  \
+	src/common/linux/$(am__dirstamp) \
+	src/common/linux/$(DEPDIR)/$(am__dirstamp)
 src/common/linux/tests/$(am__dirstamp):
 	@$(MKDIR_P) src/common/linux/tests
 	@: > src/common/linux/tests/$(am__dirstamp)
@@ -4539,6 +4568,13 @@ src/common/linux/google_crashdump_uploader_test-libcurl_wrapper.$(OBJEXT):  \
 src/common/linux/google_crashdump_uploader_test$(EXEEXT): $(src_common_linux_google_crashdump_uploader_test_OBJECTS) $(src_common_linux_google_crashdump_uploader_test_DEPENDENCIES) $(EXTRA_src_common_linux_google_crashdump_uploader_test_DEPENDENCIES) src/common/linux/$(am__dirstamp)
 	@rm -f src/common/linux/google_crashdump_uploader_test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_common_linux_google_crashdump_uploader_test_OBJECTS) $(src_common_linux_google_crashdump_uploader_test_LDADD) $(LIBS)
+src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.$(OBJEXT):  \
+	src/common/linux/$(am__dirstamp) \
+	src/common/linux/$(DEPDIR)/$(am__dirstamp)
+
+src/common/linux/scoped_tmpfile_unittest$(EXEEXT): $(src_common_linux_scoped_tmpfile_unittest_OBJECTS) $(src_common_linux_scoped_tmpfile_unittest_DEPENDENCIES) $(EXTRA_src_common_linux_scoped_tmpfile_unittest_DEPENDENCIES) src/common/linux/$(am__dirstamp)
+	@rm -f src/common/linux/scoped_tmpfile_unittest$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_common_linux_scoped_tmpfile_unittest_OBJECTS) $(src_common_linux_scoped_tmpfile_unittest_LDADD) $(LIBS)
 src/common/mac_macho_reader_unittest-dwarf_cfi_to_module.$(OBJEXT):  \
 	src/common/$(am__dirstamp) \
 	src/common/$(DEPDIR)/$(am__dirstamp)
@@ -5329,6 +5365,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-breakpad_getcontext_unittest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-elf_core_dump.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/dumper_unittest-crc32.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols_unittest.Po@am__quote@ # am--include-marker
@@ -5358,6 +5395,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/linux_libc_support.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/memory_mapped_file.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/safe_readlink.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/symbol_collector_client.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/symbol_upload.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/tools_linux_dump_syms_dump_syms-crc32.Po@am__quote@ # am--include-marker
@@ -5853,6 +5891,20 @@ src/common/linux/client_linux_linux_client_unittest_shlib-linux_libc_support_uni
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/linux_libc_support_unittest.cc' object='src/common/linux/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.obj `if test -f 'src/common/linux/linux_libc_support_unittest.cc'; then $(CYGPATH_W) 'src/common/linux/linux_libc_support_unittest.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/linux_libc_support_unittest.cc'; fi`
+
+src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.o: src/common/linux/scoped_tmpfile.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.o -MD -MP -MF src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Tpo -c -o src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.o `test -f 'src/common/linux/scoped_tmpfile.cc' || echo '$(srcdir)/'`src/common/linux/scoped_tmpfile.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Tpo src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/scoped_tmpfile.cc' object='src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.o `test -f 'src/common/linux/scoped_tmpfile.cc' || echo '$(srcdir)/'`src/common/linux/scoped_tmpfile.cc
+
+src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.obj: src/common/linux/scoped_tmpfile.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.obj -MD -MP -MF src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Tpo -c -o src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.obj `if test -f 'src/common/linux/scoped_tmpfile.cc'; then $(CYGPATH_W) 'src/common/linux/scoped_tmpfile.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/scoped_tmpfile.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Tpo src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/scoped_tmpfile.cc' object='src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/client_linux_linux_client_unittest_shlib-scoped_tmpfile.obj `if test -f 'src/common/linux/scoped_tmpfile.cc'; then $(CYGPATH_W) 'src/common/linux/scoped_tmpfile.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/scoped_tmpfile.cc'; fi`
 
 src/common/linux/tests/client_linux_linux_client_unittest_shlib-crash_generator.o: src/common/linux/tests/crash_generator.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_client_linux_linux_client_unittest_shlib_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/linux/tests/client_linux_linux_client_unittest_shlib-crash_generator.o -MD -MP -MF src/common/linux/tests/$(DEPDIR)/client_linux_linux_client_unittest_shlib-crash_generator.Tpo -c -o src/common/linux/tests/client_linux_linux_client_unittest_shlib-crash_generator.o `test -f 'src/common/linux/tests/crash_generator.cc' || echo '$(srcdir)/'`src/common/linux/tests/crash_generator.cc
@@ -6791,6 +6843,20 @@ src/common/linux/google_crashdump_uploader_test-libcurl_wrapper.obj: src/common/
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/libcurl_wrapper.cc' object='src/common/linux/google_crashdump_uploader_test-libcurl_wrapper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_linux_google_crashdump_uploader_test_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/google_crashdump_uploader_test-libcurl_wrapper.obj `if test -f 'src/common/linux/libcurl_wrapper.cc'; then $(CYGPATH_W) 'src/common/linux/libcurl_wrapper.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/libcurl_wrapper.cc'; fi`
+
+src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.o: src/common/linux/scoped_tmpfile_unittest.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_linux_scoped_tmpfile_unittest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.o -MD -MP -MF src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Tpo -c -o src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.o `test -f 'src/common/linux/scoped_tmpfile_unittest.cc' || echo '$(srcdir)/'`src/common/linux/scoped_tmpfile_unittest.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Tpo src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/scoped_tmpfile_unittest.cc' object='src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_linux_scoped_tmpfile_unittest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.o `test -f 'src/common/linux/scoped_tmpfile_unittest.cc' || echo '$(srcdir)/'`src/common/linux/scoped_tmpfile_unittest.cc
+
+src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.obj: src/common/linux/scoped_tmpfile_unittest.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_linux_scoped_tmpfile_unittest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.obj -MD -MP -MF src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Tpo -c -o src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.obj `if test -f 'src/common/linux/scoped_tmpfile_unittest.cc'; then $(CYGPATH_W) 'src/common/linux/scoped_tmpfile_unittest.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/scoped_tmpfile_unittest.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Tpo src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/common/linux/scoped_tmpfile_unittest.cc' object='src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_linux_scoped_tmpfile_unittest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/common/linux/scoped_tmpfile_unittest-scoped_tmpfile_unittest.obj `if test -f 'src/common/linux/scoped_tmpfile_unittest.cc'; then $(CYGPATH_W) 'src/common/linux/scoped_tmpfile_unittest.cc'; else $(CYGPATH_W) '$(srcdir)/src/common/linux/scoped_tmpfile_unittest.cc'; fi`
 
 src/common/mac_macho_reader_unittest-dwarf_cfi_to_module.o: src/common/dwarf_cfi_to_module.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(src_common_mac_macho_reader_unittest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/common/mac_macho_reader_unittest-dwarf_cfi_to_module.o -MD -MP -MF src/common/$(DEPDIR)/mac_macho_reader_unittest-dwarf_cfi_to_module.Tpo -c -o src/common/mac_macho_reader_unittest-dwarf_cfi_to_module.o `test -f 'src/common/dwarf_cfi_to_module.cc' || echo '$(srcdir)/'`src/common/dwarf_cfi_to_module.cc
@@ -9043,6 +9109,13 @@ src/processor/disassembler_objdump_unittest.log: src/processor/disassembler_objd
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+src/common/linux/scoped_tmpfile_unittest.log: src/common/linux/scoped_tmpfile_unittest$(EXEEXT)
+	@p='src/common/linux/scoped_tmpfile_unittest$(EXEEXT)'; \
+	b='src/common/linux/scoped_tmpfile_unittest'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 src/processor/stackwalker_selftest.log: src/processor/stackwalker_selftest$(EXEEXT)
 	@p='src/processor/stackwalker_selftest$(EXEEXT)'; \
 	b='src/processor/stackwalker_selftest'; \
@@ -9535,6 +9608,7 @@ distclean: distclean-am
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-breakpad_getcontext_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-elf_core_dump.Po
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.Po
+	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-crc32.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols_unittest.Po
@@ -9564,6 +9638,7 @@ distclean: distclean-am
 	-rm -f src/common/linux/$(DEPDIR)/linux_libc_support.Po
 	-rm -f src/common/linux/$(DEPDIR)/memory_mapped_file.Po
 	-rm -f src/common/linux/$(DEPDIR)/safe_readlink.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_collector_client.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_upload.Po
 	-rm -f src/common/linux/$(DEPDIR)/tools_linux_dump_syms_dump_syms-crc32.Po
@@ -9889,6 +9964,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-breakpad_getcontext_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-elf_core_dump.Po
 	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-linux_libc_support_unittest.Po
+	-rm -f src/common/linux/$(DEPDIR)/client_linux_linux_client_unittest_shlib-scoped_tmpfile.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-crc32.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols.Po
 	-rm -f src/common/linux/$(DEPDIR)/dumper_unittest-dump_symbols_unittest.Po
@@ -9918,6 +9994,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/common/linux/$(DEPDIR)/linux_libc_support.Po
 	-rm -f src/common/linux/$(DEPDIR)/memory_mapped_file.Po
 	-rm -f src/common/linux/$(DEPDIR)/safe_readlink.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_collector_client.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_upload.Po
 	-rm -f src/common/linux/$(DEPDIR)/tools_linux_dump_syms_dump_syms-crc32.Po

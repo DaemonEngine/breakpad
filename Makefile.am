@@ -222,7 +222,8 @@ check_PROGRAMS += \
 	src/processor/synth_minidump_unittest
 if LINUX_HOST
 check_PROGRAMS += \
-	src/processor/disassembler_objdump_unittest
+	src/processor/disassembler_objdump_unittest \
+	src/common/linux/scoped_tmpfile_unittest
 endif LINUX_HOST
 if SELFTEST
 check_PROGRAMS += \
@@ -529,7 +530,6 @@ src_client_linux_libbreakpad_client_a_SOURCES += \
 endif
 
 # Client tests
-
 src_client_linux_linux_dumper_unittest_helper_SOURCES = \
 	src/client/linux/minidump_writer/linux_dumper_unittest_helper.cc
 src_client_linux_linux_dumper_unittest_helper_LDFLAGS=$(PTHREAD_CFLAGS)
@@ -558,7 +558,8 @@ src_client_linux_linux_client_unittest_shlib_SOURCES = \
 	src/client/linux/minidump_writer/proc_cpuinfo_reader_unittest.cc \
 	src/common/linux/elf_core_dump.cc \
 	src/common/linux/linux_libc_support_unittest.cc \
-	src/common/linux/tests/auto_testfile.h \
+	src/common/linux/scoped_tmpfile.h \
+	src/common/linux/scoped_tmpfile.cc \
 	src/common/linux/tests/crash_generator.cc \
 	src/common/memory_allocator_unittest.cc \
 	src/common/tests/auto_tempdir.h \
@@ -956,6 +957,15 @@ if LINUX_HOST
 src_processor_exploitability_unittest_LDADD += \
 	src/processor/disassembler_objdump.o
 endif
+
+src_common_linux_scoped_tmpfile_unittest_SOURCES = \
+	src/common/linux/scoped_tmpfile_unittest.cc
+src_common_linux_scoped_tmpfile_unittest_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+src_common_linux_scoped_tmpfile_unittest_LDADD = \
+	src/common/linux/scoped_tmpfile.o \
+	$(TEST_LIBS) \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 src_processor_disassembler_objdump_unittest_SOURCES = \
 	src/processor/disassembler_objdump_unittest.cc
