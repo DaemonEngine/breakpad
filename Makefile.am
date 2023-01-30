@@ -204,7 +204,6 @@ check_PROGRAMS += \
 	src/processor/basic_source_line_resolver_unittest \
 	src/processor/cfi_frame_info_unittest \
 	src/processor/contained_range_map_unittest \
-	src/processor/disassembler_objdump_unittest \
 	src/processor/disassembler_x86_unittest \
 	src/processor/exploitability_unittest \
 	src/processor/fast_source_line_resolver_unittest \
@@ -232,6 +231,10 @@ check_PROGRAMS += \
 	src/processor/stackwalker_riscv64_unittest \
 	src/processor/stackwalker_x86_unittest \
 	src/processor/synth_minidump_unittest
+if LINUX_HOST
+check_PROGRAMS += \
+	src/processor/disassembler_objdump_unittest
+endif LINUX_HOST
 if SELFTEST
 check_PROGRAMS += \
 	src/processor/stackwalker_selftest
@@ -392,8 +395,6 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/contained_range_map.h \
 	src/processor/convert_old_arm64_context.cc \
 	src/processor/convert_old_arm64_context.h \
-	src/processor/disassembler_objdump.h \
-	src/processor/disassembler_objdump.cc \
 	src/processor/disassembler_x86.h \
 	src/processor/disassembler_x86.cc \
 	src/processor/dump_context.cc \
@@ -475,6 +476,11 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/symbolic_constants_win.h \
 	src/processor/tokenize.cc \
 	src/processor/tokenize.h
+if LINUX_HOST
+src_libbreakpad_a_SOURCES += \
+	src/processor/disassembler_objdump.cc \
+	src/processor/disassembler_objdump.h
+endif LINUX_HOST
 
 # libdisasm 3rd party library
 src_third_party_libdisasm_libdisasm_a_SOURCES = \
@@ -954,7 +960,6 @@ src_processor_exploitability_unittest_LDADD = \
 	src/processor/convert_old_arm64_context.o \
 	src/processor/minidump_processor.o \
 	src/processor/process_state.o \
-	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/exploitability.o \
 	src/processor/exploitability_linux.o \
@@ -990,6 +995,10 @@ src_processor_exploitability_unittest_LDADD = \
 	src/third_party/libdisasm/libdisasm.a \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) @LIBOBJS@
+if LINUX_HOST
+src_processor_exploitability_unittest_LDADD += \
+	src/processor/disassembler_objdump.o
+endif
 
 src_processor_disassembler_objdump_unittest_SOURCES = \
 	src/processor/disassembler_objdump_unittest.cc
@@ -1087,7 +1096,6 @@ src_processor_minidump_processor_unittest_LDADD = \
 	src/processor/call_stack.o \
 	src/processor/cfi_frame_info.o \
 	src/processor/convert_old_arm64_context.o \
-	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
@@ -1120,6 +1128,10 @@ src_processor_minidump_processor_unittest_LDADD = \
 	src/third_party/libdisasm/libdisasm.a \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) @LIBOBJS@
+if LINUX_HOST
+src_processor_minidump_processor_unittest_LDADD += \
+	src/processor/disassembler_objdump.o
+endif
 
 src_processor_minidump_unittest_SOURCES = \
 	src/common/test_assembler.cc \
@@ -1237,7 +1249,6 @@ src_processor_stackwalker_selftest_LDADD = \
 	src/processor/basic_code_modules.o \
 	src/processor/basic_source_line_resolver.o \
 	src/processor/call_stack.o \
-	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/exploitability.o \
 	src/processor/exploitability_linux.o \
@@ -1263,6 +1274,10 @@ src_processor_stackwalker_selftest_LDADD = \
 	src/processor/stackwalker_x86.o \
 	src/processor/tokenize.o \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+if LINUX_HOST
+src_processor_stackwalker_selftest_LDADD += \
+	src/processor/disassembler_objdump.o
+endif
 
 src_processor_stackwalker_amd64_unittest_SOURCES = \
 	src/common/test_assembler.cc \
@@ -1461,7 +1476,6 @@ src_processor_minidump_stackwalk_LDADD = \
 	src/processor/call_stack.o \
 	src/processor/cfi_frame_info.o \
 	src/processor/convert_old_arm64_context.o \
-	src/processor/disassembler_objdump.o \
 	src/processor/disassembler_x86.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
@@ -1495,6 +1509,10 @@ src_processor_minidump_stackwalk_LDADD = \
 	src/processor/tokenize.o \
 	src/third_party/libdisasm/libdisasm.a \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) $(SOCKET_LIBS) @LIBOBJS@
+if LINUX_HOST
+src_processor_minidump_stackwalk_LDADD += \
+	src/processor/disassembler_objdump.o
+endif LINUX_HOST
 
 ## Additional files to be included in a source distribution
 ##
