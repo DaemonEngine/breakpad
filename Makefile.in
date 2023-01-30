@@ -248,8 +248,12 @@ EXTRA_PROGRAMS = $(am__EXEEXT_1)
 @DISABLE_TOOLS_FALSE@@LINUX_HOST_TRUE@@X86_HOST_TRUE@	src/common/mac/macho_reader_unittest
 
 @LINUX_HOST_TRUE@am__append_22 = \
-@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.cc \
-@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.h
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.h \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.cc \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.h \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.cc \
+@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.h \
+@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.cc
 
 @HAVE_GETCONTEXT_FALSE@am__append_23 = \
 @HAVE_GETCONTEXT_FALSE@	src/common/linux/breakpad_getcontext.S
@@ -264,15 +268,33 @@ EXTRA_PROGRAMS = $(am__EXEEXT_1)
 @ANDROID_HOST_TRUE@        -llog
 
 @LINUX_HOST_TRUE@am__append_27 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
 @LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
 
 @LINUX_HOST_TRUE@am__append_28 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
 @LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
 
 @LINUX_HOST_TRUE@am__append_29 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
 @LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
 
 @LINUX_HOST_TRUE@am__append_30 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
+@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
+
+@LINUX_HOST_TRUE@am__append_31 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
+@LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
+
+@LINUX_HOST_TRUE@am__append_32 = \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.o \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.o \
 @LINUX_HOST_TRUE@	src/processor/disassembler_objdump.o
 
 subdir = .
@@ -569,9 +591,14 @@ am__src_libbreakpad_a_SOURCES_DIST =  \
 	src/processor/symbolic_constants_win.cc \
 	src/processor/symbolic_constants_win.h \
 	src/processor/tokenize.cc src/processor/tokenize.h \
-	src/processor/disassembler_objdump.cc \
-	src/processor/disassembler_objdump.h
+	src/common/linux/scoped_pipe.h src/common/linux/scoped_pipe.cc \
+	src/common/linux/scoped_tmpfile.h \
+	src/common/linux/scoped_tmpfile.cc \
+	src/processor/disassembler_objdump.h \
+	src/processor/disassembler_objdump.cc
 @LINUX_HOST_TRUE@am__objects_2 =  \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_pipe.$(OBJEXT) \
+@LINUX_HOST_TRUE@	src/common/linux/scoped_tmpfile.$(OBJEXT) \
 @LINUX_HOST_TRUE@	src/processor/disassembler_objdump.$(OBJEXT)
 am_src_libbreakpad_a_OBJECTS =  \
 	src/processor/basic_code_modules.$(OBJEXT) \
@@ -903,6 +930,8 @@ am_src_processor_disassembler_objdump_unittest_OBJECTS = src/processor/disassemb
 src_processor_disassembler_objdump_unittest_OBJECTS =  \
 	$(am_src_processor_disassembler_objdump_unittest_OBJECTS)
 src_processor_disassembler_objdump_unittest_DEPENDENCIES =  \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o \
 	src/processor/dump_context.o src/processor/dump_object.o \
 	src/processor/logging.o src/processor/pathname_stripper.o \
@@ -999,7 +1028,7 @@ src_processor_microdump_processor_unittest_DEPENDENCIES =  \
 	src/processor/stackwalker_sparc.o \
 	src/processor/stackwalker_x86.o src/processor/tokenize.o \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__append_28)
 am_src_processor_microdump_stackwalk_OBJECTS =  \
 	src/processor/microdump_stackwalk.$(OBJEXT)
 src_processor_microdump_stackwalk_OBJECTS =  \
@@ -1031,7 +1060,7 @@ src_processor_microdump_stackwalk_DEPENDENCIES =  \
 	src/processor/stackwalker_riscv64.o \
 	src/processor/stackwalker_sparc.o \
 	src/processor/stackwalker_x86.o src/processor/tokenize.o \
-	src/third_party/libdisasm/libdisasm.a
+	src/third_party/libdisasm/libdisasm.a $(am__append_31)
 am_src_processor_minidump_dump_OBJECTS =  \
 	src/processor/minidump_dump.$(OBJEXT)
 src_processor_minidump_dump_OBJECTS =  \
@@ -1076,7 +1105,7 @@ src_processor_minidump_processor_unittest_DEPENDENCIES =  \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o src/third_party/libdisasm/libdisasm.a \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__append_28)
+	$(am__DEPENDENCIES_1) $(am__append_29)
 am_src_processor_minidump_stackwalk_OBJECTS =  \
 	src/processor/minidump_stackwalk.$(OBJEXT)
 src_processor_minidump_stackwalk_OBJECTS =  \
@@ -1111,7 +1140,7 @@ src_processor_minidump_stackwalk_DEPENDENCIES =  \
 	src/processor/stackwalker_x86.o \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o src/third_party/libdisasm/libdisasm.a \
-	$(am__append_30)
+	$(am__append_32)
 am_src_processor_minidump_unittest_OBJECTS = src/common/processor_minidump_unittest-test_assembler.$(OBJEXT) \
 	src/processor/minidump_unittest-minidump_unittest.$(OBJEXT) \
 	src/processor/minidump_unittest-synth_minidump.$(OBJEXT)
@@ -1252,7 +1281,7 @@ src_processor_stackwalker_selftest_DEPENDENCIES =  \
 	src/processor/stackwalker_riscv64.o \
 	src/processor/stackwalker_sparc.o \
 	src/processor/stackwalker_x86.o src/processor/tokenize.o \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(am__append_29)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(am__append_30)
 am_src_processor_stackwalker_x86_unittest_OBJECTS = src/common/processor_stackwalker_x86_unittest-test_assembler.$(OBJEXT) \
 	src/processor/stackwalker_x86_unittest-stackwalker_x86_unittest.$(OBJEXT)
 src_processor_stackwalker_x86_unittest_OBJECTS =  \
@@ -1572,7 +1601,9 @@ am__depfiles_remade = src/client/$(DEPDIR)/minidump_file_writer.Po \
 	src/common/linux/$(DEPDIR)/linux_libc_support.Po \
 	src/common/linux/$(DEPDIR)/memory_mapped_file.Po \
 	src/common/linux/$(DEPDIR)/safe_readlink.Po \
+	src/common/linux/$(DEPDIR)/scoped_pipe.Po \
 	src/common/linux/$(DEPDIR)/scoped_pipe_unittest-scoped_pipe_unittest.Po \
+	src/common/linux/$(DEPDIR)/scoped_tmpfile.Po \
 	src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po \
 	src/common/linux/$(DEPDIR)/symbol_collector_client.Po \
 	src/common/linux/$(DEPDIR)/symbol_upload.Po \
@@ -2971,6 +3002,8 @@ src_processor_disassembler_objdump_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS)
 
 src_processor_disassembler_objdump_unittest_LDADD = \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
@@ -3028,17 +3061,14 @@ src_processor_microdump_processor_unittest_SOURCES = \
 src_processor_microdump_processor_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS)
 
-src_processor_microdump_processor_unittest_LDADD = \
+src_processor_microdump_processor_unittest_LDADD =  \
 	src/processor/basic_code_modules.o \
 	src/processor/basic_source_line_resolver.o \
 	src/processor/call_stack.o \
-        src/processor/convert_old_arm64_context.o \
-	src/processor/cfi_frame_info.o \
-	src/processor/dump_context.o \
-	src/processor/dump_object.o \
-	src/processor/logging.o \
-	src/processor/microdump.o \
-	src/processor/microdump_processor.o \
+	src/processor/convert_old_arm64_context.o \
+	src/processor/cfi_frame_info.o src/processor/dump_context.o \
+	src/processor/dump_object.o src/processor/logging.o \
+	src/processor/microdump.o src/processor/microdump_processor.o \
 	src/processor/pathname_stripper.o \
 	src/processor/process_state.o \
 	src/processor/simple_symbol_supplier.o \
@@ -3055,11 +3085,9 @@ src_processor_microdump_processor_unittest_LDADD = \
 	src/processor/stackwalker_riscv.o \
 	src/processor/stackwalker_riscv64.o \
 	src/processor/stackwalker_sparc.o \
-	src/processor/stackwalker_x86.o \
-	src/processor/tokenize.o \
-	$(TEST_LIBS) \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
-
+	src/processor/stackwalker_x86.o src/processor/tokenize.o \
+	$(TEST_LIBS) $(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
+	$(am__append_28)
 src_processor_minidump_processor_unittest_SOURCES = \
 	src/processor/minidump_processor_unittest.cc
 
@@ -3096,7 +3124,7 @@ src_processor_minidump_processor_unittest_LDADD =  \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o src/third_party/libdisasm/libdisasm.a \
 	$(TEST_LIBS) $(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
-	$(am__append_28)
+	$(am__append_29)
 src_processor_minidump_unittest_SOURCES = \
 	src/common/test_assembler.cc \
 	src/processor/minidump_unittest.cc \
@@ -3253,7 +3281,7 @@ src_processor_stackwalker_selftest_LDADD =  \
 	src/processor/stackwalker_riscv64.o \
 	src/processor/stackwalker_sparc.o \
 	src/processor/stackwalker_x86.o src/processor/tokenize.o \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) $(am__append_29)
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) $(am__append_30)
 src_processor_stackwalker_amd64_unittest_SOURCES = \
 	src/common/test_assembler.cc \
 	src/processor/stackwalker_amd64_unittest.cc
@@ -3433,27 +3461,22 @@ src_processor_minidump_dump_LDADD = \
 src_processor_microdump_stackwalk_SOURCES = \
 	src/processor/microdump_stackwalk.cc
 
-src_processor_microdump_stackwalk_LDADD = \
-	src/common/path_helper.o \
+src_processor_microdump_stackwalk_LDADD = src/common/path_helper.o \
 	src/processor/basic_code_modules.o \
 	src/processor/basic_source_line_resolver.o \
 	src/processor/call_stack.o \
 	src/processor/convert_old_arm64_context.o \
 	src/processor/cfi_frame_info.o \
-	src/processor/disassembler_x86.o \
-	src/processor/dump_context.o \
-	src/processor/dump_object.o \
-	src/processor/logging.o \
-	src/processor/microdump.o \
-	src/processor/microdump_processor.o \
+	src/processor/disassembler_x86.o src/processor/dump_context.o \
+	src/processor/dump_object.o src/processor/logging.o \
+	src/processor/microdump.o src/processor/microdump_processor.o \
 	src/processor/pathname_stripper.o \
 	src/processor/process_state.o \
 	src/processor/simple_symbol_supplier.o \
 	src/processor/source_line_resolver_base.o \
 	src/processor/stack_frame_cpu.o \
 	src/processor/stack_frame_symbolizer.o \
-	src/processor/stackwalk_common.o \
-	src/processor/stackwalker.o \
+	src/processor/stackwalk_common.o src/processor/stackwalker.o \
 	src/processor/stackwalker_address_list.o \
 	src/processor/stackwalker_amd64.o \
 	src/processor/stackwalker_arm.o \
@@ -3464,10 +3487,8 @@ src_processor_microdump_stackwalk_LDADD = \
 	src/processor/stackwalker_riscv.o \
 	src/processor/stackwalker_riscv64.o \
 	src/processor/stackwalker_sparc.o \
-	src/processor/stackwalker_x86.o \
-	src/processor/tokenize.o \
-	src/third_party/libdisasm/libdisasm.a
-
+	src/processor/stackwalker_x86.o src/processor/tokenize.o \
+	src/third_party/libdisasm/libdisasm.a $(am__append_31)
 src_processor_minidump_stackwalk_SOURCES = \
 	src/processor/minidump_stackwalk.cc
 
@@ -3501,7 +3522,7 @@ src_processor_minidump_stackwalk_LDADD = src/common/path_helper.o \
 	src/processor/stackwalker_x86.o \
 	src/processor/symbolic_constants_win.o \
 	src/processor/tokenize.o src/third_party/libdisasm/libdisasm.a \
-	$(am__append_30)
+	$(am__append_32)
 EXTRA_DIST = \
 	$(SCRIPTS) \
 	src/client/linux/data/linux-gate-amd.sym \
@@ -4197,6 +4218,12 @@ src/processor/symbolic_constants_win.$(OBJEXT):  \
 	src/processor/$(DEPDIR)/$(am__dirstamp)
 src/processor/tokenize.$(OBJEXT): src/processor/$(am__dirstamp) \
 	src/processor/$(DEPDIR)/$(am__dirstamp)
+src/common/linux/scoped_pipe.$(OBJEXT):  \
+	src/common/linux/$(am__dirstamp) \
+	src/common/linux/$(DEPDIR)/$(am__dirstamp)
+src/common/linux/scoped_tmpfile.$(OBJEXT):  \
+	src/common/linux/$(am__dirstamp) \
+	src/common/linux/$(DEPDIR)/$(am__dirstamp)
 src/processor/disassembler_objdump.$(OBJEXT):  \
 	src/processor/$(am__dirstamp) \
 	src/processor/$(DEPDIR)/$(am__dirstamp)
@@ -5432,7 +5459,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/linux_libc_support.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/memory_mapped_file.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/safe_readlink.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/scoped_pipe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/scoped_pipe_unittest-scoped_pipe_unittest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/scoped_tmpfile.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/symbol_collector_client.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/common/linux/$(DEPDIR)/symbol_upload.Po@am__quote@ # am--include-marker
@@ -9712,7 +9741,9 @@ distclean: distclean-am
 	-rm -f src/common/linux/$(DEPDIR)/linux_libc_support.Po
 	-rm -f src/common/linux/$(DEPDIR)/memory_mapped_file.Po
 	-rm -f src/common/linux/$(DEPDIR)/safe_readlink.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_pipe.Po
 	-rm -f src/common/linux/$(DEPDIR)/scoped_pipe_unittest-scoped_pipe_unittest.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile.Po
 	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_collector_client.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_upload.Po
@@ -10070,7 +10101,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/common/linux/$(DEPDIR)/linux_libc_support.Po
 	-rm -f src/common/linux/$(DEPDIR)/memory_mapped_file.Po
 	-rm -f src/common/linux/$(DEPDIR)/safe_readlink.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_pipe.Po
 	-rm -f src/common/linux/$(DEPDIR)/scoped_pipe_unittest-scoped_pipe_unittest.Po
+	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile.Po
 	-rm -f src/common/linux/$(DEPDIR)/scoped_tmpfile_unittest-scoped_tmpfile_unittest.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_collector_client.Po
 	-rm -f src/common/linux/$(DEPDIR)/symbol_upload.Po
