@@ -480,9 +480,13 @@ src_libbreakpad_a_SOURCES = \
 	src/processor/tokenize.h
 if LINUX_HOST
 src_libbreakpad_a_SOURCES += \
-	src/processor/disassembler_objdump.cc \
-	src/processor/disassembler_objdump.h
-endif LINUX_HOST
+	src/common/linux/scoped_pipe.h \
+	src/common/linux/scoped_pipe.cc \
+	src/common/linux/scoped_tmpfile.h \
+	src/common/linux/scoped_tmpfile.cc \
+	src/processor/disassembler_objdump.h \
+	src/processor/disassembler_objdump.cc
+endif
 
 # libdisasm 3rd party library
 src_third_party_libdisasm_libdisasm_a_SOURCES = \
@@ -1001,6 +1005,8 @@ src_processor_exploitability_unittest_LDADD = \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) @LIBOBJS@
 if LINUX_HOST
 src_processor_exploitability_unittest_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o
 endif
 
@@ -1027,6 +1033,8 @@ src_processor_disassembler_objdump_unittest_SOURCES = \
 src_processor_disassembler_objdump_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS)
 src_processor_disassembler_objdump_unittest_LDADD = \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
@@ -1107,6 +1115,12 @@ src_processor_microdump_processor_unittest_LDADD = \
 	src/processor/tokenize.o \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) @LIBOBJS@
+if LINUX_HOST
+src_processor_microdump_processor_unittest_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
+	src/processor/disassembler_objdump.o
+endif
 
 src_processor_minidump_processor_unittest_SOURCES = \
 	src/processor/minidump_processor_unittest.cc
@@ -1152,6 +1166,8 @@ src_processor_minidump_processor_unittest_LDADD = \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) @LIBOBJS@
 if LINUX_HOST
 src_processor_minidump_processor_unittest_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o
 endif
 
@@ -1298,6 +1314,8 @@ src_processor_stackwalker_selftest_LDADD = \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 if LINUX_HOST
 src_processor_stackwalker_selftest_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o
 endif
 
@@ -1488,6 +1506,12 @@ src_processor_microdump_stackwalk_LDADD = \
 	src/processor/tokenize.o \
 	src/third_party/libdisasm/libdisasm.a \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) $(SOCKET_LIBS) @LIBOBJS@
+if LINUX_HOST
+src_processor_microdump_stackwalk_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
+	src/processor/disassembler_objdump.o
+endif
 
 src_processor_minidump_stackwalk_SOURCES = \
 	src/processor/minidump_stackwalk.cc
@@ -1533,6 +1557,8 @@ src_processor_minidump_stackwalk_LDADD = \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) $(SOCKET_LIBS) @LIBOBJS@
 if LINUX_HOST
 src_processor_minidump_stackwalk_LDADD += \
+	src/common/linux/scoped_pipe.o \
+	src/common/linux/scoped_tmpfile.o \
 	src/processor/disassembler_objdump.o
 endif LINUX_HOST
 
