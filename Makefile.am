@@ -223,6 +223,7 @@ check_PROGRAMS += \
 if LINUX_HOST
 check_PROGRAMS += \
 	src/processor/disassembler_objdump_unittest \
+	src/common/linux/scoped_pipe_unittest \
 	src/common/linux/scoped_tmpfile_unittest
 endif LINUX_HOST
 if SELFTEST
@@ -558,6 +559,8 @@ src_client_linux_linux_client_unittest_shlib_SOURCES = \
 	src/client/linux/minidump_writer/proc_cpuinfo_reader_unittest.cc \
 	src/common/linux/elf_core_dump.cc \
 	src/common/linux/linux_libc_support_unittest.cc \
+	src/common/linux/scoped_pipe.h \
+	src/common/linux/scoped_pipe.cc \
 	src/common/linux/scoped_tmpfile.h \
 	src/common/linux/scoped_tmpfile.cc \
 	src/common/linux/tests/crash_generator.cc \
@@ -957,6 +960,15 @@ if LINUX_HOST
 src_processor_exploitability_unittest_LDADD += \
 	src/processor/disassembler_objdump.o
 endif
+
+src_common_linux_scoped_pipe_unittest_SOURCES = \
+	src/common/linux/scoped_pipe_unittest.cc
+src_common_linux_scoped_pipe_unittest_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+src_common_linux_scoped_pipe_unittest_LDADD = \
+	src/common/linux/scoped_pipe.o \
+	$(TEST_LIBS) \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 src_common_linux_scoped_tmpfile_unittest_SOURCES = \
 	src/common/linux/scoped_tmpfile_unittest.cc
