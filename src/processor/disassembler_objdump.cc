@@ -32,7 +32,6 @@
 
 #include "processor/disassembler_objdump.h"
 
-#ifdef __linux__
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
@@ -498,23 +497,5 @@ bool DisassemblerObjdump::CalculateDestAddress(const DumpContext& context,
                                                uint64_t& address) {
   return CalculateAddress(context, dest_, address);
 }
+
 }  // namespace google_breakpad
-
-#else  // __linux__
-namespace google_breakpad {
-DisassemblerObjdump::DisassemblerObjdump(const uint32_t cpu,
-                                         const MemoryRegion* memory_region,
-                                         uint64_t address) {}
-
-bool DisassemblerObjdump::CalculateSrcAddress(const DumpContext& context,
-                                              uint64_t& address) {
-  return false;
-}
-
-bool DisassemblerObjdump::CalculateDestAddress(const DumpContext& context,
-                                               uint64_t& address) {
-  return false;
-}
-}  // namespace google_breakpad
-
-#endif  // __linux__
