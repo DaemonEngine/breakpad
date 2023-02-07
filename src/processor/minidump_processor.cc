@@ -763,6 +763,8 @@ bool MinidumpProcessor::GetProcessCreateTime(Minidump* dump,
   return true;
 }
 
+#ifdef __linux__
+
 static bool IsCanonicalAddress(uint64_t address) {
   uint64_t sign_bit = (address >> 63) & 1;
   for (int shift = 48; shift < 63; ++shift) {
@@ -773,7 +775,6 @@ static bool IsCanonicalAddress(uint64_t address) {
   return true;
 }
 
-#ifdef __linux__
 static void CalculateFaultAddressFromInstruction(Minidump* dump,
                                                  uint64_t* address) {
   MinidumpException* exception = dump->GetException();
