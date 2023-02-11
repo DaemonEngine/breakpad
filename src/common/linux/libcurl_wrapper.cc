@@ -303,12 +303,10 @@ bool LibcurlWrapper::SendRequestInner(const string& url,
     (*easy_getinfo_)(curl_, CURLINFO_RESPONSE_CODE, http_status_code);
   }
 
-#ifndef NDEBUG
   if (err_code != CURLE_OK)
     fprintf(stderr, "Failed to send http request to %s, error: %s\n",
             url.c_str(),
             (*easy_strerror_)(err_code));
-#endif
 
   Reset();
 
