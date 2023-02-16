@@ -5540,7 +5540,7 @@ void MinidumpCrashpadInfo::Print() {
         // Value represents something else.
         char buffer[3];
         for (const uint8_t& v : annot.value) {
-          sprintf(buffer, "%X", v);
+          snprintf(buffer, sizeof(buffer), "%X", v);
           str_value.append(buffer);
         }
       }
