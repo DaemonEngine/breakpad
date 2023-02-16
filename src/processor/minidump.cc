@@ -5479,6 +5479,27 @@ void MinidumpCrashpadInfo::Print() {
       printf("  module_list[%d].simple_annotations[\"%s\"] = %s\n",
              module_index, annot.first.c_str(), annot.second.c_str());
     }
+    const auto& crashpad_annots =
+        module_crashpad_info_annotation_objects_[module_index];
+    for (const AnnotationObject& annot : crashpad_annots) {
+      std::string str_value;
+      if (annot.type == 1) {
+        // Value represents a C-style string.
+        for (const uint8_t& v : annot.value) {
+          str_value.append(1, static_cast<char>(v));
+        }
+      } else {
+        // Value represents something else.
+        char buffer[3];
+        for (const uint8_t& v : annot.value) {
+          sprintf(buffer, "%X", v);
+          str_value.append(buffer);
+        }
+      }
+      printf(
+          "  module_list[%d].crashpad_annotations[\"%s\"] (type = %u) = %s\n",
+          module_index, annot.name.c_str(), annot.type, str_value.c_str());
+    }
     printf("  address_mask = %" PRIu64 "\n", crashpad_info_.address_mask);
   }
 
