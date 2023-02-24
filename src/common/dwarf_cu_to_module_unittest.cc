@@ -30,6 +30,10 @@
 
 // dwarf_cu_to_module.cc: Unit tests for google_breakpad::DwarfCUToModule.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <stdint.h>
 
 #include <string>

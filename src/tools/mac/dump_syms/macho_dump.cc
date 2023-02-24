@@ -31,6 +31,10 @@
 // macho_dump.cc: Dump the contents of a Mach-O file. This is mostly
 // a test program for the Mach_O::FatReader and Mach_O::Reader classes.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <mach-o/arch.h>

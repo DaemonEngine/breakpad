@@ -31,6 +31,10 @@
 // dump_symbols.cc: implement google_breakpad::WriteSymbolFile:
 // Find all the debugging info in a file and dump it as a Breakpad symbol file.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/linux/dump_symbols.h"
 
 #include <assert.h>

@@ -31,6 +31,10 @@
 // dump_syms_tool.cc: Command line tool that uses the DumpSymbols class.
 // TODO(waylonis): accept stdin
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <mach-o/arch.h>
 #include <unistd.h>
 
