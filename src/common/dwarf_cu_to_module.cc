@@ -35,6 +35,10 @@
 #define __STDC_FORMAT_MACROS
 #endif  /* __STDC_FORMAT_MACROS */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/dwarf_cu_to_module.h"
 
 #include <assert.h>

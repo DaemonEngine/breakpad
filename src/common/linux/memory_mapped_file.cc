@@ -29,6 +29,10 @@
 // memory_mapped_file.cc: Implement google_breakpad::MemoryMappedFile.
 // See memory_mapped_file.h for details.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/linux/memory_mapped_file.h"
 
 #include <fcntl.h>

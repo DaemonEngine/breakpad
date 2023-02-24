@@ -30,6 +30,10 @@
 
 // dwarf_cfi_to_module_unittest.cc: Tests for google_breakpad::DwarfCFIToModule.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <string>
 #include <vector>
 
