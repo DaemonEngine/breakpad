@@ -221,26 +221,15 @@ bool DumpSymbols::ReadData(uint8_t* contents, size_t size,
   return true;
 }
 
-bool DumpSymbols::SetArchitecture(cpu_type_t cpu_type,
-                                  cpu_subtype_t cpu_subtype) {
+bool DumpSymbols::SetArchitecture(const ArchInfo& info) {
   // Find the best match for the architecture the user requested.
-  const SuperFatArch* best_match = FindBestMatchForArchitecture(
-      cpu_type, cpu_subtype);
+  const SuperFatArch* best_match =
+      FindBestMatchForArchitecture(info.cputype, info.cpusubtype);
   if (!best_match) return false;
 
   // Record the selected object file.
   selected_object_file_ = best_match;
   return true;
-}
-
-bool DumpSymbols::SetArchitecture(const std::string& arch_name) {
-  bool arch_set = false;
-  const NXArchInfo* arch_info =
-      google_breakpad::BreakpadGetArchInfoFromName(arch_name.c_str());
-  if (arch_info) {
-    arch_set = SetArchitecture(arch_info->cputype, arch_info->cpusubtype);
-  }
-  return arch_set;
 }
 
 SuperFatArch* DumpSymbols::FindBestMatchForArchitecture(
@@ -402,8 +391,8 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
       selected_object_file_ = &object_files_[0];
     else {
       // Look for an object file whose architecture matches our own.
-      const NXArchInfo* local_arch = NXGetLocalArchInfo();
-      if (!SetArchitecture(local_arch->cputype, local_arch->cpusubtype)) {
+      ArchInfo local_arch = GetLocalArchInfo();
+      if (!SetArchitecture(local_arch)) {
         fprintf(stderr, "%s: object file contains more than one"
                 " architecture, none of which match the current"
                 " architecture; specify an architecture explicitly"
@@ -418,18 +407,16 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
 
   // Find the name of the selected file's architecture, to appear in
   // the MODULE record and in error messages.
-  const NXArchInfo* selected_arch_info =
-      google_breakpad::BreakpadGetArchInfoFromCpuType(
-          selected_object_file_->cputype, selected_object_file_->cpusubtype);
+  const char* selected_arch_name = GetNameFromCPUType(
+      selected_object_file_->cputype, selected_object_file_->cpusubtype);
 
   // In certain cases, it is possible that architecture info can't be reliably
   // determined, e.g. new architectures that breakpad is unware of. In that
   // case, avoid crashing and return false instead.
-  if (selected_arch_info == NULL) {
+  if (selected_arch_name == kUnknownArchName) {
     return false;
   }
 
-  const char* selected_arch_name = selected_arch_info->name;
   if (strcmp(selected_arch_name, "i386") == 0)
     selected_arch_name = "x86";
 
@@ -540,16 +527,14 @@ bool DumpSymbols::ReadCFI(google_breakpad::Module* module,
       register_names = DwarfCFIToModule::RegisterNames::ARM64();
       break;
     default: {
-      const NXArchInfo* arch = google_breakpad::BreakpadGetArchInfoFromCpuType(
-          macho_reader.cpu_type(), macho_reader.cpu_subtype());
-      fprintf(stderr, "%s: cannot convert DWARF call frame information for ",
-              selected_object_name_.c_str());
-      if (arch)
-        fprintf(stderr, "architecture '%s'", arch->name);
-      else
-        fprintf(stderr, "architecture %d,%d",
-                macho_reader.cpu_type(), macho_reader.cpu_subtype());
-      fprintf(stderr, " to Breakpad symbol file: no register name table\n");
+      const char* arch_name = GetNameFromCPUType(macho_reader.cpu_type(),
+                                                 macho_reader.cpu_subtype());
+      fprintf(
+          stderr,
+          "%s: cannot convert DWARF call frame information for architecture "
+          "'%s' (%d, %d) to Breakpad symbol file: no register name table\n",
+          selected_object_name_.c_str(), arch_name, macho_reader.cpu_type(),
+          macho_reader.cpu_subtype());
       return false;
     }
   }
