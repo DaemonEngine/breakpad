@@ -67,7 +67,7 @@ struct Options {
 
   string srcPath;
   string dsymPath;
-  const NXArchInfo *arch;
+  std::optional<ArchInfo> arch;
   bool header_only;
   bool cfi;
   bool handle_inter_cu_refs;
@@ -121,11 +121,12 @@ static void CopyCFIDataBetweenModules(Module* to_module,
 }
 
 static bool SetArchitecture(DumpSymbols& dump_symbols,
-                            const NXArchInfo* arch,
+                            const ArchInfo& arch,
                             const std::string& filename) {
-  if (!dump_symbols.SetArchitecture(arch->cputype, arch->cpusubtype)) {
+  if (!dump_symbols.SetArchitecture(arch)) {
     fprintf(stderr, "%s: no architecture '%s' is present in file.\n",
-            filename.c_str(), arch->name);
+            filename.c_str(),
+            GetNameFromCPUType(arch.cputype, arch.cpusubtype));
     size_t available_size;
     const SuperFatArch* available =
         dump_symbols.AvailableArchitectures(&available_size);
@@ -135,14 +136,8 @@ static bool SetArchitecture(DumpSymbols& dump_symbols,
       fprintf(stderr, "architectures present in the file are:\n");
     for (size_t i = 0; i < available_size; i++) {
       const SuperFatArch* arch = &available[i];
-      const NXArchInfo* arch_info =
-          google_breakpad::BreakpadGetArchInfoFromCpuType(arch->cputype,
-                                                          arch->cpusubtype);
-      if (arch_info)
-        fprintf(stderr, "%s (%s)\n", arch_info->name, arch_info->description);
-      else
-        fprintf(stderr, "unrecognized cpu type 0x%x, subtype 0x%x\n",
-                arch->cputype, arch->cpusubtype);
+      fprintf(stderr, "%s\n",
+              GetNameFromCPUType(arch->cputype, arch->cpusubtype));
     }
     return false;
   }
@@ -173,7 +168,7 @@ static bool Start(const Options& options) {
     return false;
 
   if (options.arch &&
-      !SetArchitecture(dump_symbols, options.arch, primary_file)) {
+      !SetArchitecture(dump_symbols, *options.arch, primary_file)) {
     return false;
   }
 
@@ -193,7 +188,7 @@ static bool Start(const Options& options) {
       return false;
 
     if (options.arch &&
-        !SetArchitecture(dump_symbols, options.arch, options.srcPath)) {
+        !SetArchitecture(dump_symbols, *options.arch, options.srcPath)) {
       return false;
     }
     Module* cfi_module = NULL;
@@ -248,8 +243,7 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
         options->header_only = true;
         break;
       case 'a': {
-        const NXArchInfo *arch_info =
-            google_breakpad::BreakpadGetArchInfoFromName(optarg);
+        std::optional<ArchInfo> arch_info = GetArchInfoFromName(optarg);
         if (!arch_info) {
           fprintf(stderr, "%s: Invalid architecture: %s\n", argv[0], optarg);
           Usage(argc, argv);
