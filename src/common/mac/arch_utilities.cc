@@ -210,22 +210,4 @@ const NXArchInfo *NXGetArchInfoFromCpuType(cpu_type_t cputype,
   }
   return candidate;
 }
-
-struct fat_arch *NXFindBestFatArch(cpu_type_t cputype,
-                                   cpu_subtype_t cpusubtype,
-                                   struct fat_arch *fat_archs,
-                                   uint32_t nfat_archs) {
-  struct fat_arch *candidate = NULL;
-  for (uint32_t f = 0; f < nfat_archs; ++f) {
-    if (fat_archs[f].cputype == cputype) {
-      if (fat_archs[f].cpusubtype == cpusubtype) {
-        return &fat_archs[f];
-      }
-      if (!candidate) {
-        candidate = &fat_archs[f];
-      }
-    }
-  }
-  return candidate;
-}
 #endif  // !__APPLE__

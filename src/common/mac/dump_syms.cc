@@ -232,60 +232,37 @@ bool DumpSymbols::SetArchitecture(const ArchInfo& info) {
   return true;
 }
 
+
 SuperFatArch* DumpSymbols::FindBestMatchForArchitecture(
-    cpu_type_t cpu_type, cpu_subtype_t cpu_subtype) {
-  // Check if all the object files can be converted to struct fat_arch.
-  bool can_convert_to_fat_arch = true;
-  vector<struct fat_arch> fat_arch_vector;
-  for (vector<SuperFatArch>::const_iterator it = object_files_.begin();
-       it != object_files_.end();
-       ++it) {
-    struct fat_arch arch;
-    bool success = it->ConvertToFatArch(&arch);
-    if (!success) {
-      can_convert_to_fat_arch = false;
-      break;
+    cpu_type_t cpu_type,
+    cpu_subtype_t cpu_subtype) {
+  SuperFatArch* closest_match = nullptr;
+  for (auto& object_file : object_files_) {
+    if (static_cast<cpu_type_t>(object_file.cputype) == cpu_type) {
+      // If there's an exact match, return it directly.
+      if ((static_cast<cpu_subtype_t>(object_file.cpusubtype) &
+           ~CPU_SUBTYPE_MASK) == (cpu_subtype & ~CPU_SUBTYPE_MASK)) {
+        return &object_file;
+      }
+      // Otherwise, hold on to this as the closest match since at least the CPU
+      // type matches.
+      if (!closest_match) {
+        closest_match = &object_file;
+      }
     }
-    fat_arch_vector.push_back(arch);
   }
-
-  // If all the object files can be converted to struct fat_arch, use
-  // NXFindBestFatArch.
-  if (can_convert_to_fat_arch) {
-    const struct fat_arch* best_match
-      = NXFindBestFatArch(cpu_type, cpu_subtype, &fat_arch_vector[0],
-                          static_cast<uint32_t>(fat_arch_vector.size()));
-
-    for (size_t i = 0; i < fat_arch_vector.size(); ++i) {
-      if (best_match == &fat_arch_vector[i])
-        return &object_files_[i];
-    }
-    assert(best_match == NULL);
-    // Fall through since NXFindBestFatArch can't find arm slices on x86_64
-    // macOS 13. See FB11955188.
-  }
-
-  // Check for an exact match with cpu_type and cpu_subtype.
-  for (vector<SuperFatArch>::iterator it = object_files_.begin();
-       it != object_files_.end();
-       ++it) {
-    if (static_cast<cpu_type_t>(it->cputype) == cpu_type &&
-        (static_cast<cpu_subtype_t>(it->cpusubtype) & ~CPU_SUBTYPE_MASK) ==
-            (cpu_subtype & ~CPU_SUBTYPE_MASK))
-      return &*it;
-  }
-
   // No exact match found.
-  // TODO(erikchen): If it becomes necessary, we can copy the implementation of
-  // NXFindBestFatArch, located at
-  // http://web.mit.edu/darwin/src/modules/cctools/libmacho/arch.c.
-  fprintf(stderr, "Failed to find an exact match for an object file with cpu "
-      "type: %d and cpu subtype: %d.\n", cpu_type, cpu_subtype);
-  if (!can_convert_to_fat_arch) {
-    fprintf(stderr, "Furthermore, at least one object file is larger "
-        "than 2**32.\n");
+  fprintf(stderr,
+          "Failed to find an exact match for an object file with cpu "
+          "type: %d and cpu subtype: %d.\n",
+          cpu_type, cpu_subtype);
+  if (closest_match) {
+    fprintf(stderr, "Using %s as the closest match.\n",
+            GetNameFromCPUType(closest_match->cputype,
+                               closest_match->cpusubtype));
+    return closest_match;
   }
-  return NULL;
+  return nullptr;
 }
 
 string DumpSymbols::Identifier() {
