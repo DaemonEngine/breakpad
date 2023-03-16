@@ -137,7 +137,7 @@ static void Usage(int argc, const char *argv[], bool error) {
           "\n"
           "  -m         Output in machine-readable format\n"
           "  -s         Output stack contents\n"
-          "  -c         Output thread that causes crash or dump only\n",
+          "  -c         Output thread that causes crash or dump only\n"
           "  -b         Brief of the thread that causes crash or dump\n",
           google_breakpad::BaseName(argv[0]).c_str());
 }
