@@ -63,7 +63,8 @@ struct Options {
         cfi(true),
         handle_inter_cu_refs(true),
         handle_inlines(false),
-        enable_multiple(false) {}
+        enable_multiple(false),
+        module_name() {}
 
   string srcPath;
   string dsymPath;
@@ -73,6 +74,7 @@ struct Options {
   bool handle_inter_cu_refs;
   bool handle_inlines;
   bool enable_multiple;
+  string module_name;
 };
 
 static bool StackFrameEntryComparator(const Module::StackFrameEntry* a,
@@ -149,7 +151,7 @@ static bool Start(const Options& options) {
       (options.handle_inlines ? INLINES : NO_DATA) |
       (options.cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
   DumpSymbols dump_symbols(symbol_data, options.handle_inter_cu_refs,
-                           options.enable_multiple);
+                           options.enable_multiple, options.module_name);
 
   // For x86_64 binaries, the CFI data is in the __TEXT,__eh_frame of the
   // Mach-O file, which is not copied into the dSYM. Whereas in i386, the CFI
@@ -196,13 +198,38 @@ static bool Start(const Options& options) {
       return false;
     scoped_ptr<Module> scoped_cfi_module(cfi_module);
 
+    bool name_matches;
+    if (!options.module_name.empty()) {
+      // Ignore the basename of the dSYM and binary and use the passed-in module
+      // name.
+      name_matches = true;
+    } else {
+      name_matches = cfi_module->name() == module->name();
+    }
+
     // Ensure that the modules are for the same debug code file.
-    if (cfi_module->name() != module->name() ||
-        cfi_module->os() != module->os() ||
+    if (!name_matches || cfi_module->os() != module->os() ||
         cfi_module->architecture() != module->architecture() ||
         cfi_module->identifier() != module->identifier()) {
       fprintf(stderr, "Cannot generate a symbol file from split sources that do"
                       " not match.\n");
+      if (!name_matches) {
+        fprintf(stderr, "Name mismatch: binary=[%s], dSYM=[%s]\n",
+                cfi_module->name().c_str(), module->name().c_str());
+      }
+      if (cfi_module->os() != module->os()) {
+        fprintf(stderr, "OS mismatch: binary=[%s], dSYM=[%s]\n",
+                cfi_module->os().c_str(), module->os().c_str());
+      }
+      if (cfi_module->architecture() != module->architecture()) {
+        fprintf(stderr, "Architecture mismatch: binary=[%s], dSYM=[%s]\n",
+                cfi_module->architecture().c_str(),
+                module->architecture().c_str());
+      }
+      if (cfi_module->identifier() != module->identifier()) {
+        fprintf(stderr, "Identifier mismatch: binary=[%s], dSYM=[%s]\n",
+                cfi_module->identifier().c_str(), module->identifier().c_str());
+      }
       return false;
     }
 
@@ -215,8 +242,10 @@ static bool Start(const Options& options) {
 //=============================================================================
 static void Usage(int argc, const char *argv[]) {
   fprintf(stderr, "Output a Breakpad symbol file from a Mach-o file.\n");
-  fprintf(stderr, "Usage: %s [-a ARCHITECTURE] [-c] [-g dSYM path] "
-                  "<Mach-o file>\n", argv[0]);
+  fprintf(stderr,
+          "Usage: %s [-a ARCHITECTURE] [-c] [-g dSYM path] "
+          "[-n MODULE] <Mach-o file>\n",
+          argv[0]);
   fprintf(stderr, "\t-i: Output module header information only.\n");
   fprintf(stderr, "\t-a: Architecture type [default: native, or whatever is\n");
   fprintf(stderr, "\t    in the file, if it contains only one architecture]\n");
@@ -228,6 +257,9 @@ static void Usage(int argc, const char *argv[]) {
   fprintf(stderr,
           "\t-m: Enable writing the optional 'm' field on FUNC "
           "and PUBLIC, denoting multiple symbols for the address.\n");
+  fprintf(stderr,
+          "\t-n: Use MODULE as the name of the module rather than \n"
+          "the basename of the Mach-O file/dSYM.\n");
   fprintf(stderr, "\t-h: Usage\n");
   fprintf(stderr, "\t-?: Usage\n");
 }
@@ -237,7 +269,7 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
   extern int optind;
   signed char ch;
 
-  while ((ch = getopt(argc, (char* const*)argv, "ia:g:crdm?h")) != -1) {
+  while ((ch = getopt(argc, (char* const*)argv, "ia:g:crdm?hn:")) != -1) {
     switch (ch) {
       case 'i':
         options->header_only = true;
@@ -266,6 +298,9 @@ static void SetupOptions(int argc, const char *argv[], Options *options) {
         break;
       case 'm':
         options->enable_multiple = true;
+        break;
+      case 'n':
+        options->module_name = optarg;
         break;
       case '?':
       case 'h':
