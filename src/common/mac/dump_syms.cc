@@ -429,7 +429,12 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
   }
 
   // Compute a module name, to appear in the MODULE record.
-  string module_name = google_breakpad::BaseName(object_filename_);
+  string module_name;
+  if (!module_name_.empty()) {
+    module_name = module_name_;
+  } else {
+    module_name = google_breakpad::BaseName(object_filename_);
+  }
 
   // Choose an identifier string, to appear in the MODULE record.
   string identifier = Identifier();
