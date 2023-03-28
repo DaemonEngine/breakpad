@@ -1022,6 +1022,7 @@ const char* ElfArchitecture(const typename ElfClass::Ehdr* elf_header) {
     case EM_SPARC:      return "sparc";
     case EM_SPARCV9:    return "sparcv9";
     case EM_X86_64:     return "x86_64";
+    case EM_RISCV:      return "riscv";
     default: return NULL;
   }
 }
