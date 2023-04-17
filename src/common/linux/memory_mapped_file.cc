@@ -61,8 +61,11 @@ MemoryMappedFile::~MemoryMappedFile() {
 
 bool MemoryMappedFile::Map(const char* path, size_t offset) {
   Unmap();
-
-  int fd = sys_open(path, O_RDONLY, 0);
+  // Based on https://pubs.opengroup.org/onlinepubs/7908799/xsh/open.html
+  // If O_NONBLOCK is set: The open() function will return without blocking
+  // for the device to be ready or available. Setting this value will provent
+  // hanging if file is not avilable.
+  int fd = sys_open(path, O_RDONLY | O_NONBLOCK, 0);
   if (fd == -1) {
     return false;
   }
