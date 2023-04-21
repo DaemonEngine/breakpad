@@ -57,7 +57,8 @@ class DumpSymbols {
   DumpSymbols(SymbolData symbol_data,
               bool handle_inter_cu_refs,
               bool enable_multiple = false,
-              const std::string& module_name = "")
+              const std::string& module_name = "",
+              bool prefer_extern_name = false)
       : symbol_data_(symbol_data),
         handle_inter_cu_refs_(handle_inter_cu_refs),
         object_filename_(),
@@ -68,7 +69,8 @@ class DumpSymbols {
         selected_object_file_(),
         selected_object_name_(),
         enable_multiple_(enable_multiple),
-        module_name_(module_name) {}
+        module_name_(module_name),
+        prefer_extern_name_(prefer_extern_name) {}
   ~DumpSymbols() = default;
 
   // Prepare to read debugging information from |filename|. |filename| may be
@@ -205,6 +207,15 @@ class DumpSymbols {
   // If non-empty, used as the module name. Otherwise, the basename of
   // |object_filename_| is used as the module name.
   const std::string module_name_;
+
+  // If a Function and an Extern share the same address but have a different
+  // name, prefer the name of the Extern.
+  //
+  // Use this when dumping Mach-O .dSYMs built with -gmlt (Minimum Line Tables),
+  // as the Function's fully-qualified name will only be present in the STABS
+  // (which are placed in the Extern), not in the DWARF symbols (which are
+  // placed in the Function).
+  bool prefer_extern_name_;
 };
 
 }  // namespace google_breakpad

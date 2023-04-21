@@ -105,14 +105,16 @@ Module::Module(const string& name,
                const string& architecture,
                const string& id,
                const string& code_id /* = "" */,
-               bool enable_multiple_field /* = false*/)
+               bool enable_multiple_field /* = false*/,
+               bool prefer_extern_name /* = false*/)
     : name_(name),
       os_(os),
       architecture_(architecture),
       id_(id),
       code_id_(code_id),
       load_address_(0),
-      enable_multiple_field_(enable_multiple_field) {}
+      enable_multiple_field_(enable_multiple_field),
+      prefer_extern_name_(prefer_extern_name) {}
 
 Module::~Module() {
   for (FileByNameMap::iterator it = files_.begin(); it != files_.end(); ++it)
@@ -152,11 +154,14 @@ bool Module::AddFunction(Function* function) {
     it_ext = externs_.find(&arm_thumb_ext);
   }
   if (it_ext != externs_.end()) {
+    Extern* found_ext = it_ext->get();
+    bool name_mismatch = found_ext->name != function->name;
     if (enable_multiple_field_) {
-      Extern* found_ext = it_ext->get();
       // If the PUBLIC is for the same symbol as the FUNC, don't mark multiple.
-      function->is_multiple |=
-          found_ext->name != function->name || found_ext->is_multiple;
+      function->is_multiple |= name_mismatch || found_ext->is_multiple;
+    }
+    if (name_mismatch && prefer_extern_name_) {
+      function->name = AddStringToPool(it_ext->get()->name);
     }
     externs_.erase(it_ext);
   }
