@@ -301,7 +301,6 @@ static void PrintFrameHeader(const StackFrame* frame, int frame_index) {
   } else {
     printf("0x%" PRIx64, instruction_address);
   }
-  printf("\n ");
 }
 
 // PrintStack prints the call stack in |stack| to stdout, in a reasonably
@@ -326,6 +325,7 @@ static void PrintStack(const CallStack* stack,
   for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
     const StackFrame* frame = stack->frames()->at(frame_index);
     PrintFrameHeader(frame, frame_index);
+    printf("\n ");
 
     // Inlined frames don't have registers info.
     if (frame->trust != StackFrameAMD64::FRAME_TRUST_INLINE) {
@@ -1297,6 +1297,7 @@ void PrintRequestingThreadBrief(const ProcessState& process_state) {
   int frame_count = stack->frames()->size();
   for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
     PrintFrameHeader(stack->frames()->at(frame_index), frame_index);
+    printf("\n");
   }
 }
 
