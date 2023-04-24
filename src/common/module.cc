@@ -157,8 +157,22 @@ bool Module::AddFunction(Function* function) {
     Extern* found_ext = it_ext->get();
     bool name_mismatch = found_ext->name != function->name;
     if (enable_multiple_field_) {
+      bool is_multiple_based_on_name;
+      // In the case of a .dSYM built with -gmlt, the external name will be the
+      // fully-qualified symbol name, but the function name will be the partial
+      // name (or omitted).
+      //
+      // Don't mark multiple in this case.
+      if (name_mismatch &&
+          (function->name == "<name omitted>" ||
+           found_ext->name.find(function->name.str()) != string::npos)) {
+        is_multiple_based_on_name = false;
+      } else {
+        is_multiple_based_on_name = name_mismatch;
+      }
       // If the PUBLIC is for the same symbol as the FUNC, don't mark multiple.
-      function->is_multiple |= name_mismatch || found_ext->is_multiple;
+      function->is_multiple |=
+          is_multiple_based_on_name || found_ext->is_multiple;
     }
     if (name_mismatch && prefer_extern_name_) {
       function->name = AddStringToPool(it_ext->get()->name);
