@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000-2006 Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2000-2007 Apple Inc. All rights reserved.
  *
  * @APPLE_OSREFERENCE_LICENSE_HEADER_START@
  *
@@ -59,20 +59,16 @@
 /*
  *	File:	boolean.h
  *
- *	Boolean type, for I386.
+ *	Boolean type, for ARM.
  */
 
-#ifndef _MACH_I386_BOOLEAN_H_
-#define _MACH_I386_BOOLEAN_H_
+#ifndef _MACH_ARM_BOOLEAN_H_
+#define _MACH_ARM_BOOLEAN_H_
 
-#if defined (__i386__) || defined (__x86_64__)
+#if defined (__arm__) || defined (__arm64__) || defined (__aarch64__)
 
-#if defined(__x86_64__) && !defined(KERNEL)
-typedef unsigned int    boolean_t;
-#else
 typedef int             boolean_t;
-#endif
 
-#endif /* defined (__i386__) || defined (__x86_64__) */
+#endif /* defined (__arm__) || defined (__arm64__) */
 
-#endif  /* _MACH_I386_BOOLEAN_H_ */
+#endif  /* _MACH_ARM_BOOLEAN_H_ */
