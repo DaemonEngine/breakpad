@@ -3,7 +3,6 @@ processes Mach-O files on Linux.
 
 From xnu-8792.41.9 (https://github.com/apple-oss-distributions/xnu at 5c2921b)
 i386/_types.h
-architecture/byte_order.h
 arm/_types.h
 mach/boolean.h
 mach/machine.h
@@ -21,3 +20,6 @@ mach-o/arch.h
 mach-o/fat.h
 mach-o/loader.h
 mach-o/nlist.h
+
+From architecture-282 (https://github.com/apple-oss-distributions/architecture at fe86900)
+architecture/byte_order.h
