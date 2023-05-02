@@ -95,7 +95,7 @@ ArchInfo GetLocalArchInfo(void) {
 #ifdef __APPLE__
 
 std::optional<ArchInfo> GetArchInfoFromName(const char* arch_name) {
-  if (__builtin_available(macOS 13.0, *)) {
+  if (__builtin_available(macOS 13.0, iOS 16.0, *)) {
     cpu_type_t type;
     cpu_subtype_t subtype;
     if (macho_cpu_type_for_arch_name(arch_name, &type, &subtype)) {
@@ -114,7 +114,7 @@ std::optional<ArchInfo> GetArchInfoFromName(const char* arch_name) {
 }
 
 const char* GetNameFromCPUType(cpu_type_t cpu_type, cpu_subtype_t cpu_subtype) {
-  if (__builtin_available(macOS 13.0, *)) {
+  if (__builtin_available(macOS 13.0, iOS 16.0, *)) {
     const char* name = macho_arch_name_for_cpu_type(cpu_type, cpu_subtype);
     if (name) {
       return name;
