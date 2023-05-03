@@ -1122,7 +1122,7 @@ typedef struct {
 
 typedef struct {
   uint32_t count;
-  MDLocationDescriptor modules[0];  /* MDRawModuleCrashpadInfoLink */
+  MDRawModuleCrashpadInfoLink modules[0];
 } MDRawModuleCrashpadInfoList;
 
 typedef struct {
