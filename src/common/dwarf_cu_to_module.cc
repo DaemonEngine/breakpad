@@ -696,11 +696,12 @@ void DwarfCUToModule::InlineHandler::Finish() {
   // Every DW_TAG_inlined_subroutine should have a DW_AT_abstract_origin.
   assert(specification_offset_ != 0);
 
-  cu_context_->file_context->module_->inline_origin_map.SetReference(
-      specification_offset_, specification_offset_);
+  Module::InlineOriginMap& inline_origin_map =
+      cu_context_->file_context->module_
+          ->inline_origin_maps[cu_context_->file_context->filename_];
+  inline_origin_map.SetReference(specification_offset_, specification_offset_);
   Module::InlineOrigin* origin =
-      cu_context_->file_context->module_->inline_origin_map
-          .GetOrCreateInlineOrigin(specification_offset_, name_);
+      inline_origin_map.GetOrCreateInlineOrigin(specification_offset_, name_);
   unique_ptr<Module::Inline> in(
       new Module::Inline(origin, ranges, call_site_line_, call_site_file_id_,
                          inline_nest_level_, std::move(child_inlines_)));
@@ -929,10 +930,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
     StringView name = name_.empty() ? name_omitted : name_;
     uint64_t offset =
         specification_offset_ != 0 ? specification_offset_ : offset_;
-    cu_context_->file_context->module_->inline_origin_map.SetReference(offset_,
-                                                                       offset);
-    cu_context_->file_context->module_->inline_origin_map
-        .GetOrCreateInlineOrigin(offset_, name);
+    Module::InlineOriginMap& inline_origin_map =
+        cu_context_->file_context->module_
+            ->inline_origin_maps[cu_context_->file_context->filename_];
+    inline_origin_map.SetReference(offset_, offset);
+    inline_origin_map.GetOrCreateInlineOrigin(offset_, name);
   }
 }
 

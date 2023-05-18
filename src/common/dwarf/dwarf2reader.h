@@ -481,6 +481,24 @@ class CompilationUnit {
   // start of the next compilation unit, if there is one.
   uint64_t Start();
 
+  // Process the actual debug information in a split DWARF file.
+  bool ProcessSplitDwarf(std::string& split_file,
+                         SectionMap& sections,
+                         ByteReader& split_byte_reader,
+                         uint64_t& cu_offset);
+
+  const uint8_t* GetAddrBuffer() { return addr_buffer_; }
+
+  uint64_t GetAddrBufferLen() { return addr_buffer_length_; }
+
+  uint64_t GetAddrBase() { return addr_base_; }
+
+  uint64_t GetRangeBase() { return ranges_base_; }
+
+  uint64_t GetDWOID() { return dwo_id_; }
+
+  bool ShouldProcessSplitDwarf() { return should_process_split_dwarf_; }
+
  private:
 
   // This struct represents a single DWARF2/3 abbreviation
@@ -647,9 +665,6 @@ class CompilationUnit {
   // new place to position the stream to.
   const uint8_t* SkipAttribute(const uint8_t* start, enum DwarfForm form);
 
-  // Process the actual debug information in a split DWARF file.
-  void ProcessSplitDwarf();
-
   // Read the debug sections from a .dwo file.
   void ReadDebugSectionsFromDwo(ElfReader* elf_reader,
                                 SectionMap* sections);
@@ -658,7 +673,7 @@ class CompilationUnit {
   const string path_;
 
   // Offset from section start is the offset of this compilation unit
-  // from the beginning of the .debug_info section.
+  // from the beginning of the .debug_info/.debug_info.dwo section.
   uint64_t offset_from_section_start_;
 
   // buffer is the buffer for our CU, starting at .debug_info + offset
@@ -743,14 +758,13 @@ class CompilationUnit {
   // True if we have already looked for a .dwp file.
   bool have_checked_for_dwp_;
 
-  // Path to the .dwp file.
-  string dwp_path_;
-
-  // ByteReader for the DWP file.
-  std::unique_ptr<ByteReader> dwp_byte_reader_;
+  // ElfReader for the dwo/dwo file.
+  std::unique_ptr<ElfReader> split_elf_reader_;
 
   // DWP reader.
    std::unique_ptr<DwpReader> dwp_reader_;
+
+   bool should_process_split_dwarf_;
 };
 
 // A Reader for a .dwp file.  Supports the fetching of DWARF debug
@@ -769,8 +783,6 @@ class CompilationUnit {
 class DwpReader {
  public:
   DwpReader(const ByteReader& byte_reader, ElfReader* elf_reader);
-
-  ~DwpReader();
 
   // Read the CU index and initialize data members.
   void Initialize();
