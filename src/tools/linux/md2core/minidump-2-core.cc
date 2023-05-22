@@ -583,25 +583,21 @@ ParseThreadRegisters(CrashedProcess::Thread* thread,
   thread->mcontext.__gregs[30] = rawregs->t5;
   thread->mcontext.__gregs[31] = rawregs->t6;
 
-# if __riscv_flen == 32
-  for (int i = 0; i < MD_FLOATINGSAVEAREA_RISCV_FPR_COUNT; ++i) {
-    thread->mcontext.__fpregs.__f.__f[i] = rawregs->float_save.regs[i];
+  // Breakpad only supports RISCV32 with 32 bit floating point.
+  // Breakpad only supports RISCV64 with 64 bit floating point.
+#if __riscv_xlen == 32
+  for (int i = 0; i < MD_CONTEXT_RISCV_FPR_COUNT; ++i) {
+    thread->mcontext.__fpregs.__f.__f[i] = rawregs->fpregs[i];
   }
-  thread->mcontext.__fpregs.__f.__fcsr = rawregs->float_save.fpcsr;
-# elif __riscv_flen == 64
-  for (int i = 0; i < MD_FLOATINGSAVEAREA_RISCV_FPR_COUNT; ++i) {
-    thread->mcontext.__fpregs.__d.__f[i] = rawregs->float_save.regs[i];
+  thread->mcontext.__fpregs.__f.__fcsr = rawregs->fcsr;
+#elif __riscv_xlen == 64
+  for (int i = 0; i < MD_CONTEXT_RISCV_FPR_COUNT; ++i) {
+    thread->mcontext.__fpregs.__d.__f[i] = rawregs->fpregs[i];
   }
-  thread->mcontext.__fpregs.__d.__fcsr = rawregs->float_save.fpcsr;
-# elif __riscv_flen == 128
-  for (int i = 0; i < MD_FLOATINGSAVEAREA_RISCV_FPR_COUNT; ++i) {
-    thread->mcontext.__fpregs.__q.__f[2*i] = rawregs->float_save.regs[i].high;
-    thread->mcontext.__fpregs.__q.__f[2*i+1] = rawregs->float_save.regs[i].low;
-  }
-  thread->mcontext.__fpregs.__q.__fcsr = rawregs->float_save.fpcsr;
-# else
-#  error "Unexpected __riscv_flen"
-# endif
+  thread->mcontext.__fpregs.__d.__fcsr = rawregs->fcsr;
+#else
+#error "Unexpected __riscv_xlen"
+#endif
 }
 #else
 #error "This code has not been ported to your platform yet"
