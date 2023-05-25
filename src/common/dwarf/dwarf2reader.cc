@@ -80,7 +80,7 @@ CompilationUnit::CompilationUnit(const string& path,
       str_offsets_buffer_(NULL), str_offsets_buffer_length_(0),
       addr_buffer_(NULL), addr_buffer_length_(0),
       is_split_dwarf_(false), is_type_unit_(false), dwo_id_(0), dwo_name_(),
-      skeleton_dwo_id_(0), ranges_base_(0), addr_base_(0),
+      skeleton_dwo_id_(0), addr_base_(0),
       str_offsets_base_(0), have_checked_for_dwp_(false),
       should_process_split_dwarf_(false) {}
 
@@ -91,16 +91,11 @@ CompilationUnit::CompilationUnit(const string& path,
 // the executable file, and call it as if we were still
 // processing the original compilation unit.
 
-void CompilationUnit::SetSplitDwarf(const uint8_t* addr_buffer,
-                                    uint64_t addr_buffer_length,
+void CompilationUnit::SetSplitDwarf(
                                     uint64_t addr_base,
-                                    uint64_t ranges_base,
                                     uint64_t dwo_id) {
   is_split_dwarf_ = true;
-  addr_buffer_ = addr_buffer;
-  addr_buffer_length_ = addr_buffer_length;
   addr_base_ = addr_base;
-  ranges_base_ = ranges_base;
   skeleton_dwo_id_ = dwo_id;
 }
 
@@ -889,7 +884,9 @@ const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
   // DW_AT_str_offsets_base or DW_AT_addr_base.  If it does, that attribute must
   // be found and processed before trying to process the other attributes;
   // otherwise the string or address values will all come out incorrect.
-  if (abbrev.tag == DW_TAG_compile_unit && header_.version == 5) {
+  if ((abbrev.tag == DW_TAG_compile_unit ||
+       abbrev.tag == DW_TAG_skeleton_unit) &&
+      header_.version == 5) {
     uint64_t dieoffset_copy = dieoffset;
     const uint8_t* start_copy = start;
     for (AttributeList::const_iterator i = abbrev.attributes.begin();
@@ -1016,7 +1013,8 @@ bool CompilationUnit::ProcessSplitDwarf(std::string& split_file,
       string debug_suffix(".debug");
       dwp_path = path_;
       size_t found = path_.rfind(debug_suffix);
-      if (found + debug_suffix.length() == path_.length())
+      if (found != string::npos &&
+          found + debug_suffix.length() == path_.length())
         dwp_path = dwp_path.replace(found, debug_suffix.length(), dwp_suffix);
     }
     if (stat(dwp_path.c_str(), &statbuf) == 0) {
@@ -1133,6 +1131,8 @@ void DwpReader::Initialize() {
     info_data_ = elf_reader_->GetSectionByName(".debug_info.dwo", &info_size_);
     str_offsets_data_ = elf_reader_->GetSectionByName(".debug_str_offsets.dwo",
                                                       &str_offsets_size_);
+    rnglist_data_ =
+        elf_reader_->GetSectionByName(".debug_rnglists.dwo", &rnglist_size_);
     if (size_table_ >= cu_index_ + cu_index_size_) {
       version_ = 0;
     }
@@ -1245,6 +1245,12 @@ void DwpReader::ReadDebugSectionsForCU(uint64_t dwo_id,
             ".debug_str_offsets",
             std::make_pair(reinterpret_cast<const uint8_t*> (str_offsets_data_)
                            + offset, size)));
+      } else if (section_id == DW_SECT_RNGLISTS) {
+        sections->insert(std::make_pair(
+            ".debug_rnglists",
+            std::make_pair(
+                reinterpret_cast<const uint8_t*>(rnglist_data_) + offset,
+                size)));
       }
     }
     sections->insert(std::make_pair(
@@ -1830,6 +1836,11 @@ bool RangeListReader::ReadRanges(enum DwarfForm form, uint64_t data) {
       return ReadDebugRngList(data);
     }
   } else if (form == DW_FORM_rnglistx) {
+    if (cu_info_->ranges_base_ == 0) {
+      // In split dwarf, there's no DW_AT_rnglists_base attribute, range_base
+      // will just be the first byte after the header.
+      cu_info_->ranges_base_ = reader_->OffsetSize() == 4? 12: 20;
+    }
     offset_array_ = cu_info_->ranges_base_;
     uint64_t index_offset = reader_->OffsetSize() * data;
     uint64_t range_list_offset =

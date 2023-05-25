@@ -469,8 +469,7 @@ class CompilationUnit {
   // compilation unit.  We also inherit the Dwarf2Handler from
   // the executable file, and call it as if we were still
   // processing the original compilation unit.
-  void SetSplitDwarf(const uint8_t* addr_buffer, uint64_t addr_buffer_length,
-                     uint64_t addr_base, uint64_t ranges_base, uint64_t dwo_id);
+  void SetSplitDwarf(uint64_t addr_base, uint64_t dwo_id);
 
   // Begin reading a Dwarf2 compilation unit, and calling the
   // callbacks in the Dwarf2Handler
@@ -493,7 +492,7 @@ class CompilationUnit {
 
   uint64_t GetAddrBase() { return addr_base_; }
 
-  uint64_t GetRangeBase() { return ranges_base_; }
+  uint64_t GetLowPC() { return low_pc_; }
 
   uint64_t GetDWOID() { return dwo_id_; }
 
@@ -583,14 +582,8 @@ class CompilationUnit {
     else if (attr == DW_AT_str_offsets_base) {
       str_offsets_base_ = data;
     }
-    else if (attr == DW_AT_GNU_ranges_base || attr == DW_AT_rnglists_base) {
-      ranges_base_ = data;
-    }
-    // TODO(yunlian): When we add DW_AT_ranges_base from DWARF-5,
-    // that base will apply to DW_AT_ranges attributes in the
-    // skeleton CU as well as in the .dwo/.dwp files.
-    else if (attr == DW_AT_ranges && is_split_dwarf_) {
-      data += ranges_base_;
+    else if (attr == DW_AT_low_pc) {
+      low_pc_ = data;
     }
     handler_->ProcessAttributeUnsigned(offset, attr, form, data);
   }
@@ -745,10 +738,6 @@ class CompilationUnit {
   // from the skeleton CU.
   uint64_t skeleton_dwo_id_;
 
-  // The value of the DW_AT_GNU_ranges_base or DW_AT_rnglists_base attribute,
-  // if any.
-  uint64_t ranges_base_;
-
   // The value of the DW_AT_GNU_addr_base attribute, if any.
   uint64_t addr_base_;
 
@@ -762,9 +751,12 @@ class CompilationUnit {
   std::unique_ptr<ElfReader> split_elf_reader_;
 
   // DWP reader.
-   std::unique_ptr<DwpReader> dwp_reader_;
+  std::unique_ptr<DwpReader> dwp_reader_;
 
-   bool should_process_split_dwarf_;
+  bool should_process_split_dwarf_;
+
+  // The value of the DW_AT_low_pc attribute, if any.
+  uint64_t low_pc_;
 };
 
 // A Reader for a .dwp file.  Supports the fetching of DWARF debug
@@ -851,6 +843,8 @@ class DwpReader {
   size_t info_size_;
   const char* str_offsets_data_;
   size_t str_offsets_size_;
+  const char* rnglist_data_;
+  size_t rnglist_size_;
 };
 
 // This class is a reader for DWARF's Call Frame Information.  CFI

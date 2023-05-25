@@ -169,19 +169,23 @@ bool DwarfCUToModule::FileContext::IsUnhandledInterCUReference(
 // parsing. This is for data shared across the CU's entire DIE tree,
 // and parameters from the code invoking the CU parser.
 struct DwarfCUToModule::CUContext {
-  CUContext(FileContext* file_context_arg, WarningReporter* reporter_arg,
-            RangesHandler* ranges_handler_arg)
+  CUContext(FileContext* file_context_arg,
+            WarningReporter* reporter_arg,
+            RangesHandler* ranges_handler_arg,
+            uint64_t low_pc,
+            uint64_t addr_base)
       : version(0),
         file_context(file_context_arg),
         reporter(reporter_arg),
         ranges_handler(ranges_handler_arg),
         language(Language::CPlusPlus),
-        low_pc(0),
+        low_pc(low_pc),
         high_pc(0),
         ranges_form(DW_FORM_sec_offset),
         ranges_data(0),
         ranges_base(0),
-        str_offsets_base(0) { }
+        addr_base(addr_base),
+        str_offsets_base(0) {}
 
   ~CUContext() {
     for (vector<Module::Function*>::iterator it = functions.begin();
@@ -854,7 +858,7 @@ void DwarfCUToModule::FuncHandler::Finish() {
       iter->second->name = name_;
   }
 
-  if (!ranges_data_) {
+  if (low_pc_ && high_pc_) {
     // Make high_pc_ an address, if it isn't already.
     if (high_pc_form_ != DW_FORM_addr &&
         high_pc_form_ != DW_FORM_GNU_addr_index &&
@@ -868,7 +872,7 @@ void DwarfCUToModule::FuncHandler::Finish() {
 
     Module::Range range(low_pc_, high_pc_ - low_pc_);
     ranges.push_back(range);
-  } else {
+  } else if (ranges_data_) {
     RangesHandler* ranges_handler = cu_context_->ranges_handler;
     if (ranges_handler) {
       RangeListReader::CURangesInfo cu_info;
@@ -1069,10 +1073,16 @@ DwarfCUToModule::DwarfCUToModule(FileContext* file_context,
                                  LineToModuleHandler* line_reader,
                                  RangesHandler* ranges_handler,
                                  WarningReporter* reporter,
-                                 bool handle_inline)
+                                 bool handle_inline,
+                                 uint64_t low_pc,
+                                 uint64_t addr_base)
     : RootDIEHandler(handle_inline),
       line_reader_(line_reader),
-      cu_context_(new CUContext(file_context, reporter, ranges_handler)),
+      cu_context_(new CUContext(file_context,
+                                reporter,
+                                ranges_handler,
+                                low_pc,
+                                addr_base)),
       child_context_(new DIEContext()),
       has_source_line_info_(false) {}
 

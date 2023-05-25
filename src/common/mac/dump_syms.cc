@@ -439,18 +439,26 @@ void DumpSymbols::StartProcessSplitDwarf(
     return;
   DwarfCUToModule::FileContext file_context(split_file, module,
                                             handle_inter_cu_refs);
+  for (auto section : split_sections)
+    file_context.AddSectionToSectionMap(section.first, section.second.first,
+                                        section.second.second);
+  // If DWP/DWO file doesn't have .debug_addr, its debug info will refer to
+  // .debug_addr in the main binary.
+  if (file_context.section_map().find(".debug_addr") ==
+      file_context.section_map().end())
+    file_context.AddSectionToSectionMap(".debug_addr", reader->GetAddrBuffer(),
+                                        reader->GetAddrBufferLen());
   DumperRangesHandler ranges_handler(&split_byte_reader);
   DumperLineToModule line_to_module(&split_byte_reader);
   DwarfCUToModule::WarningReporter reporter(split_file, cu_offset);
   DwarfCUToModule root_handler(&file_context, &line_to_module, &ranges_handler,
-                               &reporter, handle_inline);
+                               &reporter, handle_inline, reader->GetLowPC(),
+                               reader->GetAddrBase());
   google_breakpad::DIEDispatcher die_dispatcher(&root_handler);
-  google_breakpad::CompilationUnit split_reader(split_file, split_sections,
-                                                cu_offset, &split_byte_reader,
-                                                &die_dispatcher);
-  split_reader.SetSplitDwarf(reader->GetAddrBuffer(),
-                             reader->GetAddrBufferLen(), reader->GetAddrBase(),
-                             reader->GetRangeBase(), reader->GetDWOID());
+  google_breakpad::CompilationUnit split_reader(
+      split_file, file_context.section_map(), cu_offset, &split_byte_reader,
+      &die_dispatcher);
+  split_reader.SetSplitDwarf(reader->GetAddrBase(), reader->GetDWOID());
   split_reader.Start();
   // Normally, it won't happen unless we have transitive reference.
   if (split_reader.ShouldProcessSplitDwarf()) {
