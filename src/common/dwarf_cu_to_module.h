@@ -264,7 +264,9 @@ class DwarfCUToModule: public RootDIEHandler {
                   LineToModuleHandler* line_reader,
                   RangesHandler* ranges_handler,
                   WarningReporter* reporter,
-                  bool handle_inline = false);
+                  bool handle_inline = false,
+                  uint64_t low_pc = 0,
+                  uint64_t addr_base = 0);
   ~DwarfCUToModule();
 
   void ProcessAttributeSigned(enum DwarfAttribute attr,
