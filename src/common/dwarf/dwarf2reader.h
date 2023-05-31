@@ -496,6 +496,18 @@ class CompilationUnit {
 
   uint64_t GetDWOID() { return dwo_id_; }
 
+  const uint8_t* GetLineBuffer() { return line_buffer_; }
+
+  uint64_t GetLineBufferLen() { return line_buffer_length_; }
+
+  const uint8_t* GetLineStrBuffer() { return line_string_buffer_; }
+
+  uint64_t GetLineStrBufferLen() { return line_string_buffer_length_; }
+
+  bool HasSourceLineInfo() { return has_source_line_info_; }
+
+  uint64_t GetSourceLineOffset() { return source_line_offset_; }
+
   bool ShouldProcessSplitDwarf() { return should_process_split_dwarf_; }
 
  private:
@@ -584,6 +596,10 @@ class CompilationUnit {
     }
     else if (attr == DW_AT_low_pc) {
       low_pc_ = data;
+    }
+    else if (attr == DW_AT_stmt_list) {
+      has_source_line_info_ = true;
+      source_line_offset_ = data;
     }
     handler_->ProcessAttributeUnsigned(offset, attr, form, data);
   }
@@ -696,7 +712,7 @@ class CompilationUnit {
   const uint8_t* string_buffer_;
   uint64_t string_buffer_length_;
 
-  // Similarly for .debug_line_string.
+  // Similarly for .debug_line_str.
   const uint8_t* line_string_buffer_;
   uint64_t line_string_buffer_length_;
 
@@ -709,6 +725,10 @@ class CompilationUnit {
   // (.debug_addr).
   const uint8_t* addr_buffer_;
   uint64_t addr_buffer_length_;
+
+  // .debug_line section buffer and length.
+  const uint8_t* line_buffer_;
+  uint64_t line_buffer_length_;
 
   // Flag indicating whether this compilation unit is part of a .dwo
   // or .dwp file.  If true, we are reading this unit because a
@@ -757,6 +777,10 @@ class CompilationUnit {
 
   // The value of the DW_AT_low_pc attribute, if any.
   uint64_t low_pc_;
+
+  // The value of DW_AT_stmt_list attribute if any.
+  bool has_source_line_info_;
+  uint64_t source_line_offset_;
 };
 
 // A Reader for a .dwp file.  Supports the fetching of DWARF debug

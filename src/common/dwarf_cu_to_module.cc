@@ -1075,7 +1075,9 @@ DwarfCUToModule::DwarfCUToModule(FileContext* file_context,
                                  WarningReporter* reporter,
                                  bool handle_inline,
                                  uint64_t low_pc,
-                                 uint64_t addr_base)
+                                 uint64_t addr_base,
+                                 bool has_source_line_info,
+                                 uint64_t source_line_offset)
     : RootDIEHandler(handle_inline),
       line_reader_(line_reader),
       cu_context_(new CUContext(file_context,
@@ -1084,7 +1086,8 @@ DwarfCUToModule::DwarfCUToModule(FileContext* file_context,
                                 low_pc,
                                 addr_base)),
       child_context_(new DIEContext()),
-      has_source_line_info_(false) {}
+      has_source_line_info_(has_source_line_info),
+      source_line_offset_(source_line_offset) {}
 
 DwarfCUToModule::~DwarfCUToModule() {
 }

@@ -442,18 +442,28 @@ void DumpSymbols::StartProcessSplitDwarf(
   for (auto section : split_sections)
     file_context.AddSectionToSectionMap(section.first, section.second.first,
                                         section.second.second);
-  // If DWP/DWO file doesn't have .debug_addr, its debug info will refer to
-  // .debug_addr in the main binary.
+  // Because DWP/DWO file doesn't have .debug_addr/.debug_line/.debug_line_str,
+  // its debug info will refer to .debug_addr/.debug_line in the main binary.
   if (file_context.section_map().find(".debug_addr") ==
       file_context.section_map().end())
     file_context.AddSectionToSectionMap(".debug_addr", reader->GetAddrBuffer(),
                                         reader->GetAddrBufferLen());
+  if (file_context.section_map().find(".debug_line") ==
+      file_context.section_map().end())
+    file_context.AddSectionToSectionMap(".debug_line", reader->GetLineBuffer(),
+                                        reader->GetLineBufferLen());
+  if (file_context.section_map().find(".debug_line_str") ==
+      file_context.section_map().end())
+    file_context.AddSectionToSectionMap(".debug_line_str",
+                                        reader->GetLineStrBuffer(),
+                                        reader->GetLineStrBufferLen());
   DumperRangesHandler ranges_handler(&split_byte_reader);
   DumperLineToModule line_to_module(&split_byte_reader);
   DwarfCUToModule::WarningReporter reporter(split_file, cu_offset);
-  DwarfCUToModule root_handler(&file_context, &line_to_module, &ranges_handler,
-                               &reporter, handle_inline, reader->GetLowPC(),
-                               reader->GetAddrBase());
+  DwarfCUToModule root_handler(
+      &file_context, &line_to_module, &ranges_handler, &reporter, handle_inline,
+      reader->GetLowPC(), reader->GetAddrBase(), reader->HasSourceLineInfo(),
+      reader->GetSourceLineOffset());
   google_breakpad::DIEDispatcher die_dispatcher(&root_handler);
   google_breakpad::CompilationUnit split_reader(
       split_file, file_context.section_map(), cu_offset, &split_byte_reader,

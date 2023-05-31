@@ -82,7 +82,8 @@ CompilationUnit::CompilationUnit(const string& path,
       is_split_dwarf_(false), is_type_unit_(false), dwo_id_(0), dwo_name_(),
       skeleton_dwo_id_(0), addr_base_(0),
       str_offsets_base_(0), have_checked_for_dwp_(false),
-      should_process_split_dwarf_(false) {}
+      should_process_split_dwarf_(false), low_pc_(0),
+      has_source_line_info_(false), source_line_offset_(0) {}
 
 // Initialize a compilation unit from a .dwo or .dwp file.
 // In this case, we need the .debug_addr section from the
@@ -91,8 +92,7 @@ CompilationUnit::CompilationUnit(const string& path,
 // the executable file, and call it as if we were still
 // processing the original compilation unit.
 
-void CompilationUnit::SetSplitDwarf(
-                                    uint64_t addr_base,
+void CompilationUnit::SetSplitDwarf(uint64_t addr_base,
                                     uint64_t dwo_id) {
   is_split_dwarf_ = true;
   addr_base_ = addr_base;
@@ -433,6 +433,12 @@ uint64_t CompilationUnit::Start() {
   if (iter != sections_.end()) {
     string_buffer_ = iter->second.first;
     string_buffer_length_ = iter->second.second;
+  }
+
+  iter = GetSectionByName(sections_, ".debug_line");
+  if (iter != sections_.end()) {
+    line_buffer_ = iter->second.first;
+    line_buffer_length_ = iter->second.second;
   }
 
   // Set the line string section if we have one.
