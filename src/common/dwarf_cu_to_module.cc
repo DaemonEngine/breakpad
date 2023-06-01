@@ -579,6 +579,7 @@ class DwarfCUToModule::InlineHandler : public GenericDIEHandler {
         ranges_data_(0),
         call_site_line_(0),
         inline_nest_level_(inline_nest_level),
+        has_range_data_(false),
         inlines_(inlines) {}
 
   void ProcessAttributeUnsigned(enum DwarfAttribute attr,
@@ -600,6 +601,7 @@ class DwarfCUToModule::InlineHandler : public GenericDIEHandler {
   int call_site_line_;         // DW_AT_call_line
   int call_site_file_id_;      // DW_AT_call_file
   int inline_nest_level_;
+  bool has_range_data_;
   // A vector of inlines in the same nest level. It's owned by its parent
   // function/inline. At Finish(), add this inline into the vector.
   vector<unique_ptr<Module::Inline>>& inlines_;
@@ -620,6 +622,7 @@ void DwarfCUToModule::InlineHandler::ProcessAttributeUnsigned(
       high_pc_ = data;
       break;
     case DW_AT_ranges:
+      has_range_data_ = true;
       ranges_data_ = data;
       ranges_form_ = form;
       break;
@@ -663,7 +666,7 @@ bool DwarfCUToModule::InlineHandler::EndAttributes() {
 void DwarfCUToModule::InlineHandler::Finish() {
   vector<Module::Range> ranges;
 
-  if (low_pc_ && high_pc_) {
+  if (!has_range_data_) {
     if (high_pc_form_ != DW_FORM_addr &&
         high_pc_form_ != DW_FORM_GNU_addr_index &&
         high_pc_form_ != DW_FORM_addrx &&
@@ -745,7 +748,8 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
         ranges_data_(0),
         inline_(false),
         handle_inline_(handle_inline),
-        has_qualified_name_(false) {}
+        has_qualified_name_(false),
+        has_range_data_(false) {}
 
   void ProcessAttributeUnsigned(enum DwarfAttribute attr,
                                 enum DwarfForm form,
@@ -769,6 +773,7 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
   vector<unique_ptr<Module::Inline>> child_inlines_;
   bool handle_inline_;
   bool has_qualified_name_;
+  bool has_range_data_;
   DIEContext child_context_; // A context for our children.
 };
 
@@ -788,6 +793,7 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
       high_pc_ = data;
       break;
     case DW_AT_ranges:
+      has_range_data_ = true;
       ranges_data_ = data;
       ranges_form_ = form;
       break;
@@ -858,7 +864,7 @@ void DwarfCUToModule::FuncHandler::Finish() {
       iter->second->name = name_;
   }
 
-  if (low_pc_ && high_pc_) {
+  if (!has_range_data_) {
     // Make high_pc_ an address, if it isn't already.
     if (high_pc_form_ != DW_FORM_addr &&
         high_pc_form_ != DW_FORM_GNU_addr_index &&
@@ -872,7 +878,7 @@ void DwarfCUToModule::FuncHandler::Finish() {
 
     Module::Range range(low_pc_, high_pc_ - low_pc_);
     ranges.push_back(range);
-  } else if (ranges_data_) {
+  } else {
     RangesHandler* ranges_handler = cu_context_->ranges_handler;
     if (ranges_handler) {
       RangeListReader::CURangesInfo cu_info;
