@@ -37,7 +37,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
 
 AM_INIT_AUTOMAKE(subdir-objects tar-ustar 1.13)
-AM_CONFIG_HEADER(src/config.h)
+AC_CONFIG_HEADERS(src/config.h)
 AM_MAINTAINER_MODE
 
 AM_PROG_AR
@@ -58,15 +58,6 @@ if test "x$enable_m32" = xyes; then
   CFLAGS="${CFLAGS} -m32"
   CXXFLAGS="${CXXFLAGS} -m32"
 fi
-
-m4_warn([obsolete],
-[The preprocessor macro `STDC_HEADERS' is obsolete.
-  Except in unusual embedded environments, you can safely include all
-  ISO C90 headers unconditionally.])dnl
-# Autoupdate added the next two lines to ensure that your configure
-# script's behavior did not change.  They are probably safe to remove.
-AC_CHECK_INCLUDES_DEFAULT
-AC_PROG_EGREP
 
 AC_SYS_LARGEFILE
 AX_PTHREAD
