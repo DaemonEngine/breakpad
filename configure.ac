@@ -212,6 +212,17 @@ fi
 AC_ARG_VAR([RUSTC_DEMANGLE_CFLAGS], [Compiler flags for rustc-demangle])
 AC_ARG_VAR([RUSTC_DEMANGLE_LIBS], [Linker flags for rustc-demangle])
 
+AC_ARG_ENABLE(zstd,
+              AS_HELP_STRING([--enable-zstd],
+                             [Enable decompression of ELF sections with zstd]),,
+              [enable_zstd=no])
+if test "x${enable_zstd}" != xno; then
+  AC_CHECK_LIB(zstd, ZSTD_decompress, [],
+               [AC_MSG_ERROR([zstd library not found.])])
+  AC_CHECK_HEADER(zstd.h, [],
+                  [AC_MSG_ERROR([zstd header not found.])])
+fi
+
 AC_ARG_WITH(tests-as-root,
             AS_HELP_STRING([--with-tests-as-root],
                            [Run the tests as root. Use this on platforms]
