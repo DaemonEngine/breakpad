@@ -49,6 +49,7 @@ lib*.a
 /src/tools/linux/symupload/sym_upload
 /src/tools/mac/dump_syms/dump_syms
 /src/tools/mac/dump_syms/dump_syms_mac
+/src/tools/windows/dump_syms_dwarf/dump_syms
 
 # Ignore unit test artifacts.
 *_unittest
