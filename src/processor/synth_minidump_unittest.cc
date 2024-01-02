@@ -147,7 +147,12 @@ TEST(Context, ARM) {
               == 0);
 }
 
+#if GTEST_OS_WINDOWS && !GTEST_HAS_ABSL
+// GTest on Windows does not support complex regular expressions.
+TEST(ContextDeathTest, DISABLED_X86BadFlags) {
+#else
 TEST(ContextDeathTest, X86BadFlags) {
+#endif
   Dump dump(0, kLittleEndian);
   MDRawContextX86 raw;
   raw.context_flags = MD_CONTEXT_AMD64;
@@ -160,7 +165,12 @@ TEST(ContextDeathTest, X86BadFlags) {
 #endif
 }
 
+#if GTEST_OS_WINDOWS && !GTEST_HAS_ABSL
+// GTest on Windows does not support complex regular expressions.
+TEST(ContextDeathTest, DISABLED_X86BadEndianness) {
+#else
 TEST(ContextDeathTest, X86BadEndianness) {
+#endif
   Dump dump(0, kBigEndian);
   MDRawContextX86 raw;
   raw.context_flags = MD_CONTEXT_X86;
