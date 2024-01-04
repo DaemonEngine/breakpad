@@ -37,10 +37,11 @@
 #include <mach-o/fat.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef __APPLE__
 #include <Availability.h>
 #include <AvailabilityMacros.h>
 
-#ifdef __APPLE__
 #if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_16_0) &&    \
      __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0) ||                     \
     (defined(MAC_OS_X_VERSION_MIN_REQUIRED) && defined(MAC_OS_VERSION_13_0) && \
