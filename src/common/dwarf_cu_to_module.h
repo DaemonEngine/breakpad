@@ -357,6 +357,7 @@ class DwarfCUToModule: public RootDIEHandler {
   struct Specification;
   class GenericDIEHandler;
   class FuncHandler;
+  class LexicalBlockHandler;
   class InlineHandler;
   class NamedScopeHandler;
 
