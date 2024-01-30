@@ -68,7 +68,7 @@
  * User specific VFP registers. If only VFPv2 is present, registers 16 to 31
  * are ignored by the ptrace system call and the signal handler.
  */
-typedef struct user_vfp {
+typedef struct {
   unsigned long long fpregs[32];
   unsigned long fpscr;
 // Kernel just appends fpscr to the copy of fpregs, so we need to force
@@ -204,7 +204,7 @@ bool LinuxPtraceDumper::ReadRegisterSet(ThreadInfo* info, pid_t tid)
     switch (errno) {
       case EIO:
       case EINVAL:
-        user_vfp vfp;
+        user_vfp_t vfp;
         struct iovec io;
         io.iov_base = &vfp;
         io.iov_len = sizeof(vfp);
@@ -252,7 +252,7 @@ bool LinuxPtraceDumper::ReadRegisters(ThreadInfo* info, pid_t tid) {
     switch (errno) {
       case EIO:
       case EINVAL:
-        user_vfp vfp;
+        user_vfp_t vfp;
         struct iovec io;
         io.iov_base = &vfp;
         io.iov_len = sizeof(vfp);
