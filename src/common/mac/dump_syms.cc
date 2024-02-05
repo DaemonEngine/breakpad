@@ -528,13 +528,13 @@ void DumpSymbols::ReadDwarf(google_breakpad::Module* module,
   for (uint64_t offset = 0; offset < debug_info_length;) {
     // Make a handler for the root DIE that populates MODULE with the
     // debug info.
-    DwarfCUToModule::WarningReporter *reporter = nullptr;
+    std::unique_ptr<DwarfCUToModule::WarningReporter> reporter;
     if (report_warnings_) {
-        reporter = new DwarfCUToModule::WarningReporter(
-            selected_object_name_, offset);
+      reporter = std::make_unique<DwarfCUToModule::WarningReporter>(
+        selected_object_name_, offset);
     } else {
-        reporter = new DwarfCUToModule::NullWarningReporter(
-            selected_object_name_, offset);
+      reporter = std::make_unique<DwarfCUToModule::NullWarningReporter>(
+        selected_object_name_, offset);
     }
     DwarfCUToModule root_handler(&file_context, &line_to_module,
                                  &ranges_handler, reporter,
@@ -554,7 +554,6 @@ void DumpSymbols::ReadDwarf(google_breakpad::Module* module,
       StartProcessSplitDwarf(&dwarf_reader, module, endianness,
                              handle_inter_cu_refs, handle_inline);
     }
-    delete reporter;
   }
 }
 
