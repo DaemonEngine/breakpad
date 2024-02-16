@@ -394,7 +394,7 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
   // In certain cases, it is possible that architecture info can't be reliably
   // determined, e.g. new architectures that breakpad is unware of. In that
   // case, avoid crashing and return false instead.
-  if (selected_arch_name == kUnknownArchName) {
+  if (strcmp(selected_arch_name, kUnknownArchName) == 0) {
     return false;
   }
 
