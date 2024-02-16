@@ -40,7 +40,7 @@
 #define PROCESSOR_RANGE_MAP_H__
 
 
-#include <cstdint>
+#include <stdint.h>
 #include <map>
 
 

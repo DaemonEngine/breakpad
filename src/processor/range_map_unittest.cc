@@ -35,6 +35,7 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
 
@@ -504,7 +505,7 @@ static bool RunTests() {
     // The RangeMap's own count of objects should also match.
     if (range_map->GetCount() != stored_count) {
       fprintf(stderr, "FAILED: stored object count doesn't match GetCount, "
-              "expected %d, observed %ld\n",
+              "expected %d, observed %" PRId64 "\n",
               stored_count, range_map->GetCount());
 
       return false;
