@@ -406,7 +406,7 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
   selected_object_name_ = object_filename_;
   if (object_files_.size() > 1) {
     selected_object_name_ += ", architecture ";
-    selected_object_name_ + selected_arch_name;
+    selected_object_name_ += selected_arch_name;
   }
 
   // Compute a module name, to appear in the MODULE record.
@@ -537,7 +537,7 @@ void DumpSymbols::ReadDwarf(google_breakpad::Module* module,
         selected_object_name_, offset);
     }
     DwarfCUToModule root_handler(&file_context, &line_to_module,
-                                 &ranges_handler, reporter,
+                                 &ranges_handler, reporter.get(),
                                  handle_inline);
     // Make a Dwarf2Handler that drives our DIEHandler.
     DIEDispatcher die_dispatcher(&root_handler);
