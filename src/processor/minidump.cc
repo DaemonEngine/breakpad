@@ -903,8 +903,12 @@ bool MinidumpContext::Read(uint32_t expected_size) {
 
         // Skip extended xstate data if present in X86 context.
         if (context_flags & MD_CONTEXT_X86_XSTATE) {
-          minidump_->SeekSet((minidump_->Tell() - sizeof(MDRawContextX86)) +
-                             expected_size);
+          if (!minidump_->SeekSet(
+                  (minidump_->Tell() - sizeof(MDRawContextX86)) +
+                  expected_size)) {
+            BPLOG(ERROR) << "MinidumpContext cannot seek to past xstate data";
+            return false;
+          }
         }
 
         break;
