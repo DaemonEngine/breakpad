@@ -823,8 +823,6 @@ static void CalculateFaultAddressFromInstruction(Minidump* dump,
 
   DisassemblerObjdump disassembler(context->GetContextCPU(), memory_region,
                                    instruction_ptr);
-  fprintf(stderr, "%s %s %s\n", disassembler.operation().c_str(),
-    disassembler.src().c_str(), disassembler.dest().c_str());
   if (!disassembler.IsValid()) {
     BPLOG(INFO) << "Disassembling fault instruction failed.";
     return;
