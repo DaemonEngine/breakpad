@@ -315,31 +315,17 @@ uint32_t GetCompressionHeader(
 
 std::pair<uint8_t *, uint64_t> UncompressZlibSectionContents(
     const uint8_t* compressed_buffer, uint64_t compressed_size, uint64_t uncompressed_size) {
-  z_stream stream;
-  memset(&stream, 0, sizeof stream);
-
-  stream.avail_in = compressed_size;
-  stream.avail_out = uncompressed_size;
-  stream.next_in = const_cast<uint8_t *>(compressed_buffer);
-
   google_breakpad::scoped_array<uint8_t> uncompressed_buffer(
     new uint8_t[uncompressed_size]);
 
-  int status = inflateInit(&stream);
-  while (stream.avail_in != 0 && status == Z_OK) {
-    stream.next_out =
-      uncompressed_buffer.get() + uncompressed_size - stream.avail_out;
+  uLongf size = static_cast<uLongf>(uncompressed_size);
 
-    if ((status = inflate(&stream, Z_FINISH)) != Z_STREAM_END) {
-      break;
-    }
+  int status = uncompress(
+    uncompressed_buffer.get(), &size, compressed_buffer, compressed_size);
 
-    status = inflateReset(&stream);
-  }
-
-  return inflateEnd(&stream) != Z_OK || status != Z_OK || stream.avail_out != 0
-    ? std::make_pair(nullptr, 0)
-    : std::make_pair(uncompressed_buffer.release(), uncompressed_size);
+  return status != Z_OK
+      ? std::make_pair(nullptr, 0)
+      : std::make_pair(uncompressed_buffer.release(), uncompressed_size);
 }
 
 #ifdef HAVE_LIBZSTD
