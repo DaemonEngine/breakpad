@@ -95,7 +95,7 @@ TYPED_TEST(DumpSymbols, Invalid) {
   Elf32_Ehdr header;
   memset(&header, 0, sizeof(header));
   Module* module;
-  DumpOptions options(ALL_SYMBOL_DATA, true, false);
+  DumpOptions options(ALL_SYMBOL_DATA, true, false, false);
   EXPECT_FALSE(ReadSymbolDataInternal(reinterpret_cast<uint8_t*>(&header),
                                       "foo",
                                       "Linux",
@@ -132,7 +132,7 @@ TYPED_TEST(DumpSymbols, SimplePublic) {
   this->GetElfContents(elf);
 
   Module* module;
-  DumpOptions options(ALL_SYMBOL_DATA, true, false);
+  DumpOptions options(ALL_SYMBOL_DATA, true, false, false);
   EXPECT_TRUE(ReadSymbolDataInternal(this->elfdata,
                                      "foo",
                                      "Linux",
@@ -189,7 +189,7 @@ TYPED_TEST(DumpSymbols, SimpleBuildID) {
   this->GetElfContents(elf);
 
   Module* module;
-  DumpOptions options(ALL_SYMBOL_DATA, true, false);
+  DumpOptions options(ALL_SYMBOL_DATA, true, false, false);
   EXPECT_TRUE(ReadSymbolDataInternal(this->elfdata,
                                      "foo",
                                      "Linux",

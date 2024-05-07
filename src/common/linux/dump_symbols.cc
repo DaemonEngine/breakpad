@@ -1280,7 +1280,7 @@ bool WriteSymbolFile(const string& load_path,
                       &module))
     return false;
 
-  bool result = module->Write(sym_stream, options.symbol_data);
+  bool result = module->Write(sym_stream, options.symbol_data, options.preserve_load_address);
   delete module;
   return result;
 }
