@@ -59,6 +59,7 @@ int usage(const char* self) {
   fprintf(stderr, "  -r          Do not handle inter-compilation "
                                  "unit references\n");
   fprintf(stderr, "  -v          Print all warnings to stderr\n");
+  fprintf(stderr, "  -b <id>     Use specified id for the module id\n");
   fprintf(stderr, "  -n <name>   Use specified name for name of the object\n");
   fprintf(stderr, "  -o <os>     Use specified name for the "
                                  "operating system\n");
@@ -79,6 +80,7 @@ int main(int argc, char** argv) {
   bool log_to_stderr = false;
   bool enable_multiple_field = false;
   std::string obj_name;
+  std::string module_id;
   const char* obj_os = "Linux";
   int arg_index = 1;
   while (arg_index < argc && strlen(argv[arg_index]) > 0 &&
@@ -95,6 +97,13 @@ int main(int argc, char** argv) {
       handle_inter_cu_refs = false;
     } else if (strcmp("-v", argv[arg_index]) == 0) {
       log_to_stderr = true;
+    } else if (strcmp("-b", argv[arg_index]) == 0) {
+      if (arg_index + 1 >= argc) {
+        fprintf(stderr, "Missing argument to -b\n");
+        return usage(argv[0]);
+      }
+      module_id = argv[arg_index + 1];
+      ++arg_index;
     } else if (strcmp("-n", argv[arg_index]) == 0) {
       if (arg_index + 1 >= argc) {
         fprintf(stderr, "Missing argument to -n\n");
@@ -140,7 +149,7 @@ int main(int argc, char** argv) {
     obj_name = binary;
 
   if (header_only) {
-    if (!WriteSymbolFileHeader(binary, obj_name, obj_os, std::cout)) {
+    if (!WriteSymbolFileHeader(binary, obj_name, obj_os, module_id, std::cout)) {
       fprintf(saved_stderr, "Failed to process file.\n");
       return 1;
     }
@@ -149,7 +158,7 @@ int main(int argc, char** argv) {
                              (cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
     google_breakpad::DumpOptions options(symbol_data, handle_inter_cu_refs,
                                          enable_multiple_field, preserve_load_address);
-    if (!WriteSymbolFile(binary, obj_name, obj_os, debug_dirs, options,
+    if (!WriteSymbolFile(binary, obj_name, obj_os, module_id, debug_dirs, options,
                          std::cout)) {
       fprintf(saved_stderr, "Failed to write symbol file.\n");
       return 1;

@@ -1148,6 +1148,7 @@ template<typename ElfClass>
 bool InitModuleForElfClass(const typename ElfClass::Ehdr* elf_header,
                            const string& obj_filename,
                            const string& obj_os,
+                           const string& module_id,
                            scoped_ptr<Module>& module,
                            bool enable_multiple_field) {
   PageAllocator allocator;
@@ -1171,10 +1172,14 @@ bool InitModuleForElfClass(const typename ElfClass::Ehdr* elf_header,
                          ? name_buf
                          : google_breakpad::BaseName(obj_filename);
 
-  // Add an extra "0" at the end.  PDB files on Windows have an 'age'
-  // number appended to the end of the file identifier; this isn't
-  // really used or necessary on other platforms, but be consistent.
-  string id = FileID::ConvertIdentifierToUUIDString(identifier) + "0";
+  // Use the provided module_id
+  string id = module_id.empty()
+    // Add an extra "0" at the end.  PDB files on Windows have an 'age'
+    // number appended to the end of the file identifier; this isn't
+    // really used or necessary on other platforms, but be consistent.
+    ? FileID::ConvertIdentifierToUUIDString(identifier) + "0"
+    : module_id;
+
   // This is just the raw Build ID in hex.
   string code_id = FileID::ConvertIdentifierToString(identifier);
 
@@ -1188,6 +1193,7 @@ template<typename ElfClass>
 bool ReadSymbolDataElfClass(const typename ElfClass::Ehdr* elf_header,
                             const string& obj_filename,
                             const string& obj_os,
+                            const string& module_id,
                             const std::vector<string>& debug_dirs,
                             const DumpOptions& options,
                             Module** out_module) {
@@ -1196,8 +1202,8 @@ bool ReadSymbolDataElfClass(const typename ElfClass::Ehdr* elf_header,
   *out_module = NULL;
 
   scoped_ptr<Module> module;
-  if (!InitModuleForElfClass<ElfClass>(elf_header, obj_filename, obj_os, module,
-                                       options.enable_multiple_field)) {
+  if (!InitModuleForElfClass<ElfClass>(elf_header, obj_filename, obj_os, module_id,
+                                      module, options.enable_multiple_field)) {
     return false;
   }
 
@@ -1246,6 +1252,7 @@ namespace google_breakpad {
 bool ReadSymbolDataInternal(const uint8_t* obj_file,
                             const string& obj_filename,
                             const string& obj_os,
+                            const string& module_id,
                             const std::vector<string>& debug_dirs,
                             const DumpOptions& options,
                             Module** module) {
@@ -1258,12 +1265,12 @@ bool ReadSymbolDataInternal(const uint8_t* obj_file,
   if (elfclass == ELFCLASS32) {
     return ReadSymbolDataElfClass<ElfClass32>(
         reinterpret_cast<const Elf32_Ehdr*>(obj_file), obj_filename, obj_os,
-        debug_dirs, options, module);
+        module_id, debug_dirs, options, module);
   }
   if (elfclass == ELFCLASS64) {
     return ReadSymbolDataElfClass<ElfClass64>(
         reinterpret_cast<const Elf64_Ehdr*>(obj_file), obj_filename, obj_os,
-        debug_dirs, options, module);
+        module_id, debug_dirs, options, module);
   }
 
   return false;
@@ -1272,11 +1279,12 @@ bool ReadSymbolDataInternal(const uint8_t* obj_file,
 bool WriteSymbolFile(const string& load_path,
                      const string& obj_file,
                      const string& obj_os,
+                     const string& module_id,
                      const std::vector<string>& debug_dirs,
                      const DumpOptions& options,
                      std::ostream& sym_stream) {
   Module* module;
-  if (!ReadSymbolData(load_path, obj_file, obj_os, debug_dirs, options,
+  if (!ReadSymbolData(load_path, obj_file, obj_os, module_id, debug_dirs, options,
                       &module))
     return false;
 
@@ -1291,6 +1299,7 @@ bool WriteSymbolFile(const string& load_path,
 bool WriteSymbolFileHeader(const string& load_path,
                            const string& obj_file,
                            const string& obj_os,
+                           const string& module_id,
                            std::ostream& sym_stream) {
   MmapWrapper map_wrapper;
   void* elf_header = NULL;
@@ -1309,14 +1318,14 @@ bool WriteSymbolFileHeader(const string& load_path,
   if (elfclass == ELFCLASS32) {
     if (!InitModuleForElfClass<ElfClass32>(
         reinterpret_cast<const Elf32_Ehdr*>(elf_header), obj_file, obj_os,
-        module, /*enable_multiple_field=*/false)) {
+        module_id, module, /*enable_multiple_field=*/false)) {
       fprintf(stderr, "Failed to load ELF module: %s\n", obj_file.c_str());
       return false;
     }
   } else if (elfclass == ELFCLASS64) {
     if (!InitModuleForElfClass<ElfClass64>(
         reinterpret_cast<const Elf64_Ehdr*>(elf_header), obj_file, obj_os,
-        module, /*enable_multiple_field=*/false)) {
+        module_id, module, /*enable_multiple_field=*/false)) {
       fprintf(stderr, "Failed to load ELF module: %s\n", obj_file.c_str());
       return false;
     }
@@ -1331,6 +1340,7 @@ bool WriteSymbolFileHeader(const string& load_path,
 bool ReadSymbolData(const string& load_path,
                     const string& obj_file,
                     const string& obj_os,
+                    const string& module_id,
                     const std::vector<string>& debug_dirs,
                     const DumpOptions& options,
                     Module** module) {
@@ -1340,7 +1350,7 @@ bool ReadSymbolData(const string& load_path,
     return false;
 
   return ReadSymbolDataInternal(reinterpret_cast<uint8_t*>(elf_header),
-                                obj_file, obj_os, debug_dirs, options, module);
+                                obj_file, obj_os, module_id, debug_dirs, options, module);
 }
 
 }  // namespace google_breakpad

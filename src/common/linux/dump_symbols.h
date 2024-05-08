@@ -70,6 +70,7 @@ struct DumpOptions {
 bool WriteSymbolFile(const string& load_path,
                      const string& obj_file,
                      const string& obj_os,
+                     const string& module_id,
                      const std::vector<string>& debug_dirs,
                      const DumpOptions& options,
                      std::ostream& sym_stream);
@@ -81,6 +82,7 @@ bool WriteSymbolFile(const string& load_path,
 bool WriteSymbolFileHeader(const string& load_path,
                            const string& obj_file,
                            const string& obj_os,
+                           const string& module_id,
                            std::ostream& sym_stream);
 
 // As above, but simply return the debugging information in MODULE
@@ -89,6 +91,7 @@ bool WriteSymbolFileHeader(const string& load_path,
 bool ReadSymbolData(const string& load_path,
                     const string& obj_file,
                     const string& obj_os,
+                    const string& module_id,
                     const std::vector<string>& debug_dirs,
                     const DumpOptions& options,
                     Module** module);
