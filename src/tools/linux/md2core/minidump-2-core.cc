@@ -1562,7 +1562,8 @@ main(int argc, const char* argv[]) {
     if (!writea(options.out_fd, iter->c_str(), iter->length() + 1))
       return 1;
   }
-  writea(options.out_fd, "\0\0\0\0", nt_file_align);
+  if (!writea(options.out_fd, "\0\0\0\0", nt_file_align))
+    return 1;
 
   for (const auto& current_thread : crashinfo.threads) {
     if (current_thread.tid == crashinfo.exception.tid) {
