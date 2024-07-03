@@ -31,11 +31,12 @@
 #endif
 
 #include <assert.h>
+#include <stdint.h>
+#include <windows.h>
 
 // Disable exception handler warnings.
 #pragma warning(disable:4530)
 
-#include <fstream>
 #include <vector>
 
 #include "common/windows/string_utils-inl.h"
@@ -47,8 +48,8 @@ namespace {
   using std::wstring;
   using std::map;
   using std::vector;
-  using std::ifstream;
   using std::ios;
+  using std::unique_ptr;
 
   const wchar_t kUserAgent[] = L"Breakpad/1.0 (Windows)";
 
@@ -110,38 +111,51 @@ namespace {
     return result;
   }
 
-  bool GetFileContents(const wstring& filename, vector<char>* contents) {
-    bool rv = false;
-    // The "open" method on pre-MSVC8 ifstream implementations doesn't accept a
-    // wchar_t* filename, so use _wfopen directly in that case.  For VC8 and
-    // later, _wfopen has been deprecated in favor of _wfopen_s, which does
-    // not exist in earlier versions, so let the ifstream open the file itself.
-    // GCC doesn't support wide file name and opening on FILE* requires ugly
-    // hacks, so fallback to multi byte file.
-#ifdef _MSC_VER
-    ifstream file;
-    file.open(filename.c_str(), ios::binary);
-#else // GCC
-    ifstream file(WideToMBCP(filename, CP_ACP).c_str(), ios::binary);
-#endif  // _MSC_VER >= 1400
-    if (file.is_open()) {
-      file.seekg(0, ios::end);
-      std::streamoff length = file.tellg();
-      // Check for loss of data when converting lenght from std::streamoff into
-      // std::vector<char>::size_type
-      std::vector<char>::size_type vector_size =
-        static_cast<std::vector<char>::size_type>(length);
-      if (static_cast<std::streamoff>(vector_size) == length) {
-        contents->resize(vector_size);
-        if (length != 0) {
-          file.seekg(0, ios::beg);
-          file.read(&((*contents)[0]), length);
-        }
-        rv = true;
-      }
-      file.close();
+  // Invokes the Win32 CloseHandle function on `handle` if it is valid.
+  // Intended for use as a deleter for a std::unique_ptr.
+  void CloseWindowsHandle(void* handle) {
+    if (handle != INVALID_HANDLE_VALUE && handle != nullptr) {
+      ::CloseHandle(handle);
     }
-    return rv;
+  }
+
+  // Appends the contents of the file at `filename` to `contents`.
+  bool AppendFileContents(const wstring& filename, string* contents) {
+    // Use Win32 APIs rather than the STL so that files larger than 2^31-1 bytes
+    // can be read. This also allows for use of a hint to the cache manager that
+    // the file will be read sequentially, which can improve performance.
+    using ScopedWindowsHandle =
+        unique_ptr<void, decltype(&CloseWindowsHandle)>;
+    ScopedWindowsHandle file(
+        ::CreateFileW(filename.c_str(), GENERIC_READ,
+                      FILE_SHARE_DELETE | FILE_SHARE_READ,
+                      /*lpSecurityAttributes=*/nullptr, OPEN_EXISTING,
+                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+                      /*hTemplateFile=*/nullptr), &CloseWindowsHandle);
+    BY_HANDLE_FILE_INFORMATION info = {};
+    if (file.get() != nullptr && file.get() != INVALID_HANDLE_VALUE &&
+        ::GetFileInformationByHandle(file.get(), &info)) {
+      uint64_t file_size = info.nFileSizeHigh;
+      file_size <<= 32;
+      file_size |= info.nFileSizeLow;
+      string::size_type position = contents->size();
+      contents->resize(position + file_size);
+      constexpr DWORD kChunkSize = 1024*1024;
+      while (file_size) {
+        const DWORD bytes_to_read =
+            (file_size >= kChunkSize
+                ? kChunkSize
+                : static_cast<DWORD>(file_size));
+        DWORD bytes_read = 0;
+        if (!::ReadFile(file.get(), &((*contents)[position]), bytes_to_read,
+                        &bytes_read, /*lpOverlapped=*/nullptr)) {
+          return false;
+        }
+        position += bytes_read;
+        file_size -= bytes_read;
+      }
+    }
+    return true;
   }
 
   bool CheckParameters(const map<wstring, wstring>& parameters) {
@@ -386,16 +400,7 @@ namespace {
       request_body->append("\r\n");
     }
 
-    vector<char> contents;
-    if (!GetFileContents(filename, &contents)) {
-      return false;
-    }
-
-    if (!contents.empty()) {
-      request_body->append(&(contents[0]), contents.size());
-    }
-
-    return true;
+    return AppendFileContents(filename, request_body);
   }
 
   bool GenerateRequestBody(const map<wstring, wstring>& parameters,
