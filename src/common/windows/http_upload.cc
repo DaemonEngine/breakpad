@@ -32,12 +32,11 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <windows.h>
 
 // Disable exception handler warnings.
 #pragma warning(disable:4530)
-
-#include <vector>
 
 #include "common/windows/string_utils-inl.h"
 
@@ -47,7 +46,6 @@ namespace {
   using std::string;
   using std::wstring;
   using std::map;
-  using std::vector;
   using std::ios;
   using std::unique_ptr;
 
@@ -109,6 +107,30 @@ namespace {
     string result(buf);
     delete[] buf;
     return result;
+  }
+
+  // Returns a string representation of a given Windows error code, or null
+  // on failure.
+  using ScopedLocalString = unique_ptr<wchar_t, decltype(&LocalFree)>;
+  ScopedLocalString FormatError(DWORD error) {
+    wchar_t* message_buffer = nullptr;
+    DWORD message_length =
+        ::FormatMessageW(
+             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+             FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+             /*lpSource=*/::GetModuleHandle(L"wininet.dll"), error,
+             /*dwLanguageId=*/0, reinterpret_cast<wchar_t*>(&message_buffer),
+             /*nSize=*/0, /*Arguments=*/nullptr);
+    return ScopedLocalString(message_length ? message_buffer : nullptr,
+                             &LocalFree);
+  }
+
+  // Emits a log message to stderr for the named operation and Windows error
+  // code.
+  void LogError(const char* operation, DWORD error) {
+    ScopedLocalString message = FormatError(error);
+    fwprintf(stderr, L"%S failed with error %u: %s\n", operation, error,
+             message ? message.get() : L"");
   }
 
   // Invokes the Win32 CloseHandle function on `handle` if it is valid.
@@ -193,37 +215,46 @@ namespace {
       has_content_length_header = true;
       claimed_size = wcstol(content_length, NULL, 10);
       response_body.reserve(claimed_size);
+    } else {
+      DWORD error = ::GetLastError();
+      if (error != ERROR_HTTP_HEADER_NOT_FOUND) {
+        LogError("HttpQueryInfo", error);
+      }
     }
 
-    DWORD bytes_available;
     DWORD total_read = 0;
-    BOOL return_code;
-
-    while (((return_code = InternetQueryDataAvailable(request, &bytes_available,
-        0, 0)) != 0) && bytes_available > 0) {
-      vector<char> response_buffer(bytes_available);
-      DWORD size_read;
-
-      return_code = InternetReadFile(request,
-          &response_buffer[0],
-          bytes_available, &size_read);
-
-      if (return_code && size_read > 0) {
-        total_read += size_read;
-        response_body.append(&response_buffer[0], size_read);
+    while (true) {
+      DWORD bytes_available;
+      if (!InternetQueryDataAvailable(request, &bytes_available, 0, 0)) {
+        LogError("InternetQueryDataAvailable", ::GetLastError());
+        return false;
       }
-      else {
+      if (bytes_available == 0) {
         break;
       }
+      // Grow the output to hold the available bytes.
+      response_body.resize(total_read + bytes_available);
+      DWORD size_read;
+      if (!InternetReadFile(request, &response_body[total_read],
+                            bytes_available, &size_read)) {
+        LogError("InternetReadFile", ::GetLastError());
+        return false;
+      }
+      if (size_read == 0) {
+        break;
+      }
+      total_read += size_read;
     }
+    // The body may have been over-sized above; shrink to the actual bytes read.
+    response_body.resize(total_read);
 
-    bool succeeded = return_code && (!has_content_length_header ||
-        (total_read == claimed_size));
-    if (succeeded && response) {
+    if (has_content_length_header && (total_read != claimed_size)) {
+      return false;  // The response doesn't match the Content-Length header.
+    }
+    if (response) {
       *response = UTF8ToWide(response_body);
     }
-
-    return succeeded;
+    return true;
   }
 
   bool SendRequestInner(
@@ -251,8 +282,7 @@ namespace {
     components.dwUrlPathLength = sizeof(path) / sizeof(path[0]);
     if (!InternetCrackUrl(url.c_str(), static_cast<DWORD>(url.size()),
         0, &components)) {
-      DWORD err = GetLastError();
-      wprintf(L"%d\n", err);
+      LogError("InternetCrackUrl", ::GetLastError());
       return false;
     }
     bool secure = false;
@@ -269,6 +299,7 @@ namespace {
         NULL,  // proxy bypass
         0));   // flags
     if (!internet.get()) {
+      LogError("InternetOpen", ::GetLastError());
       return false;
     }
 
@@ -281,6 +312,7 @@ namespace {
         0,       // flags
         0));  // context
     if (!connection.get()) {
+      LogError("InternetConnect", ::GetLastError());
       return false;
     }
 
@@ -295,14 +327,17 @@ namespace {
         http_open_flags,
         0));  // context
     if (!request.get()) {
+      LogError("HttpOpenRequest", ::GetLastError());
       return false;
     }
 
     if (!content_type_header.empty()) {
-      HttpAddRequestHeaders(request.get(),
-          content_type_header.c_str(),
-          static_cast<DWORD>(-1),
-          HTTP_ADDREQ_FLAG_ADD);
+      if (!HttpAddRequestHeaders(request.get(),
+                                 content_type_header.c_str(),
+                                 static_cast<DWORD>(-1),
+                                 HTTP_ADDREQ_FLAG_ADD)) {
+        LogError("HttpAddRequestHeaders", ::GetLastError());
+      }
     }
 
     if (timeout_ms) {
@@ -310,20 +345,21 @@ namespace {
           INTERNET_OPTION_SEND_TIMEOUT,
           timeout_ms,
           sizeof(*timeout_ms))) {
-        fwprintf(stderr, L"Could not unset send timeout, continuing...\n");
+        LogError("InternetSetOption-send timeout", ::GetLastError());
       }
 
       if (!InternetSetOption(request.get(),
           INTERNET_OPTION_RECEIVE_TIMEOUT,
           timeout_ms,
           sizeof(*timeout_ms))) {
-        fwprintf(stderr, L"Could not unset receive timeout, continuing...\n");
+        LogError("InternetSetOption-receive timeout", ::GetLastError());
       }
     }
 
     if (!HttpSendRequest(request.get(), NULL, 0,
         const_cast<char*>(request_body.data()),
         static_cast<DWORD>(request_body.size()))) {
+      LogError("HttpSendRequest", ::GetLastError());
       return false;
     }
 
@@ -333,6 +369,7 @@ namespace {
     if (!HttpQueryInfo(request.get(), HTTP_QUERY_STATUS_CODE,
         static_cast<LPVOID>(&http_status), &http_status_size,
         0)) {
+      LogError("HttpQueryInfo", ::GetLastError());
       return false;
     }
 
