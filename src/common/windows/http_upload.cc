@@ -30,10 +30,17 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <algorithm>
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wchar.h>
 #include <windows.h>
+
+#if defined(HAVE_ZLIB)
+#include <zlib.h>
+#endif
 
 // Disable exception handler warnings.
 #pragma warning(disable:4530)
@@ -48,6 +55,56 @@ namespace {
   using std::map;
   using std::ios;
   using std::unique_ptr;
+
+// Compresses the contents of `data` into `deflated` using the deflate
+// algorithm, if supported. Returns true on success, or false if not supported
+// or in case of any error. The contents of `deflated` are undefined in the
+// latter case.
+bool Deflate(const string& data, string& deflated) {
+#if defined(HAVE_ZLIB)
+  z_stream stream{};
+
+  // Start with an output buffer sufficient for 75% compression to avoid
+  // reallocations.
+  deflated.resize(data.size() / 4);
+  stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(data.data()));
+  stream.avail_in = data.size();
+  stream.next_out = reinterpret_cast<Bytef*>(&deflated[0]);
+  stream.avail_out = deflated.size();
+  stream.data_type = Z_TEXT;
+
+  // Z_BEST_SPEED is chosen because, in practice, it offers excellent speed with
+  // comparable compression for the symbol data typically being uploaded.
+  // Z_BEST_COMPRESSION:    2151202094 bytes compressed 84.27% in 74.440s.
+  // Z_DEFAULT_COMPRESSION: 2151202094 bytes compressed 84.08% in 36.016s.
+  // Z_BEST_SPEED:          2151202094 bytes compressed 80.39% in 13.73s.
+  int result = deflateInit(&stream, Z_BEST_SPEED);
+  if (result != Z_OK) {
+    return false;
+  }
+
+  while (true) {
+    result = deflate(&stream, /*flush=*/Z_FINISH);
+    if (result == Z_STREAM_END) {  // All data processed.
+      deflated.resize(stream.total_out);
+      break;
+    }
+    if (result != Z_OK && result != Z_BUF_ERROR) {
+      fwprintf(stderr, L"Compression failed with zlib error %d\n", result);
+      break;  // Error condition.
+    }
+    // Grow `deflated` by at least 1k to accept the rest of the data.
+    deflated.resize(deflated.size() + std::max(stream.avail_in, 1024U));
+    stream.next_out = reinterpret_cast<Bytef*>(&deflated[stream.total_out]);
+    stream.avail_out = deflated.size() - stream.total_out;
+  }
+  deflateEnd(&stream);
+
+  return result == Z_STREAM_END;
+#else
+  return false;
+#endif  // defined(HAVE_ZLIB)
+}
 
   const wchar_t kUserAgent[] = L"Breakpad/1.0 (Windows)";
 
@@ -490,10 +547,20 @@ namespace google_breakpad {
       return false;
     }
 
+    static const wchar_t kNoEncoding[] = L"";
+    static const wchar_t kDeflateEncoding[] = L"Content-Encoding: deflate\r\n";
+    const wchar_t* encoding_header = &kNoEncoding[0];
+    string compressed_body;
+    if (Deflate(request_body, compressed_body)) {
+      request_body.swap(compressed_body);
+      encoding_header = &kDeflateEncoding[0];
+    }  // else deflate unsupported or failed; send the raw data.
+    string().swap(compressed_body);  // Free memory.
+
     return SendRequestInner(
         url,
         L"PUT",
-        L"",
+        encoding_header,
         request_body,
         timeout_ms,
         response_body,
