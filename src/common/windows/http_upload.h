@@ -41,6 +41,7 @@
 #include <wininet.h>
 
 #include <map>
+#include <string>
 
 namespace google_breakpad {
 
