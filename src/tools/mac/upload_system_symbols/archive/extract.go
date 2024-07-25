@@ -1,4 +1,4 @@
-package main
+package archive
 
 // #cgo LDFLAGS: -lParallelCompression
 // #include <stdio.h>
