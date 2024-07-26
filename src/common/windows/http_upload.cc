@@ -104,9 +104,6 @@ bool Deflate(const string& data, string& deflated) {
 
   return result == Z_STREAM_END;
 #else
-  // Silence MSVC warning C4100 when building without zlib support.
-  data;
-  deflated;
   return false;
 #endif  // defined(HAVE_ZLIB)
 }
