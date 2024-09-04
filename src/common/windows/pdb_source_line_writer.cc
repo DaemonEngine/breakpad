@@ -1056,7 +1056,7 @@ bool PDBSourceLineWriter::PrintFrameDataUsingEXE() {
 
 bool PDBSourceLineWriter::PrintFrameData() {
   PDBModuleInfo info;
-  if (GetModuleInfo(&info) && info.cpu == L"x86_64") {
+  if (GetModuleInfo(&info) && (info.cpu == L"x86_64" || info.cpu == L"arm64")) {
     return PrintFrameDataUsingEXE();
   }
   return PrintFrameDataUsingPDB();
