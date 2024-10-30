@@ -68,9 +68,6 @@ constexpr const wchar_t* FileHeaderMachineToCpuString(WORD machine) {
     case IMAGE_FILE_MACHINE_AMD64: {
       return L"x86_64";
     }
-    case IMAGE_FILE_MACHINE_ARM64: {
-      return L"arm64";
-    }
     default: { return L"unknown"; }
   }
 }
