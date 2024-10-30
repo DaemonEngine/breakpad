@@ -1162,7 +1162,7 @@ void PrintProcessState(const ProcessState& process_state,
       printf("Crash parameters:\n");
       for (const auto& param : *exception_param_vec) {
         printf("    value: %" PRIu64 "\tdescription: %s\n", param.value(),
-               param.description());
+               param.description().c_str());
       }
     }
   } else {
