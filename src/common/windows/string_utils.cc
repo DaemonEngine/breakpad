@@ -30,6 +30,8 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <stdlib.h>
+
 #include <cassert>
 #include <vector>
 
