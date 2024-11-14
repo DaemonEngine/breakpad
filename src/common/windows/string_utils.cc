@@ -30,12 +30,12 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "common/windows/string_utils-inl.h"
+
+#include <assert.h>
 #include <stdlib.h>
 
-#include <cassert>
 #include <vector>
-
-#include "common/windows/string_utils-inl.h"
 
 namespace google_breakpad {
 
