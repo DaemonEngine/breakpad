@@ -179,7 +179,7 @@ void CompilationUnit::ReadAbbrevs() {
                            value);
       abbrev.attributes.push_back(abbrev_attr);
     }
-    abbrevs_->push_back(abbrev);
+    abbrevs_->push_back(std::move(abbrev));
   }
 
   // Account of cases where entries are out of order.

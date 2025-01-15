@@ -370,7 +370,7 @@ ProcessResult MinidumpProcessor::Process(
     stack->set_tid(thread_id);
     process_state->threads_.push_back(stack.release());
     process_state->thread_memory_regions_.push_back(thread_memory);
-    process_state->thread_names_.push_back(thread_name);
+    process_state->thread_names_.push_back(std::move(thread_name));
   }
 
   if (interrupted) {
