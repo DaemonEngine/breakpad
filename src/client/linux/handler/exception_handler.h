@@ -207,7 +207,7 @@ class ExceptionHandler {
 
   // Returns whether out-of-process dump generation is used or not.
   bool IsOutOfProcess() const {
-    return crash_generation_client_.get() != NULL;
+    return crash_generation_client_.get() != nullptr;
   }
 
   // Add information about a memory mapping. This can be used if

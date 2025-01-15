@@ -89,7 +89,7 @@ class scoped_ptr {
   // Constructor.  Defaults to initializing with NULL.
   // There is no way to create an uninitialized scoped_ptr.
   // The input parameter must be allocated with new.
-  explicit scoped_ptr(C* p = NULL) : ptr_(p) { }
+  explicit scoped_ptr(C* p = nullptr) : ptr_(p) { }
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
@@ -101,7 +101,7 @@ class scoped_ptr {
   // Reset.  Deletes the current owned object, if any.
   // Then takes ownership of a new object, if given.
   // this->reset(this->get()) works.
-  void reset(C* p = NULL) {
+  void reset(C* p = nullptr) {
     if (p != ptr_) {
       enum { type_must_be_complete = sizeof(C) };
       delete ptr_;
@@ -112,11 +112,11 @@ class scoped_ptr {
   // Accessors to get the owned object.
   // operator* and operator-> will assert() if there is no current object.
   C& operator*() const {
-    assert(ptr_ != NULL);
+    assert(ptr_ != nullptr);
     return *ptr_;
   }
   C* operator->() const  {
-    assert(ptr_ != NULL);
+    assert(ptr_ != nullptr);
     return ptr_;
   }
   C* get() const { return ptr_; }
@@ -141,7 +141,7 @@ class scoped_ptr {
   // and will not own the object any more.
   C* release() {
     C* retVal = ptr_;
-    ptr_ = NULL;
+    ptr_ = nullptr;
     return retVal;
   }
 
@@ -194,7 +194,7 @@ class scoped_array {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized scoped_array.
   // The input parameter must be allocated with new [].
-  explicit scoped_array(C* p = NULL) : array_(p) { }
+  explicit scoped_array(C* p = nullptr) : array_(p) { }
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
@@ -206,7 +206,7 @@ class scoped_array {
   // Reset.  Deletes the current owned object, if any.
   // Then takes ownership of a new object, if given.
   // this->reset(this->get()) works.
-  void reset(C* p = NULL) {
+  void reset(C* p = nullptr) {
     if (p != array_) {
       enum { type_must_be_complete = sizeof(C) };
       delete[] array_;
@@ -218,7 +218,7 @@ class scoped_array {
   // Will assert() if there is no current object, or index i is negative.
   C& operator[](ptrdiff_t i) const {
     assert(i >= 0);
-    assert(array_ != NULL);
+    assert(array_ != nullptr);
     return array_[i];
   }
 
@@ -248,7 +248,7 @@ class scoped_array {
   // and will not own the object any more.
   C* release() {
     C* retVal = array_;
-    array_ = NULL;
+    array_ = nullptr;
     return retVal;
   }
 
@@ -304,7 +304,7 @@ class scoped_ptr_malloc {
   // The input parameter must be allocated with an allocator that matches the
   // Free functor.  For the default Free functor, this is malloc, calloc, or
   // realloc.
-  explicit scoped_ptr_malloc(C* p = NULL): ptr_(p) {}
+  explicit scoped_ptr_malloc(C* p = nullptr): ptr_(p) {}
 
   // Destructor.  If there is a C object, call the Free functor.
   ~scoped_ptr_malloc() {
@@ -314,7 +314,7 @@ class scoped_ptr_malloc {
   // Reset.  Calls the Free functor on the current owned object, if any.
   // Then takes ownership of a new object, if given.
   // this->reset(this->get()) works.
-  void reset(C* p = NULL) {
+  void reset(C* p = nullptr) {
     if (ptr_ != p) {
       FreeProc free_proc;
       free_proc(ptr_);
@@ -326,12 +326,12 @@ class scoped_ptr_malloc {
   // operator* and operator-> will cause an assert() failure if there is
   // no current object.
   C& operator*() const {
-    assert(ptr_ != NULL);
+    assert(ptr_ != nullptr);
     return *ptr_;
   }
 
   C* operator->() const {
-    assert(ptr_ != NULL);
+    assert(ptr_ != nullptr);
     return ptr_;
   }
 
@@ -366,7 +366,7 @@ class scoped_ptr_malloc {
   // and will not own the object any more.
   C* release() {
     C* tmp = ptr_;
-    ptr_ = NULL;
+    ptr_ = nullptr;
     return tmp;
   }
 
