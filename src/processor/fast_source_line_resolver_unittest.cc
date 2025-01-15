@@ -71,7 +71,7 @@ using google_breakpad::scoped_ptr;
 
 class TestCodeModule : public CodeModule {
  public:
-  explicit TestCodeModule(string code_file) : code_file_(code_file) {}
+  explicit TestCodeModule(const string& code_file) : code_file_(code_file) {}
   virtual ~TestCodeModule() {}
 
   virtual uint64_t base_address() const { return 0; }

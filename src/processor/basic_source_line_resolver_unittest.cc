@@ -60,7 +60,7 @@ using google_breakpad::SymbolParseHelper;
 
 class TestCodeModule : public CodeModule {
  public:
-  TestCodeModule(string code_file) : code_file_(code_file) {}
+  TestCodeModule(const string& code_file) : code_file_(code_file) {}
   virtual ~TestCodeModule() {}
 
   virtual uint64_t base_address() const { return 0; }

@@ -643,7 +643,7 @@ static void ConvertMissingSymbolFile(const MissingSymbolInfo& missing_info,
 
 // Reads the contents of file |file_name| and populates |contents|.
 // Returns true on success.
-static bool ReadFile(string file_name, string* contents) {
+static bool ReadFile(const string& file_name, string* contents) {
   char buffer[1024 * 8];
   FILE* fp = fopen(file_name.c_str(), "rt");
   if (!fp) {

@@ -826,7 +826,7 @@ class LoadSymbolsInfo {
   string debuglink_file() const {
     return debuglink_file_;
   }
-  void set_debuglink_file(string file) {
+  void set_debuglink_file(const string& file) {
     debuglink_file_ = file;
   }
 

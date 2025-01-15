@@ -378,7 +378,7 @@ static bool InstallRaiseSIGKILL() {
 
 static void CrashWithCallbacks(ExceptionHandler::FilterCallback filter,
                                ExceptionHandler::MinidumpCallback done,
-                               string path) {
+                               const string& path) {
   ExceptionHandler handler(
       MinidumpDescriptor(path), filter, done, NULL, true, -1);
   // Crash with the exception handler in scope.
