@@ -447,7 +447,8 @@ bool ExceptionHandler::HandleSignal(int /*sig*/, siginfo_t* info, void* uc) {
   // Allow ourselves to be dumped if the signal is trusted.
   bool signal_trusted = info->si_code > 0;
   bool signal_pid_trusted = info->si_code == SI_USER ||
-      info->si_code == SI_TKILL;
+                            info->si_code == SI_TKILL ||
+                            info->si_code == SI_QUEUE;
   if (signal_trusted || (signal_pid_trusted && info->si_pid == getpid())) {
     sys_prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
   }
