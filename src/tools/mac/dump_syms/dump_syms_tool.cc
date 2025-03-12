@@ -47,11 +47,9 @@
 #include "common/mac/dump_syms.h"
 #include "common/mac/arch_utilities.h"
 #include "common/mac/macho_utilities.h"
-#include "common/scoped_ptr.h"
 
 using google_breakpad::DumpSymbols;
 using google_breakpad::Module;
-using google_breakpad::scoped_ptr;
 using std::vector;
 
 struct Options {
@@ -177,7 +175,7 @@ static bool Start(const Options& options) {
   Module* module = NULL;
   if (!dump_symbols.ReadSymbolData(&module))
     return false;
-  scoped_ptr<Module> scoped_module(module);
+  std::unique_ptr<Module> scoped_module(module);
 
   // If this is a split module, read the secondary Mach-O file, from which the
   // CFI data will be extracted.
@@ -192,7 +190,7 @@ static bool Start(const Options& options) {
     Module* cfi_module = NULL;
     if (!dump_symbols.ReadSymbolData(&cfi_module))
       return false;
-    scoped_ptr<Module> scoped_cfi_module(cfi_module);
+    std::unique_ptr<Module> scoped_cfi_module(cfi_module);
 
     bool name_matches;
     if (!options.module_name.empty()) {

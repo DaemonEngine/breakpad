@@ -69,7 +69,6 @@
 
 #include <stdio.h>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/common/breakpad_types.h"
 #include "google_breakpad/common/minidump_format.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
@@ -83,7 +82,6 @@ using google_breakpad::BasicSourceLineResolver;
 using google_breakpad::CallStack;
 using google_breakpad::CodeModule;
 using google_breakpad::MemoryRegion;
-using google_breakpad::scoped_ptr;
 using google_breakpad::StackFrame;
 using google_breakpad::StackFramePPC;
 using google_breakpad::StackFrameX86;

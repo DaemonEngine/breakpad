@@ -37,9 +37,10 @@
 #endif
 
 #include <assert.h>
+
+#include <memory>
 #include <string>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_modules.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -536,7 +537,7 @@ StackFrameX86* StackwalkerX86::GetCallerByCFIFrameInfo(
   StackFrameX86* last_frame = static_cast<StackFrameX86*>(frames.back());
   last_frame->cfi_frame_info = cfi_frame_info;
 
-  scoped_ptr<StackFrameX86> frame(new StackFrameX86());
+  std::unique_ptr<StackFrameX86> frame(new StackFrameX86());
   if (!cfi_walker_
       .FindCallerRegisters(*memory_, *cfi_frame_info,
                            last_frame->context, last_frame->context_validity,
@@ -658,7 +659,7 @@ StackFrame* StackwalkerX86::GetCallerFrame(const CallStack* stack,
   // The last frame can never be inline. A sequence of inline frames always
   // finishes with a conventional frame.
   assert(last_frame->trust != StackFrame::FRAME_TRUST_INLINE);
-  scoped_ptr<StackFrameX86> new_frame;
+  std::unique_ptr<StackFrameX86> new_frame;
 
   // If the resolver has Windows stack walking information, use that.
   WindowsFrameInfo* windows_frame_info

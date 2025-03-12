@@ -55,6 +55,7 @@
 #include <zstd.h>
 #endif
 
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -103,7 +104,6 @@ using google_breakpad::PageAllocator;
 #ifndef NO_STABS_SUPPORT
 using google_breakpad::StabsToModule;
 #endif
-using google_breakpad::scoped_ptr;
 using google_breakpad::wasteful_vector;
 
 // Define AARCH64 ELF architecture if host machine does not include this define.
@@ -1159,7 +1159,7 @@ bool InitModuleForElfClass(const typename ElfClass::Ehdr* elf_header,
                            const string& obj_filename,
                            const string& obj_os,
                            const string& module_id,
-                           scoped_ptr<Module>& module,
+                           std::unique_ptr<Module>& module,
                            bool enable_multiple_field) {
   PageAllocator allocator;
   wasteful_vector<uint8_t> identifier(&allocator, kDefaultBuildIdSize);
@@ -1211,7 +1211,7 @@ bool ReadSymbolDataElfClass(const typename ElfClass::Ehdr* elf_header,
 
   *out_module = NULL;
 
-  scoped_ptr<Module> module;
+  std::unique_ptr<Module> module;
   if (!InitModuleForElfClass<ElfClass>(elf_header, obj_filename, obj_os, module_id,
                                       module, options.enable_multiple_field)) {
     return false;
@@ -1324,7 +1324,7 @@ bool WriteSymbolFileHeader(const string& load_path,
   }
 
   int elfclass = ElfClass(elf_header);
-  scoped_ptr<Module> module;
+  std::unique_ptr<Module> module;
   if (elfclass == ELFCLASS32) {
     if (!InitModuleForElfClass<ElfClass32>(
         reinterpret_cast<const Elf32_Ehdr*>(elf_header), obj_file, obj_os,

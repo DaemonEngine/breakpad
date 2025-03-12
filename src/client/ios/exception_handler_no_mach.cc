@@ -33,6 +33,8 @@
 #include <signal.h>
 #include <TargetConditionals.h>
 
+#include <memory>
+
 #include "client/mac/handler/minidump_generator.h"
 #include "client/ios/exception_handler_no_mach.h"
 
@@ -65,7 +67,7 @@ const int kExceptionSignals[] = {
 };
 const int kNumHandledSignals =
     sizeof(kExceptionSignals) / sizeof(kExceptionSignals[0]);
-struct scoped_ptr<struct sigaction> old_handlers[kNumHandledSignals];
+struct std::unique_ptr<struct sigaction> old_handlers[kNumHandledSignals];
 
 static union {
 #if USE_PROTECTED_ALLOCATIONS

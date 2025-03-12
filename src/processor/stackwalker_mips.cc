@@ -36,7 +36,8 @@
 #include <config.h>  // Must come first
 #endif
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_modules.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -143,7 +144,7 @@ StackFrameMIPS* StackwalkerMIPS::GetCallerByCFIFrameInfo(
     }
     caller_registers["$pc"] = pc;
     // Construct a new stack frame given the values the CFI recovered.
-    scoped_ptr<StackFrameMIPS> frame(new StackFrameMIPS());
+    std::unique_ptr<StackFrameMIPS> frame(new StackFrameMIPS());
 
     for (int i = 0; kRegisterNames[i]; ++i) {
       CFIFrameInfo::RegisterValueMap<uint32_t>::const_iterator caller_entry =
@@ -210,7 +211,7 @@ StackFrameMIPS* StackwalkerMIPS::GetCallerByCFIFrameInfo(
     }
     caller_registers["$pc"] = pc;
     // Construct a new stack frame given the values the CFI recovered.
-    scoped_ptr<StackFrameMIPS> frame(new StackFrameMIPS());
+    std::unique_ptr<StackFrameMIPS> frame(new StackFrameMIPS());
 
     for (int i = 0; kRegisterNames[i]; ++i) {
       CFIFrameInfo::RegisterValueMap<uint64_t>::const_iterator caller_entry =
@@ -257,10 +258,10 @@ StackFrame* StackwalkerMIPS::GetCallerFrame(const CallStack* stack,
 
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameMIPS* last_frame = static_cast<StackFrameMIPS*>(frames.back());
-  scoped_ptr<StackFrameMIPS> new_frame;
+  std::unique_ptr<StackFrameMIPS> new_frame;
 
   // See if there is DWARF call frame information covering this address.
-  scoped_ptr<CFIFrameInfo> cfi_frame_info(
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info(
     frame_symbolizer_->FindCFIFrameInfo(last_frame));
   if (cfi_frame_info.get())
     new_frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));

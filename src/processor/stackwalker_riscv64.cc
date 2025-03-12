@@ -37,7 +37,8 @@
 #include <config.h>  // Must come first
 #endif
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_modules.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -158,7 +159,7 @@ StackFrameRISCV64* StackwalkerRISCV64::GetCallerByCFIFrameInfo(
 
   // Construct a new stack frame given the values the CFI recovered.
   CFIFrameInfo::RegisterValueMap<uint64_t>::iterator entry;
-  scoped_ptr<StackFrameRISCV64> frame(new StackFrameRISCV64());
+  std::unique_ptr<StackFrameRISCV64> frame(new StackFrameRISCV64());
   entry = caller_registers.find("pc");
   if (entry != caller_registers.end()) {
     frame->context_validity |= StackFrameRISCV64::CONTEXT_VALID_PC;
@@ -498,10 +499,10 @@ StackFrame* StackwalkerRISCV64::GetCallerFrame(const CallStack* stack,
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameRISCV64* last_frame =
       static_cast<StackFrameRISCV64*>(frames.back());
-  scoped_ptr<StackFrameRISCV64> frame;
+  std::unique_ptr<StackFrameRISCV64> frame;
 
   // Try to recover caller information from CFI.
-  scoped_ptr<CFIFrameInfo> cfi_frame_info(
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info(
       frame_symbolizer_->FindCFIFrameInfo(last_frame));
   if (cfi_frame_info.get())
     frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));

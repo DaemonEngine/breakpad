@@ -40,7 +40,6 @@
 #include <unistd.h>
 
 #include "common/path_helper.h"
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/minidump.h"
 #include "processor/logging.h"
 

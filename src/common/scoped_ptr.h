@@ -32,8 +32,7 @@
 #define COMMON_SCOPED_PTR_H_
 
 // This is an implementation designed to match the anticipated future TR2
-// implementation of the scoped_ptr class, and its closely-related brethren,
-// scoped_array.
+// implementation of the scoped_array class.
 
 #include <assert.h>
 #include <stddef.h>
@@ -41,23 +40,14 @@
 
 #include <memory>
 
+#include "common/scoped_ptr.h"
+
 namespace google_breakpad {
 
-template <typename T, typename D = std::default_delete<T>>
-using scoped_ptr = std::unique_ptr<T, D>;
-
-// A function to convert T* into scoped_ptr<T>
-// Doing e.g. make_scoped_ptr(new FooBarBaz<type>(arg)) is a shorter notation
-// for scoped_ptr<FooBarBaz<type> >(new FooBarBaz<type>(arg))
-template <typename T>
-scoped_ptr<T> make_scoped_ptr(T* ptr) {
-  return scoped_ptr<T>(ptr);
-}
-
-// scoped_array<C> is like scoped_ptr<C>, except that the caller must allocate
+// scoped_array<C> is like std::unique_ptr<C>, except that the caller must allocate
 // with new [] and the destructor deletes objects with delete [].
 //
-// As with scoped_ptr<C>, a scoped_array<C> either points to an object
+// As with std::unique_ptr<C>, a scoped_array<C> either points to an object
 // or is NULL.  A scoped_array<C> owns the object that it points to.
 // scoped_array<T> is thread-compatible, and once you index into it,
 // the returned objects have only the threadsafety guarantees of T.

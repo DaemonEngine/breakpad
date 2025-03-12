@@ -37,6 +37,7 @@
 #include <TargetConditionals.h>
 
 #include <map>
+#include <memory>
 
 #include "client/mac/handler/exception_handler.h"
 #include "client/mac/handler/minidump_generator.h"
@@ -648,7 +649,7 @@ bool ExceptionHandler::InstallHandler() {
     sa.sa_sigaction = ExceptionHandler::SignalHandler;
     sa.sa_flags = SA_SIGINFO;
 
-    scoped_ptr<struct sigaction> old(new struct sigaction);
+    std::unique_ptr<struct sigaction> old(new struct sigaction);
     if (sigaction(SIGABRT, &sa, old.get()) == -1) {
       return false;
     }

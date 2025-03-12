@@ -43,6 +43,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -67,7 +68,6 @@ using google_breakpad::CodeModule;
 using google_breakpad::MemoryRegion;
 using google_breakpad::StackFrame;
 using google_breakpad::WindowsFrameInfo;
-using google_breakpad::scoped_ptr;
 
 class TestCodeModule : public CodeModule {
  public:
@@ -215,8 +215,8 @@ TEST_F(TestFastSourceLineResolver, TestLoadAndResolve) {
   ASSERT_TRUE(fast_resolver.HasModule(&module2));
 
   StackFrame frame;
-  scoped_ptr<WindowsFrameInfo> windows_frame_info;
-  scoped_ptr<CFIFrameInfo> cfi_frame_info;
+  std::unique_ptr<WindowsFrameInfo> windows_frame_info;
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info;
   frame.instruction = 0x1000;
   frame.module = NULL;
   fast_resolver.FillSourceLineInfo(&frame, nullptr);

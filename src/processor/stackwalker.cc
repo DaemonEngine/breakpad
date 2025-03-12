@@ -40,7 +40,8 @@
 
 #include <assert.h>
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_module.h"
 #include "google_breakpad/processor/code_modules.h"
@@ -136,7 +137,7 @@ bool Stackwalker::Walk(
   uint32_t scanned_frames = 0;
 
   // Take ownership of the pointer returned by GetContextFrame.
-  scoped_ptr<StackFrame> frame(GetContextFrame());
+  std::unique_ptr<StackFrame> frame(GetContextFrame());
 
   while (frame.get()) {
     // frame already contains a good frame with properly set instruction and

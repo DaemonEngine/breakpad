@@ -46,7 +46,6 @@
 #include "common/linux/breakpad_getcontext.h"
 #include "common/linux/eintr_wrapper.h"
 #include "common/linux/ignore_ret.h"
-#include "common/scoped_ptr.h"
 #include "common/tests/auto_tempdir.h"
 #include "common/using_std_string.h"
 

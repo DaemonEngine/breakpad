@@ -40,9 +40,9 @@
 
 #include <stdint.h>
 
+#include <memory>
 #include <vector>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
 #include "google_breakpad/processor/source_line_resolver_interface.h"
@@ -131,7 +131,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
     return NULL;
   }
   // Construct a new stack frame given the values the CFI recovered.
-  scoped_ptr<StackFrameARM64> frame(new StackFrameARM64());
+  std::unique_ptr<StackFrameARM64> frame(new StackFrameARM64());
   for (int i = 0; register_names[i]; i++) {
     CFIFrameInfo::RegisterValueMap<uint64_t>::iterator entry =
       caller_registers.find(register_names[i]);
@@ -318,10 +318,10 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
 
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameARM64* last_frame = static_cast<StackFrameARM64*>(frames.back());
-  scoped_ptr<StackFrameARM64> frame;
+  std::unique_ptr<StackFrameARM64> frame;
 
   // See if there is DWARF call frame information covering this address.
-  scoped_ptr<CFIFrameInfo> cfi_frame_info(
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info(
       frame_symbolizer_->FindCFIFrameInfo(last_frame));
   if (cfi_frame_info.get())
     frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));

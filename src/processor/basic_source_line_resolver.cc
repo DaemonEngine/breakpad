@@ -356,7 +356,7 @@ void BasicSourceLineResolver::Module::LookupAddress(
 WindowsFrameInfo* BasicSourceLineResolver::Module::FindWindowsFrameInfo(
     const StackFrame* frame) const {
   MemAddr address = frame->instruction - frame->module->base_address();
-  scoped_ptr<WindowsFrameInfo> result(new WindowsFrameInfo());
+  std::unique_ptr<WindowsFrameInfo> result(new WindowsFrameInfo());
 
   // We only know about WindowsFrameInfo::STACK_INFO_FRAME_DATA and
   // WindowsFrameInfo::STACK_INFO_FPO. Prefer them in this order.
@@ -419,7 +419,7 @@ CFIFrameInfo* BasicSourceLineResolver::Module::FindCFIFrameInfo(
 
   // Create a frame info structure, and populate it with the rules from
   // the STACK CFI INIT record.
-  scoped_ptr<CFIFrameInfo> rules(new CFIFrameInfo());
+  std::unique_ptr<CFIFrameInfo> rules(new CFIFrameInfo());
   if (!ParseCFIRuleSet(initial_rules, rules.get()))
     return NULL;
 

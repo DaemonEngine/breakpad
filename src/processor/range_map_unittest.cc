@@ -43,9 +43,10 @@
 #include <limits.h>
 #include <stdio.h>
 
+#include <memory>
+
 #include "processor/range_map-inl.h"
 
-#include "common/scoped_ptr.h"
 #include "processor/linked_ptr.h"
 #include "processor/logging.h"
 
@@ -54,7 +55,6 @@ namespace {
 using google_breakpad::AddIgnoringOverflow;
 using google_breakpad::linked_ptr;
 using google_breakpad::RangeMap;
-using google_breakpad::scoped_ptr;
 
 // A CountedObject holds an int.  A global (not thread safe!) count of
 // allocated CountedObjects is maintained to help test memory management.
@@ -342,7 +342,7 @@ static bool RetrieveIndexTest(TestMap* range_map, int set) {
 // entry, however, it is supposed to retrieve the base address of entry as
 // stated in the comment in range_map.h.
 static bool RetrieveAtIndexTest2() {
-  scoped_ptr<TestMap> range_map(new TestMap());
+  std::unique_ptr<TestMap> range_map(new TestMap());
 
   // Store ranges with base address = 2 * object_id:
   const int range_size = 2;
@@ -468,7 +468,7 @@ static bool RunTests() {
 
   // Maintain the range map in a pointer so that deletion can be meaningfully
   // tested.
-  scoped_ptr<TestMap> range_map(new TestMap());
+  std::unique_ptr<TestMap> range_map(new TestMap());
 
   // Run all of the test sets in sequence.
   unsigned int range_test_set_count = sizeof(range_test_sets) /

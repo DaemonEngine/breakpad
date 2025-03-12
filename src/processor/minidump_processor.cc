@@ -39,10 +39,10 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "common/scoped_ptr.h"
 #include "common/stdio_wrapper.h"
 #include "common/using_std_string.h"
 #include "google_breakpad/processor/call_stack.h"
@@ -344,7 +344,7 @@ ProcessResult MinidumpProcessor::Process(
     // returns.  process_state->modules_ is owned by the ProcessState object
     // (just like the StackFrame objects), and is much more suitable for this
     // task.
-    scoped_ptr<Stackwalker> stackwalker(
+    std::unique_ptr<Stackwalker> stackwalker(
         Stackwalker::StackwalkerForCPU(process_state->system_info(),
                                        context,
                                        thread_memory,
@@ -352,7 +352,7 @@ ProcessResult MinidumpProcessor::Process(
                                        process_state->unloaded_modules_,
                                        frame_symbolizer_));
 
-    scoped_ptr<CallStack> stack(new CallStack());
+    std::unique_ptr<CallStack> stack(new CallStack());
     if (stackwalker.get()) {
       if (!stackwalker->Walk(stack.get(),
                              &process_state->modules_without_symbols_,
@@ -393,7 +393,7 @@ ProcessResult MinidumpProcessor::Process(
   // If an exploitability run was requested we perform the platform specific
   // rating.
   if (enable_exploitability_) {
-    scoped_ptr<Exploitability> exploitability(
+    std::unique_ptr<Exploitability> exploitability(
         Exploitability::ExploitabilityForPlatform(
           dump, process_state, enable_objdump_for_exploitability_));
     // The engine will be null if the platform is not supported

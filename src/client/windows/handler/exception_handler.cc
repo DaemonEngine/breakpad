@@ -37,6 +37,7 @@
 #include <stdio.h>
 
 #include <algorithm>
+#include <memory>
 
 #include "client/windows/common/ipc_protocol.h"
 #include "common/windows/guid_string.h"
@@ -180,7 +181,7 @@ void ExceptionHandler::Initialize(
 
   // Attempt to use out-of-process if user has specified a pipe or a
   // crash generation client.
-  scoped_ptr<CrashGenerationClient> client;
+  std::unique_ptr<CrashGenerationClient> client;
   if (crash_generation_client) {
     client.reset(crash_generation_client);
   } else if (pipe_name) {

@@ -42,7 +42,6 @@
 #include <utility>
 
 #include "breakpad_googletest_includes.h"
-#include "common/scoped_ptr.h"
 #include "common/using_std_string.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
 #include "google_breakpad/processor/call_stack.h"
@@ -179,7 +178,6 @@ using google_breakpad::MockMinidumpThreadList;
 using google_breakpad::MockMinidumpUnloadedModule;
 using google_breakpad::MockMinidumpUnloadedModuleList;
 using google_breakpad::ProcessState;
-using google_breakpad::scoped_ptr;
 using google_breakpad::SymbolSupplier;
 using google_breakpad::SystemInfo;
 using ::testing::_;

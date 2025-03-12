@@ -37,7 +37,8 @@
 #include <config.h>  // Must come first
 #endif
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "processor/stackwalker_ppc.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -125,7 +126,7 @@ StackFrame* StackwalkerPPC::GetCallerFrame(const CallStack* stack,
     return NULL;
   }
 
-  scoped_ptr<StackFramePPC> frame(new StackFramePPC());
+  std::unique_ptr<StackFramePPC> frame(new StackFramePPC());
 
   frame->context = last_frame->context;
   frame->context.srr0 = instruction;

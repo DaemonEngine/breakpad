@@ -39,7 +39,6 @@
 
 #include <assert.h>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/code_module.h"
 #include "google_breakpad/processor/code_modules.h"
 #include "google_breakpad/processor/source_line_resolver_interface.h"

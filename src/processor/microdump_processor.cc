@@ -38,6 +38,7 @@
 
 #include <assert.h>
 
+#include <memory>
 #include <string>
 
 #include "common/using_std_string.h"
@@ -64,7 +65,7 @@ ProcessResult MicrodumpProcessor::Process(Microdump *microdump,
   process_state->Clear();
 
   process_state->modules_ = microdump->GetModules()->Copy();
-  scoped_ptr<Stackwalker> stackwalker(
+  std::unique_ptr<Stackwalker> stackwalker(
       Stackwalker::StackwalkerForCPU(
                             &process_state->system_info_,
                             microdump->GetContext(),
@@ -73,7 +74,7 @@ ProcessResult MicrodumpProcessor::Process(Microdump *microdump,
                             /* unloaded_modules= */ NULL,
                             frame_symbolizer_));
 
-  scoped_ptr<CallStack> stack(new CallStack());
+  std::unique_ptr<CallStack> stack(new CallStack());
   if (stackwalker.get()) {
     if (!stackwalker->Walk(stack.get(),
                            &process_state->modules_without_symbols_,

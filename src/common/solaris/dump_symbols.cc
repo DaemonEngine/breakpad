@@ -46,7 +46,6 @@
 #include <map>
 #include <vector>
 
-#include "common/scoped_ptr.h"
 #include "common/solaris/dump_symbols.h"
 #include "common/solaris/file_id.h"
 #include "common/solaris/guid_creator.h"

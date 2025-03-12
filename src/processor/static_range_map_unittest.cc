@@ -34,6 +34,8 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <memory>
+
 #include "breakpad_googletest_includes.h"
 #include "common/scoped_ptr.h"
 #include "processor/range_map-inl.h"
@@ -355,7 +357,7 @@ void TestStaticRangeMap::RetrieveIndexTest(const TestMap* range_map, int set) {
 void TestStaticRangeMap::RunTestCase(int test_case) {
   // Maintain the range map in a pointer so that deletion can be meaningfully
   // tested.
-  scoped_ptr<RMap> rmap(new RMap());
+  std::unique_ptr<RMap> rmap(new RMap());
 
   const RangeTest* range_tests = range_test_sets[test_case].range_tests;
   unsigned int range_test_count = range_test_sets[test_case].range_test_count;
@@ -374,7 +376,7 @@ void TestStaticRangeMap::RunTestCase(int test_case) {
   }
 
   scoped_array<char> memaddr(serializer_.Serialize(*rmap, NULL));
-  scoped_ptr<TestMap> static_range_map(new TestMap(memaddr.get()));
+  std::unique_ptr<TestMap> static_range_map(new TestMap(memaddr.get()));
 
   // The RangeMap's own count of objects should also match.
   EXPECT_EQ(static_range_map->GetCount(), stored_count);

@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "common/scoped_ptr.h"
@@ -176,7 +177,7 @@ bool ModuleSerializer::SerializeModuleAndLoadIntoFastResolver(
   string symbol_data_string(symbol_data.get(), size);
   symbol_data.reset();
 
-  scoped_ptr<CodeModule> code_module(
+  std::unique_ptr<CodeModule> code_module(
       new BasicCodeModule(0, 0, iter->first, "", "", "", ""));
 
   return fast_resolver->LoadModuleUsingMapBuffer(code_module.get(),
@@ -215,7 +216,7 @@ bool ModuleSerializer::ConvertOneModule(
 
 char* ModuleSerializer::SerializeSymbolFileData(const string& symbol_data,
                                                 size_t* size) {
-  scoped_ptr<BasicSourceLineResolver::Module> module(
+  std::unique_ptr<BasicSourceLineResolver::Module> module(
       new BasicSourceLineResolver::Module("no name"));
   scoped_array<char> buffer(new char[symbol_data.size() + 1]);
   memcpy(buffer.get(), symbol_data.c_str(), symbol_data.size());

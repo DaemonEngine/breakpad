@@ -43,6 +43,7 @@
 #include <sys/cachectl.h>
 #endif
 
+#include <memory>
 #include <string>
 
 #include "breakpad_googletest_includes.h"
@@ -51,6 +52,7 @@
 #include "common/linux/eintr_wrapper.h"
 #include "common/linux/ignore_ret.h"
 #include "common/linux/linux_libc_support.h"
+#include "common/scoped_ptr.h"
 #include "common/tests/auto_tempdir.h"
 #include "common/using_std_string.h"
 #include "third_party/lss/linux_syscall_support.h"
@@ -224,7 +226,7 @@ void ChildCrash(bool use_fd) {
   const pid_t child = fork();
   if (child == 0) {
     {
-      google_breakpad::scoped_ptr<ExceptionHandler> handler;
+      std::unique_ptr<ExceptionHandler> handler;
       if (use_fd) {
         handler.reset(new ExceptionHandler(MinidumpDescriptor(minidump_fd),
                                            NULL, NULL, NULL, true, -1));
@@ -280,7 +282,7 @@ TEST(ExceptionHandlerTest, ParallelChildCrashesDontHang) {
   AutoTempDir temp_dir;
   const pid_t child = fork();
   if (child == 0) {
-    google_breakpad::scoped_ptr<ExceptionHandler> handler(
+    std::unique_ptr<ExceptionHandler> handler(
       new ExceptionHandler(MinidumpDescriptor(temp_dir.path()), NULL, NULL,
                             NULL, true, -1));
 

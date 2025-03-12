@@ -36,9 +36,9 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <memory>
 #include <vector>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
 #include "google_breakpad/processor/source_line_resolver_interface.h"
@@ -106,7 +106,7 @@ StackFrameARM* StackwalkerARM::GetCallerByCFIFrameInfo(
     return NULL;
 
   // Construct a new stack frame given the values the CFI recovered.
-  scoped_ptr<StackFrameARM> frame(new StackFrameARM());
+  std::unique_ptr<StackFrameARM> frame(new StackFrameARM());
   for (int i = 0; register_names[i]; i++) {
     CFIFrameInfo::RegisterValueMap<uint32_t>::iterator entry =
       caller_registers.find(register_names[i]);
@@ -251,13 +251,13 @@ StackFrame* StackwalkerARM::GetCallerFrame(const CallStack* stack,
 
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameARM* last_frame = static_cast<StackFrameARM*>(frames.back());
-  scoped_ptr<StackFrameARM> frame;
+  std::unique_ptr<StackFrameARM> frame;
 
   // See if there is DWARF call frame information covering this address.
   // TODO(jperaza): Ignore iOS CFI info until it is properly collected.
   // https://bugs.chromium.org/p/google-breakpad/issues/detail?id=764
   if (!system_info_ || system_info_->os != "iOS") {
-    scoped_ptr<CFIFrameInfo> cfi_frame_info(
+    std::unique_ptr<CFIFrameInfo> cfi_frame_info(
         frame_symbolizer_->FindCFIFrameInfo(last_frame));
     if (cfi_frame_info.get())
       frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));

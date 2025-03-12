@@ -38,7 +38,8 @@
 
 #include <assert.h>
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
 #include "google_breakpad/processor/source_line_resolver_interface.h"
@@ -133,7 +134,7 @@ StackFrameAMD64* StackwalkerAMD64::GetCallerByCFIFrameInfo(
     CFIFrameInfo* cfi_frame_info) {
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
 
-  scoped_ptr<StackFrameAMD64> frame(new StackFrameAMD64());
+  std::unique_ptr<StackFrameAMD64> frame(new StackFrameAMD64());
   if (!cfi_walker_
       .FindCallerRegisters(*memory_, *cfi_frame_info,
                            last_frame->context, last_frame->context_validity,
@@ -312,10 +313,10 @@ StackFrame* StackwalkerAMD64::GetCallerFrame(const CallStack* stack,
 
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
-  scoped_ptr<StackFrameAMD64> new_frame;
+  std::unique_ptr<StackFrameAMD64> new_frame;
 
   // If we have CFI information, use it.
-  scoped_ptr<CFIFrameInfo> cfi_frame_info(
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info(
       frame_symbolizer_->FindCFIFrameInfo(last_frame));
   if (cfi_frame_info.get())
     new_frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));

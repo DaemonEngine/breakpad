@@ -960,7 +960,7 @@ void DwarfCUToModule::FuncHandler::Finish() {
     StringView name = name_.empty() ? name_omitted : name_;
     // Create a Module::Function based on the data we've gathered, and
     // add it to the functions_ list.
-    scoped_ptr<Module::Function> func(new Module::Function(name, low_pc_));
+    std::unique_ptr<Module::Function> func(new Module::Function(name, low_pc_));
     func->ranges = ranges;
     func->parameter_size = 0;
     // If the name was unqualified, prefer the Extern name if there's a mismatch

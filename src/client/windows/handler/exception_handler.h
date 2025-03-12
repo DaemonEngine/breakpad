@@ -65,12 +65,12 @@
 #pragma warning(disable:4530)
 
 #include <list>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "client/windows/common/ipc_protocol.h"
 #include "client/windows/crash_generation/crash_generation_client.h"
-#include "common/scoped_ptr.h"
 #include "google_breakpad/common/minidump_format.h"
 
 namespace google_breakpad {
@@ -385,7 +385,7 @@ class ExceptionHandler {
   MinidumpCallback callback_;
   void* callback_context_;
 
-  scoped_ptr<CrashGenerationClient> crash_generation_client_;
+  std::unique_ptr<CrashGenerationClient> crash_generation_client_;
 
   // The directory in which a minidump will be written, set by the dump_path
   // argument to the constructor, or set_dump_path.

@@ -37,9 +37,9 @@
 #include <assert.h>
 
 #include <list>
+#include <memory>
 
 #include "client/windows/common/auto_critical_section.h"
-#include "common/scoped_ptr.h"
 #include "client/windows/crash_generation/client_info.h"
 
 namespace google_breakpad {
@@ -429,7 +429,7 @@ void CrashGenerationServer::HandleReadDoneState() {
     return;
   }
 
-  scoped_ptr<ClientInfo> client_info(
+  std::unique_ptr<ClientInfo> client_info(
       new ClientInfo(this,
                      msg_.id,
                      msg_.dump_type,

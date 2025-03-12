@@ -36,6 +36,7 @@
 #include <objbase.h>
 #include <shellapi.h>
 
+#include <memory>
 #include <string>
 
 #include "breakpad_googletest_includes.h"
@@ -127,7 +128,7 @@ TEST_F(ExceptionHandlerDeathTest, InProcTest) {
   // the semantics of the exception handler being inherited/not
   // inherited across CreateProcess().
   ASSERT_TRUE(DoesPathExist(temp_path_));
-  scoped_ptr<google_breakpad::ExceptionHandler> exc(
+  std::unique_ptr<google_breakpad::ExceptionHandler> exc(
       new google_breakpad::ExceptionHandler(
           temp_path_,
           NULL,
@@ -152,7 +153,7 @@ void clientDumpCallback(void* dump_context,
 
 void ExceptionHandlerDeathTest::DoCrashAccessViolation(
     const OutOfProcGuarantee out_of_proc_guarantee) {
-  scoped_ptr<google_breakpad::ExceptionHandler> exc;
+  std::unique_ptr<google_breakpad::ExceptionHandler> exc;
 
   if (out_of_proc_guarantee == OUT_OF_PROC_GUARANTEED) {
     google_breakpad::CrashGenerationClient* client =
@@ -324,7 +325,7 @@ wstring find_minidump_in_directory(const wstring& directory) {
 
 TEST_F(ExceptionHandlerDeathTest, InstructionPointerMemory) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
-  scoped_ptr<google_breakpad::ExceptionHandler> exc(
+  std::unique_ptr<google_breakpad::ExceptionHandler> exc(
       new google_breakpad::ExceptionHandler(
           temp_path_,
           NULL,
@@ -416,7 +417,7 @@ TEST_F(ExceptionHandlerDeathTest, InstructionPointerMemory) {
 
 TEST_F(ExceptionHandlerDeathTest, InstructionPointerMemoryMinBound) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
-  scoped_ptr<google_breakpad::ExceptionHandler> exc(
+  std::unique_ptr<google_breakpad::ExceptionHandler> exc(
       new google_breakpad::ExceptionHandler(
           temp_path_,
           NULL,
@@ -509,7 +510,7 @@ TEST_F(ExceptionHandlerDeathTest, InstructionPointerMemoryMinBound) {
 
 TEST_F(ExceptionHandlerDeathTest, InstructionPointerMemoryMaxBound) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
-  scoped_ptr<google_breakpad::ExceptionHandler> exc(
+  std::unique_ptr<google_breakpad::ExceptionHandler> exc(
       new google_breakpad::ExceptionHandler(
           temp_path_,
           NULL,

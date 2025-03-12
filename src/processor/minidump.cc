@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "common/macros.h"
@@ -258,7 +259,7 @@ inline void Swap(uint16_t* data, size_t size_in_bytes) {
 // CPU's endianness into consideration.  It doesn't seems worth the trouble
 // of making it a dependency when we don't care about anything but UTF-16.
 string* UTF16ToUTF8(const vector<uint16_t>& in, bool swap) {
-  scoped_ptr<string> out(new string());
+  std::unique_ptr<string> out(new string());
 
   // Set the string's initial capacity to the number of UTF-16 characters,
   // because the UTF-8 representation will always be at least this long.
@@ -362,7 +363,7 @@ void ConvertUTF16BufferToUTF8String(const uint16_t* utf16_data,
     size_t byte_length = word_length * sizeof(utf16_data[0]);
     vector<uint16_t> utf16_vector(word_length);
     memcpy(&utf16_vector[0], &utf16_data[0], byte_length);
-    scoped_ptr<string> temp(UTF16ToUTF8(utf16_vector, swap));
+    std::unique_ptr<string> temp(UTF16ToUTF8(utf16_vector, swap));
     if (temp.get()) {
       utf8_result->assign(*temp);
     }
@@ -506,7 +507,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
        expected_size >= sizeof(MDRawContextAMD64))) {
     BPLOG(INFO) << "MinidumpContext: looks like AMD64 context";
 
-    scoped_ptr<MDRawContextAMD64> context_amd64(new MDRawContextAMD64());
+    std::unique_ptr<MDRawContextAMD64> context_amd64(new MDRawContextAMD64());
     if (!minidump_->ReadBytes(context_amd64.get(),
                               sizeof(MDRawContextAMD64))) {
       BPLOG(ERROR) << "MinidumpContext could not read amd64 context";
@@ -628,7 +629,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
       Swap(&context_flags);
 
     uint32_t cpu_type = context_flags & MD_CONTEXT_CPU_MASK;
-    scoped_ptr<MDRawContextPPC64> context_ppc64(new MDRawContextPPC64());
+    std::unique_ptr<MDRawContextPPC64> context_ppc64(new MDRawContextPPC64());
 
     if (cpu_type == 0) {
       if (minidump_->GetContextCPUFlagsFromSystemInfo(&cpu_type)) {
@@ -724,7 +725,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
     if (minidump_->swap())
       Swap(&context_flags);
 
-    scoped_ptr<MDRawContextARM64_Old> context_arm64(new MDRawContextARM64_Old());
+    std::unique_ptr<MDRawContextARM64_Old> context_arm64(new MDRawContextARM64_Old());
 
     uint32_t cpu_type = context_flags & MD_CONTEXT_CPU_MASK;
     if (cpu_type == 0) {
@@ -783,7 +784,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
       }
     }
 
-    scoped_ptr<MDRawContextARM64> new_context(new MDRawContextARM64());
+    std::unique_ptr<MDRawContextARM64> new_context(new MDRawContextARM64());
     ConvertOldARM64Context(*context_arm64.get(), new_context.get());
     SetContextFlags(new_context->context_flags);
     SetContextARM64(new_context.release());
@@ -837,7 +838,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           }
         }
 
-        scoped_ptr<MDRawContextX86> context_x86(new MDRawContextX86());
+        std::unique_ptr<MDRawContextX86> context_x86(new MDRawContextX86());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -920,7 +921,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextPPC> context_ppc(new MDRawContextPPC());
+        std::unique_ptr<MDRawContextPPC> context_ppc(new MDRawContextPPC());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -996,7 +997,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextSPARC> context_sparc(new MDRawContextSPARC());
+        std::unique_ptr<MDRawContextSPARC> context_sparc(new MDRawContextSPARC());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -1052,7 +1053,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextARM> context_arm(new MDRawContextARM());
+        std::unique_ptr<MDRawContextARM> context_arm(new MDRawContextARM());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -1107,7 +1108,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextARM64> context_arm64(new MDRawContextARM64());
+        std::unique_ptr<MDRawContextARM64> context_arm64(new MDRawContextARM64());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -1162,7 +1163,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextMIPS> context_mips(new MDRawContextMIPS());
+        std::unique_ptr<MDRawContextMIPS> context_mips(new MDRawContextMIPS());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -1227,7 +1228,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextRISCV> context_riscv(new MDRawContextRISCV());
+        std::unique_ptr<MDRawContextRISCV> context_riscv(new MDRawContextRISCV());
 
         // Set the context_flags member, which has already been read, and
         // read the rest of the structure beginning with the first member
@@ -1304,7 +1305,7 @@ bool MinidumpContext::Read(uint32_t expected_size) {
           return false;
         }
 
-        scoped_ptr<MDRawContextRISCV64> context_riscv64(
+        std::unique_ptr<MDRawContextRISCV64> context_riscv64(
             new MDRawContextRISCV64());
 
         // Set the context_flags member, which has already been read, and
@@ -1541,7 +1542,7 @@ const uint8_t* MinidumpMemoryRegion::GetMemory() const {
       return NULL;
     }
 
-    scoped_ptr< vector<uint8_t> > memory(
+    std::unique_ptr< vector<uint8_t> > memory(
         new vector<uint8_t>(descriptor_->memory.data_size));
 
     if (!minidump_->ReadBytes(&(*memory)[0], descriptor_->memory.data_size)) {
@@ -1822,7 +1823,7 @@ MinidumpContext* MinidumpThread::GetContext() {
       return NULL;
     }
 
-    scoped_ptr<MinidumpContext> context(new MinidumpContext(minidump_));
+    std::unique_ptr<MinidumpContext> context(new MinidumpContext(minidump_));
 
     if (!context->Read(thread_.thread_context.data_size)) {
       BPLOG(ERROR) << "MinidumpThread cannot read context";
@@ -1971,7 +1972,7 @@ bool MinidumpThreadList::Read(uint32_t expected_size) {
   }
 
   if (thread_count != 0) {
-    scoped_ptr<MinidumpThreads> threads(
+    std::unique_ptr<MinidumpThreads> threads(
         new MinidumpThreads(thread_count, MinidumpThread(minidump_)));
 
     for (unsigned int thread_index = 0;
@@ -2211,7 +2212,7 @@ bool MinidumpThreadNameList::Read(uint32_t expected_size) {
   }
 
   if (thread_name_count != 0) {
-    scoped_ptr<MinidumpThreadNames> thread_names(new MinidumpThreadNames(
+    std::unique_ptr<MinidumpThreadNames> thread_names(new MinidumpThreadNames(
         thread_name_count, MinidumpThreadName(minidump_)));
 
     for (unsigned int thread_name_index = 0;
@@ -2568,7 +2569,7 @@ string MinidumpModule::debug_file() const {
 
           // GetMiscRecord already byte-swapped the data[] field if it contains
           // UTF-16, so pass false as the swap argument.
-          scoped_ptr<string> new_file(UTF16ToUTF8(string_utf16, false));
+          std::unique_ptr<string> new_file(UTF16ToUTF8(string_utf16, false));
           if (new_file.get() != nullptr) {
             file = string(*new_file);
           }
@@ -2802,7 +2803,7 @@ const uint8_t* MinidumpModule::GetCVRecord(uint32_t* size) {
     // variable-sized due to their pdb_file_name fields; these structures
     // are not MDCVInfoPDB70_minsize or MDCVInfoPDB20_minsize and treating
     // them as such would result in incomplete structures or overruns.
-    scoped_ptr< vector<uint8_t> > cv_record(
+    std::unique_ptr< vector<uint8_t> > cv_record(
         new vector<uint8_t>(module_.cv_record.data_size));
 
     if (!minidump_->ReadBytes(&(*cv_record)[0], module_.cv_record.data_size)) {
@@ -2944,7 +2945,7 @@ const MDImageDebugMisc* MinidumpModule::GetMiscRecord(uint32_t* size) {
     // because the MDImageDebugMisc is variable-sized due to its data field;
     // this structure is not MDImageDebugMisc_minsize and treating it as such
     // would result in an incomplete structure or an overrun.
-    scoped_ptr< vector<uint8_t> > misc_record_mem(
+    std::unique_ptr< vector<uint8_t> > misc_record_mem(
         new vector<uint8_t>(module_.misc_record.data_size));
     MDImageDebugMisc* misc_record =
         reinterpret_cast<MDImageDebugMisc*>(&(*misc_record_mem)[0]);
@@ -3218,7 +3219,7 @@ bool MinidumpModuleList::Read(uint32_t expected_size) {
   }
 
   if (module_count != 0) {
-    scoped_ptr<MinidumpModules> modules(
+    std::unique_ptr<MinidumpModules> modules(
         new MinidumpModules(module_count, MinidumpModule(minidump_)));
 
     for (uint32_t module_index = 0; module_index < module_count;
@@ -3527,7 +3528,7 @@ bool MinidumpMemoryList::Read(uint32_t expected_size) {
   }
 
   if (region_count != 0) {
-    scoped_ptr<MemoryDescriptors> descriptors(
+    std::unique_ptr<MemoryDescriptors> descriptors(
         new MemoryDescriptors(region_count));
 
     // Read the entire array in one fell swoop, instead of reading one entry
@@ -3538,7 +3539,7 @@ bool MinidumpMemoryList::Read(uint32_t expected_size) {
       return false;
     }
 
-    scoped_ptr<MemoryRegions> regions(
+    std::unique_ptr<MemoryRegions> regions(
         new MemoryRegions(region_count, MinidumpMemoryRegion(minidump_)));
 
     for (unsigned int region_index = 0;
@@ -3739,7 +3740,7 @@ MinidumpContext* MinidumpException::GetContext() {
       return NULL;
     }
 
-    scoped_ptr<MinidumpContext> context(new MinidumpContext(minidump_));
+    std::unique_ptr<MinidumpContext> context(new MinidumpContext(minidump_));
 
     // Don't log as an error if we can still fall back on the thread's context
     // (which must be possible if we got this far.)
@@ -4431,7 +4432,7 @@ bool MinidumpUnloadedModuleList::Read(uint32_t expected_size) {
   }
 
   if (number_of_entries != 0) {
-    scoped_ptr<MinidumpUnloadedModules> modules(
+    std::unique_ptr<MinidumpUnloadedModules> modules(
         new MinidumpUnloadedModules(number_of_entries,
                                     MinidumpUnloadedModule(minidump_)));
 
@@ -5100,7 +5101,7 @@ bool MinidumpMemoryInfoList::Read(uint32_t expected_size) {
   }
 
   if (header.number_of_entries != 0) {
-    scoped_ptr<MinidumpMemoryInfos> infos(
+    std::unique_ptr<MinidumpMemoryInfos> infos(
         new MinidumpMemoryInfos(header_number_of_entries,
                                 MinidumpMemoryInfo(minidump_)));
 
@@ -5312,11 +5313,11 @@ bool MinidumpLinuxMapsList::Read(uint32_t expected_size) {
     return false;
   }
 
-  scoped_ptr<MinidumpLinuxMappings> maps(new MinidumpLinuxMappings());
+  std::unique_ptr<MinidumpLinuxMappings> maps(new MinidumpLinuxMappings());
 
   // Push mapping data into wrapper classes.
   for (size_t i = 0; i < all_regions.size(); i++) {
-    scoped_ptr<MinidumpLinuxMaps> ele(new MinidumpLinuxMaps(minidump_));
+    std::unique_ptr<MinidumpLinuxMaps> ele(new MinidumpLinuxMaps(minidump_));
     ele->region_ = all_regions[i];
     ele->valid_ = true;
     maps->push_back(ele.release());
@@ -5829,7 +5830,7 @@ bool Minidump::Read() {
   }
 
   if (header_.stream_count != 0) {
-    scoped_ptr<MinidumpDirectoryEntries> directory(
+    std::unique_ptr<MinidumpDirectoryEntries> directory(
         new MinidumpDirectoryEntries(header_.stream_count));
 
     // Read the entire array in one fell swoop, instead of reading one entry
@@ -6541,7 +6542,7 @@ T* Minidump::GetStream(T** stream) {
     return NULL;
   }
 
-  scoped_ptr<T> new_stream(new T(this));
+  std::unique_ptr<T> new_stream(new T(this));
 
   if (!new_stream->Read(stream_length)) {
     BPLOG(ERROR) << "GetStream could not read stream type " << stream_type;
