@@ -2570,7 +2570,7 @@ string MinidumpModule::debug_file() const {
           // UTF-16, so pass false as the swap argument.
           scoped_ptr<string> new_file(UTF16ToUTF8(string_utf16, false));
           if (new_file.get() != nullptr) {
-            file = *new_file;
+            file = string(*new_file);
           }
         }
       }
