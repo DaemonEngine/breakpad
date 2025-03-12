@@ -67,7 +67,7 @@ AC_CHECK_FUNCS([arc4random getcontext getrandom memfd_create])
 AM_CONDITIONAL([HAVE_GETCONTEXT], [test "x$ac_cv_func_getcontext" = xyes])
 AM_CONDITIONAL([HAVE_MEMFD_CREATE], [test "x$ac_cv_func_memfd_create" = xyes])
 
-AX_CXX_COMPILE_STDCXX(17, , mandatory)
+AX_CXX_COMPILE_STDCXX(20, , mandatory)
 
 AC_CONFIG_LIBOBJ_DIR([compat])
 AC_REPLACE_FUNCS([strtok_r])
