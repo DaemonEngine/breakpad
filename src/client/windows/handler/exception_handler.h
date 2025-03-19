@@ -274,7 +274,9 @@ class ExceptionHandler {
   }
 
   // Returns whether out-of-process dump generation is used or not.
-  bool IsOutOfProcess() const { return crash_generation_client_.get() != NULL; }
+  bool IsOutOfProcess() const {
+    return crash_generation_client_.get() != nullptr;
+  }
 
   // Calling RegisterAppMemory(p, len) causes len bytes starting
   // at address p to be copied to the minidump when a crash happens.

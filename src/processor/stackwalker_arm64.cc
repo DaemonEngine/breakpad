@@ -87,7 +87,7 @@ uint64_t StackwalkerARM64::PtrauthStrip(uint64_t ptr) {
 StackFrame* StackwalkerARM64::GetContextFrame() {
   if (!context_) {
     BPLOG(ERROR) << "Can't get context frame without context";
-    return NULL;
+    return nullptr;
   }
 
   StackFrameARM64* frame = new StackFrameARM64();
@@ -114,7 +114,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
     "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
     "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
     "x24", "x25", "x26", "x27", "x28", "x29", "x30", "sp",
-    "pc",  NULL
+    "pc",  nullptr
   };
 
   // Populate a dictionary with the valid register values in last_frame.
@@ -128,7 +128,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
   CFIFrameInfo::RegisterValueMap<uint64_t> caller_registers;
   if (!cfi_frame_info->FindCallerRegs(callee_registers, *memory_,
                                       &caller_registers)) {
-    return NULL;
+    return nullptr;
   }
   // Construct a new stack frame given the values the CFI recovered.
   std::unique_ptr<StackFrameARM64> frame(new StackFrameARM64());
@@ -174,7 +174,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
   static const uint64_t essentials = (StackFrameARM64::CONTEXT_VALID_SP
                                      | StackFrameARM64::CONTEXT_VALID_PC);
   if ((frame->context_validity & essentials) != essentials)
-    return NULL;
+    return nullptr;
 
   frame->context.iregs[MD_CONTEXT_ARM64_REG_PC] =
       PtrauthStrip(frame->context.iregs[MD_CONTEXT_ARM64_REG_PC]);
@@ -192,7 +192,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByStackScan(
                             /*is_context_frame=*/last_frame->trust ==
                                 StackFrame::FRAME_TRUST_CONTEXT)) {
     // No plausible return address was found.
-    return NULL;
+    return nullptr;
   }
 
   // ScanForReturnAddress found a reasonable return address. Advance
@@ -227,14 +227,14 @@ StackFrameARM64* StackwalkerARM64::GetCallerByFramePointer(
   if (last_fp && !memory_->GetMemoryAtAddress(last_fp, &caller_fp)) {
     BPLOG(ERROR) << "Unable to read caller_fp from last_fp: 0x"
                  << std::hex << last_fp;
-    return NULL;
+    return nullptr;
   }
 
   uint64_t caller_lr = 0;
   if (last_fp && !memory_->GetMemoryAtAddress(last_fp + 8, &caller_lr)) {
     BPLOG(ERROR) << "Unable to read caller_lr from last_fp + 8: 0x"
                  << std::hex << (last_fp + 8);
-    return NULL;
+    return nullptr;
   }
 
   caller_lr = PtrauthStrip(caller_lr);
@@ -313,7 +313,7 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
                                              bool stack_scan_allowed) {
   if (!memory_ || !stack) {
     BPLOG(ERROR) << "Can't get caller frame without memory or stack";
-    return NULL;
+    return nullptr;
   }
 
   const vector<StackFrame*>& frames = *stack->frames();
@@ -336,7 +336,7 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
 
   // If nothing worked, tell the caller.
   if (!frame.get())
-    return NULL;
+    return nullptr;
 
   // Should we terminate the stack walk? (end-of-stack or broken invariant)
   if (TerminateWalk(frame->context.iregs[MD_CONTEXT_ARM64_REG_PC],
@@ -344,7 +344,7 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
                     last_frame->context.iregs[MD_CONTEXT_ARM64_REG_SP],
                     /*first_unwind=*/last_frame->trust ==
                         StackFrame::FRAME_TRUST_CONTEXT)) {
-    return NULL;
+    return nullptr;
   }
 
   // The new frame's context's PC is the return address, which is one

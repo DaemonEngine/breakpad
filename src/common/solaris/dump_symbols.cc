@@ -218,14 +218,14 @@ bool IsValidElf(const GElf_Ehdr* elf_header) {
 static bool FindSectionByName(Elf* elf, const char* name,
                               int shstrndx,
                               GElf_Shdr* shdr) {
-  assert(name != NULL);
+  assert(name != nullptr);
 
   if (strlen(name) == 0)
     return false;
 
-  Elf_Scn* scn = NULL;
+  Elf_Scn* scn = nullptr;
 
-  while ((scn = elf_nextscn(elf, scn)) != NULL) {
+  while ((scn = elf_nextscn(elf, scn)) != nullptr) {
     if (gelf_getshdr(scn, shdr) == (GElf_Shdr*)0) {
       fprintf(stderr, "failed to read section header: %s\n", elf_errmsg(0));
       return false;
@@ -398,7 +398,7 @@ bool LoadAllSymbols(const GElf_Shdr* stab_section,
                     const GElf_Shdr* stabstr_section,
                     GElf_Word base,
                     struct SymbolInfo* symbols) {
-  if (stab_section == NULL || stabstr_section == NULL)
+  if (stab_section == nullptr || stabstr_section == nullptr)
     return false;
 
   char* stabstr = reinterpret_cast<char*>(stabstr_section->sh_offset + base);
@@ -481,7 +481,7 @@ bool LoadSymbols(Elf* elf, GElf_Ehdr* elf_header, struct SymbolInfo* symbols,
 }
 
 bool WriteModuleInfo(int fd, GElf_Half arch, const std::string& obj_file) {
-  const char* arch_name = NULL;
+  const char* arch_name = nullptr;
   if (arch == EM_386)
     arch_name = "x86";
   else if (arch == EM_X86_64)
@@ -609,13 +609,13 @@ class MmapWrapper {
     base_(mapped_address), size_(mapped_size) {
   }
   ~MmapWrapper() {
-    if (base_ != NULL) {
+    if (base_ != nullptr) {
       assert(size_ > 0);
       munmap((char*)base_, size_);
     }
   }
   void release() {
-    base_ = NULL;
+    base_ = nullptr;
     size_ = 0;
   }
 
@@ -650,16 +650,16 @@ bool DumpSymbols::WriteSymbolFile(const std::string& obj_file, int sym_fd) {
   struct stat st;
   if (fstat(obj_fd, &st) != 0 && st.st_size <= 0)
     return false;
-  void* obj_base = mmap(NULL, st.st_size,
+  void* obj_base = mmap(nullptr, st.st_size,
                         PROT_READ, MAP_PRIVATE, obj_fd, 0);
   if (obj_base == MAP_FAILED)
     return false;
   MmapWrapper map_wrapper(obj_base, st.st_size);
   GElf_Ehdr elf_header;
-  Elf* elf = elf_begin(obj_fd, ELF_C_READ, NULL);
+  Elf* elf = elf_begin(obj_fd, ELF_C_READ, nullptr);
   AutoElfEnder elfEnder(elf);
 
-  if (gelf_getehdr(elf, &elf_header) == (GElf_Ehdr*)NULL) {
+  if (gelf_getehdr(elf, &elf_header) == (GElf_Ehdr*)nullptr) {
     fprintf(stderr, "failed to read elf header: %s\n", elf_errmsg(-1));
     return false;
   }

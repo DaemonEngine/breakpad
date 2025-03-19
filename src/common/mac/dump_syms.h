@@ -119,7 +119,7 @@ class DumpSymbols {
     *count = object_files_.size();
     if (object_files_.size() > 0)
       return &object_files_[0];
-    return NULL;
+    return nullptr;
   }
 
   // Read the selected object file's debugging information, and write out the

@@ -98,7 +98,7 @@ void FastSourceLineResolver::Module::LookupAddress(
     std::unique_ptr<Line> line(new Line);
     const Line* line_ptr = 0;
     MemAddr line_base;
-    if (func->lines.RetrieveRange(address, line_ptr, &line_base, NULL)) {
+    if (func->lines.RetrieveRange(address, line_ptr, &line_base, nullptr)) {
       line->CopyFrom(line_ptr);
       FileMap::iterator it = files_.find(line->source_file_id);
       if (it != files_.end()) {
@@ -326,14 +326,14 @@ WindowsFrameInfo* FastSourceLineResolver::Module::FindWindowsFrameInfo(
     result->parameter_size = public_symbol->parameter_size;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 CFIFrameInfo* FastSourceLineResolver::Module::FindCFIFrameInfo(
     const StackFrame* frame) const {
   MemAddr address = frame->instruction - frame->module->base_address();
   MemAddr initial_base, initial_size;
-  const char* initial_rules = NULL;
+  const char* initial_rules = nullptr;
 
   // Find the initial rule whose range covers this address. That
   // provides an initial set of register recovery rules. Then, walk
@@ -341,14 +341,14 @@ CFIFrameInfo* FastSourceLineResolver::Module::FindCFIFrameInfo(
   // instruction address, applying delta rules.
   if (!cfi_initial_rules_.RetrieveRange(address, initial_rules,
                                         &initial_base, &initial_size)) {
-    return NULL;
+    return nullptr;
   }
 
   // Create a frame info structure, and populate it with the rules from
   // the STACK CFI INIT record.
   std::unique_ptr<CFIFrameInfo> rules(new CFIFrameInfo());
   if (!ParseCFIRuleSet(initial_rules, rules.get()))
-    return NULL;
+    return nullptr;
 
   // Find the first delta rule that falls within the initial rule's range.
   StaticMap<MemAddr, char>::iterator delta =

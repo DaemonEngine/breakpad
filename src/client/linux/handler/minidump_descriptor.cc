@@ -46,7 +46,7 @@ MinidumpDescriptor::MinidumpDescriptor(const MinidumpDescriptor& descriptor)
     : mode_(descriptor.mode_),
       fd_(descriptor.fd_),
       directory_(descriptor.directory_),
-      c_path_(NULL),
+      c_path_(nullptr),
       size_limit_(descriptor.size_limit_),
       address_within_principal_mapping_(
           descriptor.address_within_principal_mapping_),
@@ -70,7 +70,7 @@ MinidumpDescriptor& MinidumpDescriptor::operator=(
   path_.clear();
   if (c_path_) {
     // This descriptor already had a path set, so generate a new one.
-    c_path_ = NULL;
+    c_path_ = nullptr;
     UpdatePath();
   }
   size_limit_ = descriptor.size_limit_;

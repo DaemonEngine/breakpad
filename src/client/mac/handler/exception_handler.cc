@@ -234,10 +234,10 @@ ExceptionHandler::ExceptionHandler(const string& dump_path,
       filter_(filter),
       callback_(callback),
       callback_context_(callback_context),
-      directCallback_(NULL),
-      handler_thread_(NULL),
+      directCallback_(nullptr),
+      handler_thread_(nullptr),
       handler_port_(MACH_PORT_NULL),
-      previous_(NULL),
+      previous_(nullptr),
       installed_exception_handler_(false),
       is_in_teardown_(false),
       last_minidump_write_result_(false),
@@ -258,13 +258,13 @@ ExceptionHandler::ExceptionHandler(DirectCallback callback,
                                    void* callback_context,
                                    bool install_handler)
     : dump_path_(),
-      filter_(NULL),
-      callback_(NULL),
+      filter_(nullptr),
+      callback_(nullptr),
       callback_context_(callback_context),
       directCallback_(callback),
-      handler_thread_(NULL),
+      handler_thread_(nullptr),
       handler_port_(MACH_PORT_NULL),
-      previous_(NULL),
+      previous_(nullptr),
       installed_exception_handler_(false),
       is_in_teardown_(false),
       last_minidump_write_result_(false),
@@ -312,8 +312,8 @@ bool ExceptionHandler::WriteMinidump(const string& dump_path,
                                      bool write_exception_stream,
                                      MinidumpCallback callback,
                                      void* callback_context) {
-  ExceptionHandler handler(dump_path, NULL, callback, callback_context, false,
-                           NULL);
+  ExceptionHandler handler(dump_path, nullptr, callback, callback_context,
+                           false, nullptr);
   return handler.WriteMinidump(write_exception_stream);
 }
 
@@ -516,7 +516,7 @@ void* ExceptionHandler::WaitForMessage(void* exception_handler_class) {
         // Don't touch self, since this message could have been sent
         // from its destructor.
         if (receive.header.msgh_id == kShutdownMessage)
-          return NULL;
+          return nullptr;
 
         self->SuspendThreads();
 
@@ -545,7 +545,7 @@ void* ExceptionHandler::WaitForMessage(void* exception_handler_class) {
         // Write out the dump and save the result for later retrieval
         self->last_minidump_write_result_ =
           self->WriteMinidumpWithException(exception_type, exception_code,
-                                           0, NULL, thread,
+                                           0, nullptr, thread,
                                            false, false);
 
 #if USE_PROTECTED_ALLOCATIONS
@@ -580,7 +580,7 @@ void* ExceptionHandler::WaitForMessage(void* exception_handler_class) {
 
         // Generate the minidump with the exception data.
         self->WriteMinidumpWithException(receive.exception, receive.code[0],
-                                         subcode, NULL, receive.thread.name,
+                                         subcode, nullptr, receive.thread.name,
                                          true, false);
 
 #if USE_PROTECTED_ALLOCATIONS
@@ -613,7 +613,7 @@ void* ExceptionHandler::WaitForMessage(void* exception_handler_class) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // static
@@ -638,7 +638,7 @@ void ExceptionHandler::SignalHandler(int sig, siginfo_t* info, void* uc) {
 
 bool ExceptionHandler::InstallHandler() {
   // If a handler is already installed, something is really wrong.
-  if (gProtectedData.handler != NULL) {
+  if (gProtectedData.handler != nullptr) {
     return false;
   }
   if (!IsOutOfProcess()) {
@@ -699,13 +699,13 @@ bool ExceptionHandler::UninstallHandler(bool in_exception) {
   kern_return_t result = KERN_SUCCESS;
 
   if (old_handler_.get()) {
-    sigaction(SIGABRT, old_handler_.get(), NULL);
+    sigaction(SIGABRT, old_handler_.get(), nullptr);
 #if USE_PROTECTED_ALLOCATIONS
     mprotect(gProtectedData.protected_buffer, PAGE_SIZE,
         PROT_READ | PROT_WRITE);
 #endif
     old_handler_.reset();
-    gProtectedData.handler = NULL;
+    gProtectedData.handler = nullptr;
   }
 
   if (installed_exception_handler_) {
@@ -730,7 +730,7 @@ bool ExceptionHandler::UninstallHandler(bool in_exception) {
 #endif
     }
 
-    previous_ = NULL;
+    previous_ = nullptr;
     installed_exception_handler_ = false;
   }
 
@@ -738,7 +738,7 @@ bool ExceptionHandler::UninstallHandler(bool in_exception) {
 }
 
 bool ExceptionHandler::Setup(bool install_handler) {
-  if (pthread_mutex_init(&minidump_write_mutex_, NULL))
+  if (pthread_mutex_init(&minidump_write_mutex_, nullptr))
     return false;
 
   // Create a receive right
@@ -786,7 +786,7 @@ bool ExceptionHandler::Teardown() {
     return false;
   }
 
-  handler_thread_ = NULL;
+  handler_thread_ = nullptr;
   handler_port_ = MACH_PORT_NULL;
   pthread_mutex_destroy(&minidump_write_mutex_);
 

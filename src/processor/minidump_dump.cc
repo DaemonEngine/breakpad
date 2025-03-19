@@ -97,7 +97,7 @@ static void DumpRawStream(Minidump *minidump,
     printf("%.*s", int_remaining, &contents[current_offset]);
     char *next_null = reinterpret_cast<char*>(
         memchr(&contents[current_offset], 0, remaining));
-    if (next_null == NULL)
+    if (next_null == nullptr)
       break;
     printf("\\0\n");
     size_t null_offset = next_null - &contents[0];

@@ -68,12 +68,12 @@ void* thread_function(void* data) {
   uint8_t byte = 1;
   if (write(pipefd, &byte, sizeof(byte)) != sizeof(byte)) {
     perror("ERROR: parent notification failed");
-    return NULL;
+    return nullptr;
   }
   register volatile pid_t* thread_id_ptr asm(TID_PTR_REGISTER) = thread_id;
   while (true)
     asm volatile ("" : : "r" (thread_id_ptr));
-  return NULL;
+  return nullptr;
 }
 
 int main(int argc, char* argv[]) {

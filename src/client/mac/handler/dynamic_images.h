@@ -254,7 +254,7 @@ class DynamicImages {
     if (i < (int)image_list_.size()) {
       return image_list_[i];
     }
-    return NULL;
+    return nullptr;
   }
 
   // Returns the image corresponding to the main executable.

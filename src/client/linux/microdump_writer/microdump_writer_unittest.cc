@@ -168,7 +168,8 @@ void ExtractMicrodumpStackContents(const string& microdump_content,
       result->reserve(result->size() + data.size() / 2);
       for (size_t i = 0; i < data.size(); i += 2) {
         std::string byte = data.substr(i, 2);
-        result->push_back(static_cast<char>(strtoul(byte.c_str(), NULL, 16)));
+        result->push_back(
+            static_cast<char>(strtoul(byte.c_str(), nullptr, 16)));
       }
     }
   }
@@ -399,7 +400,7 @@ TEST(MicrodumpWriterTest, NoProductInfo) {
   MappingList no_mappings;
 
   const MicrodumpExtraInfo kMicrodumpExtraInfoNoProductInfo(
-      MakeMicrodumpExtraInfo(kBuildFingerprint, NULL, kGPUFingerprint));
+      MakeMicrodumpExtraInfo(kBuildFingerprint, nullptr, kGPUFingerprint));
 
   CrashAndGetMicrodump(no_mappings, kMicrodumpExtraInfoNoProductInfo, &buf);
   ASSERT_TRUE(ContainsMicrodump(buf));
@@ -414,7 +415,7 @@ TEST(MicrodumpWriterTest, NoGPUInfo) {
   MappingList no_mappings;
 
   const MicrodumpExtraInfo kMicrodumpExtraInfoNoGPUInfo(
-      MakeMicrodumpExtraInfo(kBuildFingerprint, kProductInfo, NULL));
+      MakeMicrodumpExtraInfo(kBuildFingerprint, kProductInfo, nullptr));
 
   CrashAndGetMicrodump(no_mappings, kMicrodumpExtraInfoNoGPUInfo, &buf);
   ASSERT_TRUE(ContainsMicrodump(buf));

@@ -159,7 +159,7 @@ class ExceptionHandler {
 #if TARGET_OS_IPHONE
     return false;
 #else
-    return crash_generation_client_.get() != NULL;
+    return crash_generation_client_.get() != nullptr;
 #endif
   }
 

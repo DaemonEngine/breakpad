@@ -279,14 +279,15 @@ static bool RetrieveTest(TestMap* range_map, const RangeTest* range_test) {
 // false if the test fails.
 static bool RetrieveIndexTest(TestMap* range_map, int set) {
   linked_ptr<CountedObject> object;
-  CountedObject* last_object = NULL;
+  CountedObject* last_object = nullptr;
   AddressType last_base = 0;
 
   int object_count = range_map->GetCount();
   for (int object_index = 0; object_index < object_count; ++object_index) {
     AddressType base;
     if (!range_map->RetrieveRangeAtIndex(object_index, &object, &base,
-                                         NULL /* delta */, NULL /* size */)) {
+                                         nullptr /* delta */,
+                                         nullptr /* size */)) {
       fprintf(stderr, "FAILED: RetrieveRangeAtIndex set %d index %d, "
               "expected success, observed failure\n",
               set, object_index);
@@ -295,7 +296,7 @@ static bool RetrieveIndexTest(TestMap* range_map, int set) {
 
     if (!object.get()) {
       fprintf(stderr, "FAILED: RetrieveRangeAtIndex set %d index %d, "
-              "expected object, observed NULL\n",
+              "expected object, observed nullptr\n",
               set, object_index);
       return false;
     }
@@ -326,8 +327,9 @@ static bool RetrieveIndexTest(TestMap* range_map, int set) {
 
   // Make sure that RetrieveRangeAtIndex doesn't allow lookups at indices that
   // are too high.
-  if (range_map->RetrieveRangeAtIndex(object_count, &object, NULL /* base */,
-                                      NULL /* delta */, NULL /* size */)) {
+  if (range_map->RetrieveRangeAtIndex(object_count, &object, nullptr /* base */,
+                                      nullptr /* delta */,
+                                      nullptr /* size */)) {
     fprintf(stderr, "FAILED: RetrieveRangeAtIndex set %d index %d (too large), "
             "expected failure, observed success\n",
             set, object_count);
@@ -357,7 +359,8 @@ static bool RetrieveAtIndexTest2() {
   for (int object_index = 0; object_index < object_count; ++object_index) {
     AddressType base;
     if (!range_map->RetrieveRangeAtIndex(object_index, &object, &base,
-                                         NULL /* delta */, NULL /* size */)) {
+                                         nullptr /* delta */,
+                                         nullptr /* size */)) {
       fprintf(stderr, "FAILED: RetrieveAtIndexTest2 index %d, "
               "expected success, observed failure\n", object_index);
       return false;

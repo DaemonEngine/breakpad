@@ -83,7 +83,7 @@ Stackwalker::Stackwalker(const SystemInfo* system_info,
     : system_info_(system_info),
       memory_(memory),
       modules_(modules),
-      unloaded_modules_(NULL),
+      unloaded_modules_(nullptr),
       frame_symbolizer_(frame_symbolizer) {
   assert(frame_symbolizer_);
 }
@@ -215,10 +215,10 @@ Stackwalker* Stackwalker::StackwalkerForCPU(
     StackFrameSymbolizer* frame_symbolizer) {
   if (!context) {
     BPLOG(ERROR) << "Can't choose a stackwalker implementation without context";
-    return NULL;
+    return nullptr;
   }
 
-  Stackwalker* cpu_stackwalker = NULL;
+  Stackwalker* cpu_stackwalker = nullptr;
 
   uint32_t cpu = context->GetContextCPU();
   switch (cpu) {

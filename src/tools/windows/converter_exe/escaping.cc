@@ -83,7 +83,7 @@ class scoped_array {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized scoped_array.
   // The input parameter must be allocated with new [].
-  explicit scoped_array(C* p = NULL) : array_(p) { }
+  explicit scoped_array(C* p = nullptr) : array_(p) { }
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
@@ -95,7 +95,7 @@ class scoped_array {
   // Reset.  Deletes the current owned object, if any.
   // Then takes ownership of a new object, if given.
   // this->reset(this->get()) works.
-  void reset(C* p = NULL) {
+  void reset(C* p = nullptr) {
     if (p != array_) {
       enum { type_must_be_complete = sizeof(C) };
       delete[] array_;
@@ -107,7 +107,7 @@ class scoped_array {
   // Will assert() if there is no current object, or index i is negative.
   C& operator[](std::ptrdiff_t i) const {
     assert(i >= 0);
-    assert(array_ != NULL);
+    assert(array_ != nullptr);
     return array_[i];
   }
 
@@ -137,7 +137,7 @@ class scoped_array {
   // and will not own the object any more.
   C* release() {
     C* retVal = array_;
-    array_ = NULL;
+    array_ = nullptr;
     return retVal;
   }
 
@@ -174,7 +174,7 @@ namespace strings {
 // already work on all current implementations.
 inline char* string_as_array(string* str) {
   // DO NOT USE const_cast<char*>(str->data())! See the unittest for why.
-  return str->empty() ? NULL : &*str->begin();
+  return str->empty() ? nullptr : &*str->begin();
 }
 
 int CalculateBase64EscapedLen(int input_len, bool do_padding) {
@@ -493,7 +493,7 @@ int Base64Unescape(const char *src, int szsrc, char *dest, int szdest) {
   //   for (i = 0; i < 255; i += 8) {
   //     for (j = i; j < i + 8; j++) {
   //       pos = strchr(Base64, j);
-  //       if ((pos == NULL) || (j == 0))
+  //       if ((pos == nullptr) || (j == 0))
   //         idx = -1;
   //       else
   //         idx = pos - Base64;
@@ -688,7 +688,7 @@ int WebSafeBase64Unescape(const char *src, int szsrc, char *dest, int szdest) {
   //   for (i = 0; i < 255; i += 8) {
   //     for (j = i; j < i + 8; j++) {
   //       pos = strchr(Base64, j);
-  //       if ((pos == NULL) || (j == 0))
+  //       if ((pos == nullptr) || (j == 0))
   //         idx = -1;
   //       else
   //         idx = pos - Base64;

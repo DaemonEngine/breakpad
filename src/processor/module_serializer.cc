@@ -134,7 +134,7 @@ char* ModuleSerializer::Serialize(const BasicSourceLineResolver::Module& module,
     BPLOG(ERROR) << "ModuleSerializer: memory allocation failed, "
                  << "size to alloc: " << size_to_alloc;
     if (size) *size = 0;
-    return NULL;
+    return nullptr;
   }
 
   // Write serialized data to allocated memory chunk.
@@ -222,9 +222,9 @@ char* ModuleSerializer::SerializeSymbolFileData(const string& symbol_data,
   memcpy(buffer.get(), symbol_data.c_str(), symbol_data.size());
   buffer.get()[symbol_data.size()] = '\0';
   if (!module->LoadMapFromMemory(buffer.get(), symbol_data.size() + 1)) {
-    return NULL;
+    return nullptr;
   }
-  buffer.reset(NULL);
+  buffer.reset(nullptr);
   return Serialize(*module, size);
 }
 

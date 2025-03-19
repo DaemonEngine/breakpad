@@ -168,7 +168,7 @@ bool ELFSymbolsToModule(const uint8_t* symtab_section,
 #if !defined(__ANDROID__)  // Android NDK doesn't provide abi::__cxa_demangle.
       int status = 0;
       char* demangled =
-          abi::__cxa_demangle(ext->name.c_str(), NULL, NULL, &status);
+          abi::__cxa_demangle(ext->name.c_str(), nullptr, nullptr, &status);
       if (demangled) {
         if (status == 0)
           ext->name = demangled;

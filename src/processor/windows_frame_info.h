@@ -123,28 +123,28 @@ struct WindowsFrameInfo {
     StringToVector(string, buffer);
     std::vector<char*> tokens;
     if (!Tokenize(&buffer[0], " \r\n", 11, &tokens))
-      return NULL;
+      return nullptr;
 
-    type = strtol(tokens[0], NULL, 16);
+    type = strtol(tokens[0], nullptr, 16);
     if (type < 0 || type > STACK_INFO_LAST - 1)
-      return NULL;
+      return nullptr;
 
-    rva                           = strtoull(tokens[1],  NULL, 16);
-    code_size                     = strtoull(tokens[2],  NULL, 16);
-    uint32_t prolog_size          =  strtoul(tokens[3],  NULL, 16);
-    uint32_t epilog_size          =  strtoul(tokens[4],  NULL, 16);
-    uint32_t parameter_size       =  strtoul(tokens[5],  NULL, 16);
-    uint32_t saved_register_size  =  strtoul(tokens[6],  NULL, 16);
-    uint32_t local_size           =  strtoul(tokens[7],  NULL, 16);
-    uint32_t max_stack_size       =  strtoul(tokens[8],  NULL, 16);
-    int has_program_string        =  strtoul(tokens[9], NULL, 16);
+    rva                           = strtoull(tokens[1], nullptr, 16);
+    code_size                     = strtoull(tokens[2], nullptr, 16);
+    uint32_t prolog_size          =  strtoul(tokens[3], nullptr, 16);
+    uint32_t epilog_size          =  strtoul(tokens[4], nullptr, 16);
+    uint32_t parameter_size       =  strtoul(tokens[5], nullptr, 16);
+    uint32_t saved_register_size  =  strtoul(tokens[6], nullptr, 16);
+    uint32_t local_size           =  strtoul(tokens[7], nullptr, 16);
+    uint32_t max_stack_size       =  strtoul(tokens[8], nullptr, 16);
+    int has_program_string        =  strtoul(tokens[9], nullptr, 16);
 
     const char *program_string = "";
     int allocates_base_pointer = 0;
     if (has_program_string) {
       program_string = tokens[10];
     } else {
-      allocates_base_pointer = strtoul(tokens[10], NULL, 16);
+      allocates_base_pointer = strtoul(tokens[10], nullptr, 16);
     }
 
     return new WindowsFrameInfo(static_cast<StackInfoTypes>(type),

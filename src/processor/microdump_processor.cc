@@ -71,7 +71,7 @@ ProcessResult MicrodumpProcessor::Process(Microdump *microdump,
                             microdump->GetContext(),
                             microdump->GetMemory(),
                             process_state->modules_,
-                            /* unloaded_modules= */ NULL,
+                            /* unloaded_modules= */ nullptr,
                             frame_symbolizer_));
 
   std::unique_ptr<CallStack> stack(new CallStack());

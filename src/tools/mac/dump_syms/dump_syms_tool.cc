@@ -172,7 +172,7 @@ static bool Start(const Options& options) {
     return dump_symbols.WriteSymbolFileHeader(std::cout);
 
   // Read the primary file into a Breakpad Module.
-  Module* module = NULL;
+  Module* module = nullptr;
   if (!dump_symbols.ReadSymbolData(&module))
     return false;
   std::unique_ptr<Module> scoped_module(module);
@@ -187,7 +187,7 @@ static bool Start(const Options& options) {
         !SetArchitecture(dump_symbols, *options.arch, options.srcPath)) {
       return false;
     }
-    Module* cfi_module = NULL;
+    Module* cfi_module = nullptr;
     if (!dump_symbols.ReadSymbolData(&cfi_module))
       return false;
     std::unique_ptr<Module> scoped_cfi_module(cfi_module);

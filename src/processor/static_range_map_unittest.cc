@@ -324,7 +324,7 @@ void TestStaticRangeMap::RetrieveIndexTest(const TestMap* range_map, int set) {
     ASSERT_TRUE(range_map->RetrieveRangeAtIndex(object_index,
                                                 entry,
                                                 &base,
-                                                NULL))
+                                                nullptr))
         << "FAILED: RetrieveRangeAtIndex set " << set
         << " index " << object_index;
 
@@ -348,9 +348,9 @@ void TestStaticRangeMap::RetrieveIndexTest(const TestMap* range_map, int set) {
   // Make sure that RetrieveRangeAtIndex doesn't allow lookups at indices that
   // are too high.
   ASSERT_FALSE(range_map->RetrieveRangeAtIndex(
-      object_count, entry, NULL, NULL)) << "FAILED: RetrieveRangeAtIndex set "
-                                        << set << " index " << object_count
-                                        << " (too large)";
+      object_count, entry, nullptr, nullptr)) << "FAILED: RetrieveRangeAtIndex "
+                                              << "set " << set << " index "
+                                              << object_count << " (too large)";
 }
 
 // RunTests runs a series of test sets.
@@ -375,7 +375,7 @@ void TestStaticRangeMap::RunTestCase(int test_case) {
       ++stored_count;
   }
 
-  scoped_array<char> memaddr(serializer_.Serialize(*rmap, NULL));
+  scoped_array<char> memaddr(serializer_.Serialize(*rmap, nullptr));
   std::unique_ptr<TestMap> static_range_map(new TestMap(memaddr.get()));
 
   // The RangeMap's own count of objects should also match.

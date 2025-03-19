@@ -170,7 +170,7 @@ static bool VerifyEmpty(const StackFrame& frame) {
 
 static void ClearSourceLineInfo(StackFrame* frame) {
   frame->function_name.clear();
-  frame->module = NULL;
+  frame->module = nullptr;
   frame->source_file_name.clear();
   frame->source_line = 0;
 }
@@ -218,7 +218,7 @@ TEST_F(TestFastSourceLineResolver, TestLoadAndResolve) {
   std::unique_ptr<WindowsFrameInfo> windows_frame_info;
   std::unique_ptr<CFIFrameInfo> cfi_frame_info;
   frame.instruction = 0x1000;
-  frame.module = NULL;
+  frame.module = nullptr;
   fast_resolver.FillSourceLineInfo(&frame, nullptr);
   ASSERT_FALSE(frame.module);
   ASSERT_TRUE(frame.function_name.empty());

@@ -63,7 +63,7 @@ StackFrameSymbolizer::SymbolizerResult StackFrameSymbolizer::FillSourceLineInfo(
     std::deque<std::unique_ptr<StackFrame>>* inlined_frames) {
   assert(frame);
 
-  const CodeModule* module = NULL;
+  const CodeModule* module = nullptr;
   if (modules) {
     module = modules->GetModuleForAddress(frame->instruction);
   }
@@ -95,7 +95,7 @@ StackFrameSymbolizer::SymbolizerResult StackFrameSymbolizer::FillSourceLineInfo(
 
   // Start fetching symbol from supplier.
   string symbol_file;
-  char* symbol_data = NULL;
+  char* symbol_data = nullptr;
   size_t symbol_data_size;
   SymbolSupplier::SymbolResult symbol_result = supplier_->GetCStringSymbolData(
       module, system_info, &symbol_file, &symbol_data, &symbol_data_size);
@@ -137,12 +137,12 @@ StackFrameSymbolizer::SymbolizerResult StackFrameSymbolizer::FillSourceLineInfo(
 
 WindowsFrameInfo* StackFrameSymbolizer::FindWindowsFrameInfo(
     const StackFrame* frame) {
-  return resolver_ ? resolver_->FindWindowsFrameInfo(frame) : NULL;
+  return resolver_ ? resolver_->FindWindowsFrameInfo(frame) : nullptr;
 }
 
 CFIFrameInfo* StackFrameSymbolizer::FindCFIFrameInfo(
     const StackFrame* frame) {
-  return resolver_ ? resolver_->FindCFIFrameInfo(frame) : NULL;
+  return resolver_ ? resolver_->FindCFIFrameInfo(frame) : nullptr;
 }
 
 }  // namespace google_breakpad

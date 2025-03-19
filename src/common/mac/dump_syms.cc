@@ -109,7 +109,7 @@ vector<string> list_directory(const string& directory) {
     path += '/';
   }
 
-  struct dirent* entry = NULL;
+  struct dirent* entry = nullptr;
   while ((entry = readdir(dir))) {
     if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
       entries.push_back(path + entry->d_name);
