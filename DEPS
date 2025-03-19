@@ -36,7 +36,7 @@ deps = {
   # Testing libraries and utilities.
   "src/src/testing":
     "https://github.com/google/googletest.git" +
-      "@release-1.11.0",
+      "@v1.16.0",
 
   # Protobuf.
   "src/src/third_party/protobuf/protobuf":
