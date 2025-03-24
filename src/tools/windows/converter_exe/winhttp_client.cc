@@ -185,7 +185,7 @@ bool WinHttpClient::SendRequest(HttpHandle request_handle,
                                 nullptr,
                                 0,
                                 WINHTTP_IGNORE_REQUEST_TOTAL_LENGTH,
-                                nullptr);
+                                0);
 }
 
 bool WinHttpClient::ReceiveResponse(HttpHandle request_handle) const {
