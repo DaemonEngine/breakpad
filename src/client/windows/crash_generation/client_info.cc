@@ -57,7 +57,7 @@ ClientInfo::ClientInfo(CrashGenerationServer* crash_server,
       dump_generated_handle_(nullptr),
       dump_request_wait_handle_(nullptr),
       process_exit_wait_handle_(nullptr),
-      crash_id_(nullptr) {
+      crash_id_(0) {
   GetSystemTimeAsFileTime(&start_time_);
 }
 

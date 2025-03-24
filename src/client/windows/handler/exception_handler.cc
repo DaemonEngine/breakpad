@@ -253,7 +253,7 @@ void ExceptionHandler::Initialize(
 
   // Reserve one element for the instruction memory
   AppMemory instruction_memory;
-  instruction_memory.ptr = nullptr;
+  instruction_memory.ptr = reinterpret_cast<ULONG64>(nullptr);
   instruction_memory.length = 0;
   app_memory_info_.push_back(instruction_memory);
 

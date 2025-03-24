@@ -565,8 +565,8 @@ void CrashGenerationServer::HandleDisconnectingState() {
   // Done serving the client.
   client_info_ = nullptr;
 
-  overlapped_.Internal = nullptr;
-  overlapped_.InternalHigh = nullptr;
+  overlapped_.Internal = 0;
+  overlapped_.InternalHigh = 0;
   overlapped_.Offset = 0;
   overlapped_.OffsetHigh = 0;
   overlapped_.Pointer = nullptr;

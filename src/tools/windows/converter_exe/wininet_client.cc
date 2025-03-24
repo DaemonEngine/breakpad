@@ -172,7 +172,7 @@ bool WinInetClient::OpenRequest(HttpHandle connection_handle,
                                       referrer,
                                       nullptr,
                                       is_secure ? INTERNET_FLAG_SECURE : 0,
-                                      nullptr));
+                                      0));
   return !!(*request_handle);
 }
 

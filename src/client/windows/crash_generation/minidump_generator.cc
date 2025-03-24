@@ -106,7 +106,7 @@ class HandleTraceData {
 HandleTraceData::HandleTraceData()
     : verifier_module_(nullptr),
       enumerate_resource_(nullptr),
-      handle_(nullptr) {
+      handle_(0) {
 }
 
 HandleTraceData::~HandleTraceData() {

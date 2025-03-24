@@ -147,7 +147,7 @@ bool WinHttpClient::Connect(HttpHandle session_handle,
                                          ToHINTERNET(session_handle),
                                          server,
                                          static_cast<INTERNET_PORT>(port),
-                                         nullptr));
+                                         0));
   return !!(*connection_handle);
 }
 

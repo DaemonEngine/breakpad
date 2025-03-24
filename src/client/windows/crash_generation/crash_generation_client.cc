@@ -206,7 +206,7 @@ bool CrashGenerationClient::RequestUpload(DWORD crash_id) {
 
   CustomClientInfo custom_info = {nullptr, 0};
   ProtocolMessage msg(MESSAGE_TAG_UPLOAD_REQUEST, crash_id,
-                      static_cast<MINIDUMP_TYPE>(nullptr), nullptr, nullptr,
+                      MiniDumpNormal, nullptr, nullptr,
                       nullptr, custom_info, nullptr, nullptr, nullptr);
   DWORD bytes_count = 0;
   bool success = WriteFile(pipe, &msg, sizeof(msg), &bytes_count, nullptr) != 0;
