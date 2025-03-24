@@ -2469,7 +2469,7 @@ string MinidumpModule::code_identifier() const {
         break;
       }
       // Otherwise fall through to the case below.
-      BP_FALLTHROUGH;
+      [[fallthrough]];
     }
 
     case MD_OS_MAC_OS_X:
@@ -5871,7 +5871,7 @@ bool Minidump::Read() {
                             stream_type << ", but can only deal with one";
             return false;
           }
-          BP_FALLTHROUGH;
+          [[fallthrough]];
         }
 
         default: {
