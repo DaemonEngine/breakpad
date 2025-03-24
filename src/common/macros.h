@@ -29,6 +29,8 @@
 #ifndef BREAKPAD_COMMON_MACROS_H_
 #define BREAKPAD_COMMON_MACROS_H_
 
+#include <stddef.h>
+
 // Ensure that this macro definition stays in a private header file: clang
 // suggests the first macro expanding to [[clang::fallthrough]] in its
 // diagnostics, so if BP_FALLTHROUGH is visible in code depending on breakpad,
@@ -39,6 +41,11 @@
 #define BP_FALLTHROUGH [[clang::fallthrough]]
 #else
 #define BP_FALLTHROUGH
+#endif
+
+// TODO: Delete when we require C++23.
+#ifndef unreachable
+#define unreachable() __builtin_unreachable()
 #endif
 
 #endif // BREAKPAD_COMMON_MACROS_H_

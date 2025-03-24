@@ -41,6 +41,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include "common/macros.h"
 #include "common/scoped_ptr.h"
 #include "third_party/lss/linux_syscall_support.h"
 
@@ -73,7 +74,7 @@ void* thread_function(void* data) {
   register volatile pid_t* thread_id_ptr asm(TID_PTR_REGISTER) = thread_id;
   while (true)
     asm volatile ("" : : "r" (thread_id_ptr));
-  return nullptr;
+  unreachable();
 }
 
 int main(int argc, char* argv[]) {

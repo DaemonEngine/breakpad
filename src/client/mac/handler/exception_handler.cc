@@ -44,6 +44,7 @@
 #include "client/mac/handler/minidump_generator.h"
 #include "common/mac/macho_utilities.h"
 #include "common/mac/scoped_task_suspend-inl.h"
+#include "common/macros.h"
 #include "google_breakpad/common/minidump_exception_mac.h"
 
 #ifndef __EXCEPTIONS
@@ -614,7 +615,7 @@ void* ExceptionHandler::WaitForMessage(void* exception_handler_class) {
     }
   }
 
-  return nullptr;
+  unreachable();
 }
 
 // static
