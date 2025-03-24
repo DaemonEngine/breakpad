@@ -32,6 +32,7 @@
 
 #include "client/windows/unittests/exception_handler_test.h"
 
+#include <assert.h>
 #include <windows.h>
 #include <dbghelp.h>
 #include <strsafe.h>

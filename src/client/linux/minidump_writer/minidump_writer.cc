@@ -50,6 +50,7 @@
 #include "client/linux/minidump_writer/minidump_writer.h"
 #include "client/minidump_file_writer-inl.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>

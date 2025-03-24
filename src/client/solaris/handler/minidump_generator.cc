@@ -34,6 +34,7 @@
 
 #include "client/solaris/handler/minidump_generator.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/frame.h>

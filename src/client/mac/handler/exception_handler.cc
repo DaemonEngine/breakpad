@@ -30,6 +30,7 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <assert.h>
 #include <mach/exc.h>
 #include <mach/mig.h>
 #include <pthread.h>

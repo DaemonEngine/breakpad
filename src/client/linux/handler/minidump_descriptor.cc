@@ -30,6 +30,7 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "client/linux/handler/minidump_descriptor.h"

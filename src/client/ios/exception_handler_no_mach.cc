@@ -30,6 +30,7 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <assert.h>
 #include <signal.h>
 #include <TargetConditionals.h>
 

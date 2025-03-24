@@ -37,6 +37,7 @@
 
 #include "processor/cfi_frame_info.h"
 
+#include <assert.h>
 #include <string.h>
 
 #include <sstream>

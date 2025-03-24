@@ -32,6 +32,7 @@
 #include <config.h>  // Must come first
 #endif
 
+#include <assert.h>
 #include <demangle.h>
 #include <fcntl.h>
 #include <gelf.h>

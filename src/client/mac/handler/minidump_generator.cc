@@ -32,6 +32,7 @@
 
 #include "client/mac/handler/minidump_generator.h"
 
+#include <assert.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>

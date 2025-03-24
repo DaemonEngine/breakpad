@@ -35,6 +35,8 @@
 
 #include "client/linux/microdump_writer/microdump_writer.h"
 
+#include <assert.h>
+
 #include <limits>
 
 #include <sys/utsname.h>

@@ -37,6 +37,7 @@
 
 #include "common/dwarf/dwarf2reader.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
