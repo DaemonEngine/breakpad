@@ -237,7 +237,7 @@ func (e *ipswExtractor) mountSystemDMG(ipswPath string) (string, error) {
 // at `manifest`.
 func (e *ipswExtractor) getSystemDMGPath(manifest string) (string, error) {
 	print_cmd := "print :BuildIdentities:1:Manifest:Cryptex1,SystemOS:Info:Path"
-	result, err := exec.Command("PlistBuddy", "-c", print_cmd, manifest).Output()
+	result, err := exec.Command("/usr/libexec/PlistBuddy", "-c", print_cmd, manifest).Output()
 	if err != nil {
 		return "", err
 	}
