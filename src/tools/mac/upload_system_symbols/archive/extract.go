@@ -300,7 +300,7 @@ func (e *installAssistantExtractor) expandInstaller(installerPath string, destin
 // macOS version 13 or higher, and accordingly stores dyld shared caches inside cryptexes.
 func (e *installAssistantExtractor) hasCryptexes(plistPath string) (bool, error) {
 	print_cmd := "print :Assets:0:OSVersion"
-	result, err := exec.Command("PlistBuddy", "-c", print_cmd, plistPath).Output()
+	result, err := exec.Command("/usr/libexec/PlistBuddy", "-c", print_cmd, plistPath).Output()
 	if err != nil {
 		return false, fmt.Errorf("couldn't read OS version from %s: %v", plistPath, err)
 	}

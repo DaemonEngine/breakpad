@@ -569,7 +569,7 @@ func extractSystems(format archive.ArchiveFormat, archivePath string, extractPat
 	}
 	cachePrefix := "dyld_shared_cache_"
 	extractedDirPath := path.Join(extractPath, "extracted")
-	roots := make([]string, len(files))
+	roots := make([]string, 0)
 	for _, file := range files {
 		fileName := file.Name()
 		if filepath.Ext(fileName) == "" && strings.HasPrefix(fileName, cachePrefix) {
