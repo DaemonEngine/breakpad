@@ -386,7 +386,9 @@ func (e *installAssistantExtractor) extractCachesFromPayloads(payloadsPath strin
 		payload := path.Join(payloadsPath, f.Name())
 		if e.payloadHasSharedCache(payload) {
 			e.vlog("Extracting %v\n", payload)
-			e.extractPayload(payload, scratchDir)
+			if err := e.extractPayload(payload, scratchDir); err != nil {
+				return err
+			}
 		}
 	}
 	return e.copySharedCaches(scratchDir, destination)
