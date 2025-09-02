@@ -134,6 +134,7 @@ endif
 check_LIBRARIES =
 noinst_LIBRARIES =
 lib_LIBRARIES =
+libexec_PROGRAMS =
 bin_PROGRAMS =
 check_PROGRAMS =
 EXTRA_PROGRAMS =
@@ -197,9 +198,9 @@ src_client_linux_libbreakpad_client_a_SOURCES = \
 	src/common/linux/linux_libc_support.cc \
 	src/common/linux/memory_mapped_file.cc \
 	src/common/linux/safe_readlink.cc
-if ANDROID_HOST
+if !HAVE_GETCONTEXT
 src_client_linux_libbreakpad_client_a_SOURCES += \
-	src/common/android/breakpad_getcontext.S
+	src/common/linux/breakpad_getcontext.S
 endif
 endif LINUX_HOST
 
@@ -373,12 +374,15 @@ CLEANFILES += \
 if !DISABLE_TOOLS
 bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
+	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/dump_syms/dump_syms \
 	src/tools/linux/md2core/minidump-2-core
 if X86_HOST
 bin_PROGRAMS += \
 	src/tools/mac/dump_syms/dump_syms_mac
 endif
+libexec_PROGRAMS += \
+	src/tools/linux/core_handler/core_handler
 endif
 endif LINUX_HOST
 
@@ -513,6 +517,7 @@ endif
 src_client_linux_linux_client_unittest_shlib_SOURCES = \
 	$(src_testing_libtesting_a_SOURCES) \
 	src/client/linux/handler/exception_handler_unittest.cc \
+	src/client/linux/microdump_writer/microdump_writer_unittest.cc \
 	src/client/linux/minidump_writer/directory_reader_unittest.cc \
 	src/client/linux/minidump_writer/cpu_set_unittest.cc \
 	src/client/linux/minidump_writer/line_reader_unittest.cc \
@@ -538,13 +543,9 @@ src_client_linux_linux_client_unittest_shlib_SOURCES = \
 	src/processor/minidump.cc \
 	src/processor/pathname_stripper.cc \
 	src/processor/proc_maps_linux.cc
-if ANDROID_HOST
+if !HAVE_GETCONTEXT
 src_client_linux_linux_client_unittest_shlib_SOURCES += \
-	src/common/android/breakpad_getcontext.S
-endif
-if LINUX_HOST
-src_client_linux_linux_client_unittest_shlib_SOURCES += \
-	src/client/linux/microdump_writer/microdump_writer_unittest.cc
+	src/common/linux/breakpad_getcontext.S
 endif
 
 src_client_linux_linux_client_unittest_shlib_CPPFLAGS = \
@@ -575,9 +576,11 @@ src_client_linux_linux_client_unittest_shlib_LDADD = \
 	src/common/string_conversion.o \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
-if ANDROID_HOST
+if !HAVE_GETCONTEXT
 src_client_linux_linux_client_unittest_shlib_SOURCES += \
-	src/common/android/breakpad_getcontext_unittest.cc
+	src/common/linux/breakpad_getcontext_unittest.cc
+endif
+if ANDROID_HOST
 src_client_linux_linux_client_unittest_shlib_LDFLAGS += \
 	-llog -lm
 endif
@@ -610,6 +613,18 @@ src_tools_linux_core2md_core2md_SOURCES = \
 	src/tools/linux/core2md/core2md.cc
 
 src_tools_linux_core2md_core2md_LDADD = \
+	src/client/linux/libbreakpad_client.a
+
+src_tools_linux_core_handler_core_handler_SOURCES = \
+	src/tools/linux/core_handler/core_handler.cc
+
+src_tools_linux_core_handler_core_handler_LDADD = \
+	src/client/linux/libbreakpad_client.a
+
+src_tools_linux_pid2md_pid2md_SOURCES = \
+	src/tools/linux/pid2md/pid2md.cc
+
+src_tools_linux_pid2md_pid2md_LDADD = \
 	src/client/linux/libbreakpad_client.a
 
 src_tools_linux_dump_syms_dump_syms_SOURCES = \
@@ -647,6 +662,23 @@ src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/path_helper.cc \
 	src/tools/linux/md2core/minidump-2-core.cc \
 	src/tools/linux/md2core/minidump_memory_range.h
+
+src_tools_linux_symupload_minidump_upload_SOURCES = \
+	src/common/linux/http_upload.cc \
+	src/tools/linux/symupload/minidump_upload.cc
+src_tools_linux_symupload_minidump_upload_LDADD = -ldl
+
+src_tools_linux_symupload_sym_upload_SOURCES = \
+	src/common/linux/http_upload.cc \
+	src/common/linux/http_upload.h \
+	src/common/linux/libcurl_wrapper.cc \
+	src/common/linux/libcurl_wrapper.h \
+	src/common/linux/symbol_collector_client.cc \
+	src/common/linux/symbol_collector_client.h \
+	src/common/linux/symbol_upload.cc \
+	src/common/linux/symbol_upload.h \
+	src/tools/linux/symupload/sym_upload.cc
+src_tools_linux_symupload_sym_upload_LDADD = -ldl
 
 src_tools_mac_dump_syms_dump_syms_mac_SOURCES = \
 	src/common/dwarf_cfi_to_module.cc \

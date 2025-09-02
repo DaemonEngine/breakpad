@@ -126,7 +126,7 @@ StackFrame* StackwalkerAMD64::GetContextFrame() {
 }
 
 StackFrameAMD64* StackwalkerAMD64::GetCallerByCFIFrameInfo(
-    const vector<StackFrame*> &frames,
+    const vector<StackFrame*>& frames,
     CFIFrameInfo* cfi_frame_info) {
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
 
@@ -142,6 +142,11 @@ StackFrameAMD64* StackwalkerAMD64::GetCallerByCFIFrameInfo(
                                  | StackFrameAMD64::CONTEXT_VALID_RSP);
   if ((frame->context_validity & essentials) != essentials)
     return NULL;
+
+  if (!frame->context.rip || !frame->context.rsp) {
+    BPLOG(ERROR) << "invalid rip/rsp";
+    return NULL;
+  }
 
   frame->trust = StackFrame::FRAME_TRUST_CFI;
   return frame.release();
@@ -217,7 +222,7 @@ StackFrameAMD64* StackwalkerAMD64::GetCallerByFramePointerRecovery(
 }
 
 StackFrameAMD64* StackwalkerAMD64::GetCallerByStackScan(
-    const vector<StackFrame*> &frames) {
+    const vector<StackFrame*>& frames) {
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
   uint64_t last_rsp = last_frame->context.rsp;
   uint64_t caller_rip_address, caller_rip;
@@ -273,7 +278,7 @@ StackFrame* StackwalkerAMD64::GetCallerFrame(const CallStack* stack,
     return NULL;
   }
 
-  const vector<StackFrame*> &frames = *stack->frames();
+  const vector<StackFrame*>& frames = *stack->frames();
   StackFrameAMD64* last_frame = static_cast<StackFrameAMD64*>(frames.back());
   scoped_ptr<StackFrameAMD64> new_frame;
 

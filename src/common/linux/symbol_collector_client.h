@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Google Inc.
+// Copyright (c) 2019, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,30 +27,62 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_UCONTEXT_H
-#define GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_UCONTEXT_H
+#ifndef COMMON_LINUX_SYMBOL_COLLECTOR_CLIENT_H_
+#define COMMON_LINUX_SYMBOL_COLLECTOR_CLIENT_H_
 
-#include <sys/cdefs.h>
+#include <string>
 
-#ifdef __BIONIC_UCONTEXT_H
-#include <ucontext.h>
-#else
+#include "common/linux/libcurl_wrapper.h"
+#include "common/using_std_string.h"
 
-#include <sys/ucontext.h>
+namespace google_breakpad {
+namespace sym_upload {
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+struct UploadUrlResponse {
+  string upload_url;
+  string upload_key;
+};
 
-// Provided by src/android/common/breakpad_getcontext.S
-int breakpad_getcontext(ucontext_t* ucp);
+enum SymbolStatus {
+  Found,
+  Missing,
+  Unknown
+};
 
-#define getcontext(x)   breakpad_getcontext(x)
+enum CompleteUploadResult {
+  Ok,
+  DuplicateData,
+  Error
+};
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif  // __cplusplus
+// Helper class to communicate with a sym-upload-v2 service over HTTP/REST,
+// via libcurl.
+class SymbolCollectorClient {
+ public:
+  static bool CreateUploadUrl(
+      LibcurlWrapper* libcurl_wrapper,
+      const string& api_url,
+      const string& api_key,
+      UploadUrlResponse* uploadUrlResponse);
 
-#endif  // __BIONIC_UCONTEXT_H
+  static CompleteUploadResult CompleteUpload(
+      LibcurlWrapper* libcurl_wrapper,
+      const string& api_url,
+      const string& api_key,
+      const string& upload_key,
+      const string& debug_file,
+      const string& debug_id,
+      const string& type);
 
-#endif  // GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_UCONTEXT_H
+  static SymbolStatus CheckSymbolStatus(
+      LibcurlWrapper* libcurl_wrapper,
+      const string& api_url,
+      const string& api_key,
+      const string& debug_file,
+      const string& debug_id);
+};
+
+}  // namespace sym_upload
+}  // namespace google_breakpad
+
+#endif  // COMMON_LINUX_SYMBOL_COLLECTOR_CLIENT_H_

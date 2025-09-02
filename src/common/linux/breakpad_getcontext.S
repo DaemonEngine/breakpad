@@ -28,11 +28,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // A minimalistic implementation of getcontext() to be used by
-// Google Breakpad on Android.
+// Google Breakpad when getcontext() is not available in libc.
 
-#include "common/android/ucontext_constants.h"
+#include "common/linux/ucontext_constants.h"
 
-/* int getcontext (ucontext_t *ucp) */
+/* int getcontext (ucontext_t* ucp) */
 
 #if defined(__arm__)
 
@@ -336,7 +336,7 @@ symbol:   .frame  sp, framesize, rpc;
     .size function,.-function
 #endif
 
-/* int getcontext (ucontext_t *ucp) */
+/* int getcontext (ucontext_t* ucp) */
 
 NESTED (breakpad_getcontext, FRAME_SIZE, ra)
   .mask   0x10000000, 0

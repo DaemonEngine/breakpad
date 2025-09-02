@@ -73,36 +73,37 @@ using testing::_;
 
 class MockDwarf2Handler: public Dwarf2Handler {
  public:
-  MOCK_METHOD5(StartCompilationUnit, bool(uint64 offset, uint8 address_size,
-                                          uint8 offset_size, uint64 cu_length,
-                                          uint8 dwarf_version));
-  MOCK_METHOD2(StartDIE, bool(uint64 offset, enum DwarfTag tag));
-  MOCK_METHOD4(ProcessAttributeUnsigned, void(uint64 offset,
+  MOCK_METHOD5(StartCompilationUnit, bool(uint64_t offset, uint8_t address_size,
+                                          uint8_t offset_size,
+                                          uint64_t cu_length,
+                                          uint8_t dwarf_version));
+  MOCK_METHOD2(StartDIE, bool(uint64_t offset, enum DwarfTag tag));
+  MOCK_METHOD4(ProcessAttributeUnsigned, void(uint64_t offset,
                                               DwarfAttribute attr,
                                               enum DwarfForm form,
-                                              uint64 data));
-  MOCK_METHOD4(ProcessAttributeSigned, void(uint64 offset,
+                                              uint64_t data));
+  MOCK_METHOD4(ProcessAttributeSigned, void(uint64_t offset,
                                             enum DwarfAttribute attr,
                                             enum DwarfForm form,
-                                            int64 data));
-  MOCK_METHOD4(ProcessAttributeReference, void(uint64 offset,
+                                            int64_t data));
+  MOCK_METHOD4(ProcessAttributeReference, void(uint64_t offset,
                                                enum DwarfAttribute attr,
                                                enum DwarfForm form,
-                                               uint64 data));
-  MOCK_METHOD5(ProcessAttributeBuffer, void(uint64 offset,
+                                               uint64_t data));
+  MOCK_METHOD5(ProcessAttributeBuffer, void(uint64_t offset,
                                             enum DwarfAttribute attr,
                                             enum DwarfForm form,
-                                            const uint8_t *data,
-                                            uint64 len));
-  MOCK_METHOD4(ProcessAttributeString, void(uint64 offset,
+                                            const uint8_t* data,
+                                            uint64_t len));
+  MOCK_METHOD4(ProcessAttributeString, void(uint64_t offset,
                                             enum DwarfAttribute attr,
                                             enum DwarfForm form,
                                             const string& data));
-  MOCK_METHOD4(ProcessAttributeSignature, void(uint64 offset,
+  MOCK_METHOD4(ProcessAttributeSignature, void(uint64_t offset,
                                                DwarfAttribute attr,
                                                enum DwarfForm form,
-                                               uint64 signature));
-  MOCK_METHOD1(EndDIE, void(uint64 offset));
+                                               uint64_t signature));
+  MOCK_METHOD1(EndDIE, void(uint64_t offset));
 };
 
 struct DIEFixture {
@@ -127,17 +128,17 @@ struct DIEFixture {
   // to |info|, and whose .debug_abbrev section refers to |abbrevs|. This
   // function returns a reference to the same SectionMap each time; new
   // calls wipe out maps established by earlier calls.
-  const SectionMap &MakeSectionMap() {
+  const SectionMap& MakeSectionMap() {
     // Copy the sections' contents into strings that will live as long as
     // the map itself.
     assert(info.GetContents(&info_contents));
     assert(abbrevs.GetContents(&abbrevs_contents));
     section_map.clear();
     section_map[".debug_info"].first
-      = reinterpret_cast<const uint8_t *>(info_contents.data());
+      = reinterpret_cast<const uint8_t*>(info_contents.data());
     section_map[".debug_info"].second = info_contents.size();
     section_map[".debug_abbrev"].first
-      = reinterpret_cast<const uint8_t *>(abbrevs_contents.data());
+      = reinterpret_cast<const uint8_t*>(abbrevs_contents.data());
     section_map[".debug_abbrev"].second = abbrevs_contents.size();
     return section_map;
   }
@@ -217,6 +218,8 @@ INSTANTIATE_TEST_CASE_P(
                       DwarfHeaderParams(kLittleEndian, 8, 3, 8),
                       DwarfHeaderParams(kLittleEndian, 8, 4, 4),
                       DwarfHeaderParams(kLittleEndian, 8, 4, 8),
+                      DwarfHeaderParams(kLittleEndian, 8, 5, 4),
+                      DwarfHeaderParams(kLittleEndian, 8, 5, 8),
                       DwarfHeaderParams(kBigEndian,    4, 2, 4),
                       DwarfHeaderParams(kBigEndian,    4, 2, 8),
                       DwarfHeaderParams(kBigEndian,    4, 3, 4),
@@ -228,14 +231,16 @@ INSTANTIATE_TEST_CASE_P(
                       DwarfHeaderParams(kBigEndian,    8, 3, 4),
                       DwarfHeaderParams(kBigEndian,    8, 3, 8),
                       DwarfHeaderParams(kBigEndian,    8, 4, 4),
-                      DwarfHeaderParams(kBigEndian,    8, 4, 8)));
+                      DwarfHeaderParams(kBigEndian,    8, 4, 8),
+                      DwarfHeaderParams(kBigEndian,    8, 5, 4),
+                      DwarfHeaderParams(kBigEndian,    8, 5, 8)));
 
 struct DwarfFormsFixture: public DIEFixture {
   // Start a compilation unit, as directed by |params|, containing one
   // childless DIE of the given tag, with one attribute of the given name
   // and form. The 'info' fixture member is left just after the abbrev
   // code, waiting for the attribute value to be appended.
-  void StartSingleAttributeDIE(const DwarfHeaderParams &params,
+  void StartSingleAttributeDIE(const DwarfHeaderParams& params,
                                DwarfTag tag, DwarfAttribute name,
                                DwarfForm form) {
     // Create the abbreviation table.
@@ -255,8 +260,8 @@ struct DwarfFormsFixture: public DIEFixture {
   // Set up handler to expect a compilation unit matching |params|,
   // containing one childless DIE of the given tag, in the sequence s. Stop
   // just before the expectations.
-  void ExpectBeginCompilationUnit(const DwarfHeaderParams &params,
-                                  DwarfTag tag, uint64 offset=0) {
+  void ExpectBeginCompilationUnit(const DwarfHeaderParams& params,
+                                  DwarfTag tag, uint64_t offset=0) {
     EXPECT_CALL(handler,
                 StartCompilationUnit(offset, params.address_size,
                                      params.format_size, _,
@@ -274,7 +279,8 @@ struct DwarfFormsFixture: public DIEFixture {
         .WillOnce(Return());
   }
 
-  void ParseCompilationUnit(const DwarfHeaderParams &params, uint64 offset=0) {
+  void ParseCompilationUnit(const DwarfHeaderParams& params,
+                            uint64_t offset=0) {
     ByteReader byte_reader(params.endianness == kLittleEndian ?
                            ENDIANNESS_LITTLE : ENDIANNESS_BIG);
     CompilationUnit parser("", MakeSectionMap(), offset, &byte_reader, &handler);
@@ -457,6 +463,35 @@ TEST_P(DwarfForms, ref_sig8_not_first) {
   ParseCompilationUnit(GetParam(), 98);
 }
 
+TEST_P(DwarfForms, implicit_const) {
+  const DwarfHeaderParams& params = GetParam();
+  const uint64_t implicit_constant_value = 0x1234;
+  // Create the abbreviation table.
+  Label abbrev_table = abbrevs.Here();
+  abbrevs.Abbrev(1, (DwarfTag) 0x253e7b2b, dwarf2reader::DW_children_no)
+      .Attribute((DwarfAttribute) 0xd708d908,
+                 dwarf2reader::DW_FORM_implicit_const)
+      .ULEB128(implicit_constant_value);
+  abbrevs.EndAbbrev().EndTable();
+
+  info.set_format_size(params.format_size);
+  info.set_endianness(params.endianness);
+  info.Header(params.version, abbrev_table, params.address_size)
+          .ULEB128(1);                    // abbrev code
+  info.Finish();
+
+  ExpectBeginCompilationUnit(GetParam(), (DwarfTag) 0x253e7b2b);
+  EXPECT_CALL(handler,
+              ProcessAttributeUnsigned(_, (DwarfAttribute) 0xd708d908,
+                                       dwarf2reader::DW_FORM_implicit_const,
+                                       implicit_constant_value))
+      .InSequence(s)
+      .WillOnce(Return());
+  ExpectEndCompilationUnit();
+
+  ParseCompilationUnit(GetParam());
+}
+
 // Tests for the other attribute forms could go here.
 
 INSTANTIATE_TEST_CASE_P(
@@ -485,3 +520,140 @@ INSTANTIATE_TEST_CASE_P(
                       DwarfHeaderParams(kBigEndian,    8, 3, 8),
                       DwarfHeaderParams(kBigEndian,    8, 4, 4),
                       DwarfHeaderParams(kBigEndian,    8, 4, 8)));
+
+class MockRangeListHandler: public dwarf2reader::RangeListHandler {
+ public:
+  MOCK_METHOD(void, AddRange, (uint64_t begin, uint64_t end));
+  MOCK_METHOD(void, Finish, ());
+};
+
+TEST(RangeList, Dwarf4ReadRangeList) {
+  using dwarf2reader::RangeListReader;
+  using dwarf2reader::DW_FORM_sec_offset;
+
+  // Create a dwarf4 .debug_ranges section.
+  google_breakpad::test_assembler::Section ranges(kBigEndian);
+  std::string padding_offset = "padding offset";
+  ranges.Append(padding_offset);
+  const uint64_t section_offset = ranges.Size();
+  ranges.D32(1).D32(2);          // (2, 3)
+  ranges.D32(0xFFFFFFFF).D32(3); // base_address = 3.
+  ranges.D32(1).D32(2);          // (4, 5)
+  ranges.D32(0).D32(1);          // (3, 4) An out of order entry is legal.
+  ranges.D32(0).D32(0);          // End of range.
+
+  std::string section_contents;
+  ranges.GetContents(&section_contents);
+
+  ByteReader byte_reader(ENDIANNESS_BIG);
+  byte_reader.SetAddressSize(4);
+
+  RangeListReader::CURangesInfo cu_info;
+  // Only set the fields that matter for dwarf 4.
+  cu_info.version_ = 4;
+  cu_info.base_address_ = 1;
+  cu_info.buffer_ = reinterpret_cast<const uint8_t*>(section_contents.data());
+  cu_info.size_ = section_contents.size();
+
+  MockRangeListHandler handler;
+  dwarf2reader::RangeListReader range_list_reader(&byte_reader, &cu_info,
+                                                  &handler);
+  EXPECT_CALL(handler, AddRange(2, 3));
+  EXPECT_CALL(handler, AddRange(4, 5));
+  EXPECT_CALL(handler, AddRange(3, 4));
+  EXPECT_CALL(handler, Finish());
+  EXPECT_TRUE(range_list_reader.ReadRanges(DW_FORM_sec_offset,
+                                           section_offset));
+}
+
+TEST(RangeList, Dwarf5ReadRangeList) {
+  using dwarf2reader::RangeListReader;
+  using dwarf2reader::DW_RLE_base_addressx;
+  using dwarf2reader::DW_RLE_startx_endx;
+  using dwarf2reader::DW_RLE_startx_length;
+  using dwarf2reader::DW_RLE_offset_pair;
+  using dwarf2reader::DW_RLE_end_of_list;
+  using dwarf2reader::DW_RLE_base_address;
+  using dwarf2reader::DW_RLE_start_end;
+  using dwarf2reader::DW_RLE_start_length;
+  using dwarf2reader::DW_FORM_sec_offset;
+  using dwarf2reader::DW_FORM_rnglistx;
+
+  // .debug_addr for the indexed entries like startx.
+  Section addr;
+  addr.set_endianness(kBigEndian);
+  // Test addr_base handling with a padding address at 0.
+  addr.D32(0).D32(1).D32(2).D32(3).D32(4);
+  std::string addr_contents;
+  assert(addr.GetContents(&addr_contents));
+
+  // .debug_rnglists is the dwarf 5 section.
+  Section rnglists;
+  rnglists.set_endianness(kBigEndian);
+  std::string padding_offset = "padding offset";
+  rnglists.Append(padding_offset);
+  const uint64_t ranges_base = rnglists.Size();
+
+  // Header
+  Label section_size;
+  rnglists.Append(kBigEndian, 4, section_size);
+  rnglists.D16(5); // Version
+  rnglists.D8(4);  // Address size
+  rnglists.D8(0);  // Segment selector size
+  rnglists.D32(2); // Offset entry count
+  // Offset entries.
+  Label range0;
+  rnglists.Append(kBigEndian, 4, range0);
+  Label range1;
+  rnglists.Append(kBigEndian, 4, range1);
+
+  // Range 0 (will be read via DW_AT_ranges, DW_FORM_sec_offset).
+  range0 = rnglists.Size();
+  rnglists.D8(DW_RLE_base_addressx).ULEB128(0); // base_addr = 1
+  rnglists.D8(DW_RLE_startx_endx).ULEB128(1).ULEB128(2); // (2, 3)
+  rnglists.D8(DW_RLE_startx_length).ULEB128(3).ULEB128(1); // (4, 5)
+  rnglists.D8(DW_RLE_offset_pair).ULEB128(5).ULEB128(6); // (6, 7)
+  rnglists.D8(DW_RLE_end_of_list);
+
+  // Range 1 (will be read via DW_AT_ranges, DW_FORM_rnglistx).
+  range1 = rnglists.Size();
+  rnglists.D8(DW_RLE_base_address).D32(8); // base_addr = 8
+  rnglists.D8(DW_RLE_offset_pair).ULEB128(1).ULEB128(2); // (9, 10)
+  rnglists.D8(DW_RLE_start_end).D32(10).D32(11); // (10, 11)
+  rnglists.D8(DW_RLE_start_length).D32(12).ULEB128(1); // (12, 13)
+  rnglists.D8(DW_RLE_end_of_list);
+  section_size = rnglists.Size();
+  std::string rnglists_contents;
+  assert(rnglists.GetContents(&rnglists_contents));
+
+  RangeListReader::CURangesInfo cu_info;
+  // Only set the fields that matter for dwarf 4.
+  cu_info.version_ = 5;
+  cu_info.base_address_ = 1;
+  cu_info.ranges_base_ = ranges_base;
+  cu_info.buffer_ =
+      reinterpret_cast<const uint8_t*>(rnglists_contents.data());
+  cu_info.size_ = rnglists_contents.size();
+  cu_info.addr_buffer_ =
+      reinterpret_cast<const uint8_t*>(addr_contents.data());
+  cu_info.addr_buffer_size_ = addr_contents.size();
+  cu_info.addr_base_ = 4;
+
+  ByteReader byte_reader(ENDIANNESS_BIG);
+  byte_reader.SetAddressSize(4);
+  MockRangeListHandler handler;
+  dwarf2reader::RangeListReader range_list_reader(&byte_reader, &cu_info,
+                                                  &handler);
+  EXPECT_CALL(handler, AddRange(2, 3));
+  EXPECT_CALL(handler, AddRange(4, 5));
+  EXPECT_CALL(handler, AddRange(6, 7));
+  EXPECT_CALL(handler, AddRange(9, 10));
+  EXPECT_CALL(handler, AddRange(10, 11));
+  EXPECT_CALL(handler, AddRange(12, 13));
+  EXPECT_CALL(handler, Finish()).Times(2);
+  EXPECT_TRUE(range_list_reader.ReadRanges(DW_FORM_rnglistx, 1));
+  EXPECT_TRUE(range_list_reader.ReadRanges(DW_FORM_sec_offset,
+                                           range0.Value()));
+  // Out of range index, should result in no calls.
+  EXPECT_FALSE(range_list_reader.ReadRanges(DW_FORM_rnglistx, 2));
+}

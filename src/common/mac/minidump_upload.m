@@ -40,18 +40,18 @@
 #import "common/mac/HTTPMultipartUpload.h"
 
 typedef struct {
-  NSString *minidumpPath;
-  NSString *uploadURLStr;
-  NSString *product;
-  NSString *version;
+  NSString* minidumpPath;
+  NSString* uploadURLStr;
+  NSString* product;
+  NSString* version;
   BOOL success;
 } Options;
 
 //=============================================================================
-static void Start(Options *options) {
-  NSURL *url = [NSURL URLWithString:options->uploadURLStr];
-  HTTPMultipartUpload *ul = [[HTTPMultipartUpload alloc] initWithURL:url];
-  NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
+static void Start(Options* options) {
+  NSURL* url = [NSURL URLWithString:options->uploadURLStr];
+  HTTPMultipartUpload* ul = [[HTTPMultipartUpload alloc] initWithURL:url];
+  NSMutableDictionary* parameters = [NSMutableDictionary dictionary];
 
   // Add parameters
   [parameters setObject:options->product forKey:@"prod"];
@@ -62,9 +62,9 @@ static void Start(Options *options) {
   [ul addFileAtPath:options->minidumpPath name:@"upload_file_minidump"];
 
   // Send it
-  NSError *error = nil;
-  NSData *data = [ul send:&error];
-  NSString *result = [[NSString alloc] initWithData:data
+  NSError* error = nil;
+  NSData* data = [ul send:&error];
+  NSString* result = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
 
   NSLog(@"Send: %@", error ? [error description] : @"No Error");
@@ -77,11 +77,12 @@ static void Start(Options *options) {
 }
 
 //=============================================================================
-static void
-Usage(int argc, const char *argv[]) {
+static void Usage(int argc, const char* argv[]) {
   fprintf(stderr, "Submit minidump information.\n");
-  fprintf(stderr, "Usage: %s -p <product> -v <version> <minidump> "
-          "<upload-URL>\n", argv[0]);
+  fprintf(stderr,
+          "Usage: %s -p <product> -v <version> <minidump> "
+          "<upload-URL>\n",
+          argv[0]);
   fprintf(stderr, "<minidump> should be a minidump.\n");
   fprintf(stderr, "<upload-URL> is the destination for the upload\n");
 
@@ -90,12 +91,11 @@ Usage(int argc, const char *argv[]) {
 }
 
 //=============================================================================
-static void
-SetupOptions(int argc, const char *argv[], Options *options) {
+static void SetupOptions(int argc, const char* argv[], Options* options) {
   extern int optind;
   char ch;
 
-  while ((ch = getopt(argc, (char * const *)argv, "p:v:h?")) != -1) {
+  while ((ch = getopt(argc, (char* const*)argv, "p:v:h?")) != -1) {
     switch (ch) {
       case 'p':
         options->product = [NSString stringWithUTF8String:optarg];
@@ -122,8 +122,8 @@ SetupOptions(int argc, const char *argv[], Options *options) {
 }
 
 //=============================================================================
-int main (int argc, const char * argv[]) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+int main(int argc, const char* argv[]) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   Options options;
 
   bzero(&options, sizeof(Options));

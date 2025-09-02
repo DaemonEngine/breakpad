@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Google Inc.
+// Copyright (c) 2020, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,9 +27,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_SYS_SIGNAL_H
-#define GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_SYS_SIGNAL_H
+// pid2md.cc: An utility to generate a minidump from a running process
 
-#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#endif  // GOOGLE_BREAKPAD_COMMON_ANDROID_INCLUDE_SYS_SIGNAL_H
+#include "client/linux/minidump_writer/minidump_writer.h"
+
+int main(int argc, char* argv[]) {
+  if (argc != 3) {
+    fprintf(stderr, "Usage: %s <process id> <minidump file>\n\n", argv[0]);
+    fprintf(stderr,
+            "A tool to generate a minidump from a running process. The process "
+            "resumes its\nactivity once the operation is completed. Permission "
+            "to trace the process is\nrequired.\n");
+    return EXIT_FAILURE;
+  }
+
+  pid_t process_id = atoi(argv[1]);
+  const char* minidump_file = argv[2];
+
+  if (!google_breakpad::WriteMinidump(minidump_file, process_id, process_id)) {
+    fprintf(stderr, "Unable to generate minidump.\n");
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
+}
