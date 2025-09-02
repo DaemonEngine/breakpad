@@ -223,14 +223,28 @@ class DumperRangesHandler : public DwarfCUToModule::RangesHandler {
 class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
  public:
   // Create a line-to-module converter using BYTE_READER.
-  explicit DumperLineToModule(dwarf2reader::ByteReader *byte_reader)
+  explicit DumperLineToModule(dwarf2reader::ByteReader* byte_reader)
       : byte_reader_(byte_reader) { }
   void StartCompilationUnit(const string& compilation_dir) {
     compilation_dir_ = compilation_dir;
   }
+  void ReadProgram(const uint8_t* program, uint64_t length,
+                   const uint8_t* string_section,
+                   uint64_t string_section_length,
+                   const uint8_t* line_string_section,
+                   uint64_t line_string_section_length,
+                   Module* module, std::vector<Module::Line>* lines) {
+    DwarfLineToModule handler(module, compilation_dir_, lines);
+    dwarf2reader::LineInfo parser(program, length, byte_reader_,
+                                  string_section, string_section_length,
+                                  line_string_section,
+                                  line_string_section_length,
+                                  &handler);
+    parser.Start();
+  }
  private:
   string compilation_dir_;
-  dwarf2reader::ByteReader *byte_reader_;
+  dwarf2reader::ByteReader* byte_reader_;
 };
 
 template<typename ObjectFileReader>
