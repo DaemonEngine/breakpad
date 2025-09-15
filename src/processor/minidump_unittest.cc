@@ -41,7 +41,6 @@
 #include <vector>
 
 #include "breakpad_googletest_includes.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/common/minidump_format.h"
 #include "google_breakpad/processor/minidump.h"
 #include "processor/logging.h"
@@ -85,10 +84,10 @@ using ::testing::Return;
 class MinidumpTest : public ::testing::Test {
 public:
   void SetUp() {
-    minidump_file_ = string(getenv("srcdir") ? getenv("srcdir") : ".") +
+    minidump_file_ = std::string(getenv("srcdir") ? getenv("srcdir") : ".") +
       "/src/processor/testdata/minidump2.dmp";
   }
-  string minidump_file_;
+  std::string minidump_file_;
 };
 
 TEST_F(MinidumpTest, TestMinidumpFromFile) {
@@ -120,7 +119,7 @@ TEST_F(MinidumpTest, TestMinidumpFromStream) {
   file_stream.seekg(0, std::ios_base::beg);
   ASSERT_TRUE(file_stream.good());
   file_stream.read(&bytes[0], bytes.size());
-  string str(&bytes[0], bytes.size());
+  std::string str(&bytes[0], bytes.size());
   istringstream stream(str);
   ASSERT_TRUE(stream.good());
 
@@ -135,8 +134,8 @@ TEST_F(MinidumpTest, TestMinidumpFromStream) {
 }
 
 TEST_F(MinidumpTest, TestMinidumpWithCrashpadAnnotations) {
-  string crashpad_minidump_file =
-      string(getenv("srcdir") ? getenv("srcdir") : ".") +
+  std::string crashpad_minidump_file =
+      std::string(getenv("srcdir") ? getenv("srcdir") : ".") +
       "/src/processor/testdata/minidump_crashpad_annotation.dmp";
 
   Minidump minidump(crashpad_minidump_file);
@@ -173,7 +172,7 @@ TEST_F(MinidumpTest, TestMinidumpWithCrashpadAnnotations) {
 TEST(Dump, ReadBackEmpty) {
   Dump dump(0);
   dump.Finish();
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream stream(contents);
   Minidump minidump(stream);
@@ -184,7 +183,7 @@ TEST(Dump, ReadBackEmpty) {
 TEST(Dump, ReadBackEmptyBigEndian) {
   Dump big_minidump(0, kBigEndian);
   big_minidump.Finish();
-  string contents;
+  std::string contents;
   ASSERT_TRUE(big_minidump.GetContents(&contents));
   istringstream stream(contents);
   Minidump minidump(stream);
@@ -199,7 +198,7 @@ TEST(Dump, OneStream) {
   dump.Add(&stream);
   dump.Finish();
   
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -215,8 +214,8 @@ TEST(Dump, OneStream) {
   ASSERT_EQ(15U, stream_length);
   char stream_contents[15];
   ASSERT_TRUE(minidump.ReadBytes(stream_contents, sizeof(stream_contents)));
-  EXPECT_EQ(string("stream contents"),
-            string(stream_contents, sizeof(stream_contents)));
+  EXPECT_EQ(std::string("stream contents"),
+            std::string(stream_contents, sizeof(stream_contents)));
 
   EXPECT_FALSE(minidump.GetThreadList());
   EXPECT_FALSE(minidump.GetModuleList());
@@ -235,7 +234,7 @@ TEST(Dump, OneMemory) {
   dump.Add(&memory);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -288,7 +287,7 @@ TEST(Dump, OneThread) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -367,7 +366,7 @@ TEST(Dump, ThreadMissingMemory) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -410,7 +409,7 @@ TEST(Dump, ThreadMissingContext) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -457,7 +456,7 @@ TEST(Dump, OneUnloadedModule) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -538,7 +537,7 @@ TEST(Dump, OneModule) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -621,7 +620,7 @@ TEST(Dump, OneModuleCVELF) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -702,7 +701,7 @@ TEST(Dump, CVELFShort) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -774,7 +773,7 @@ TEST(Dump, CVELFLong) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -805,7 +804,7 @@ TEST(Dump, OneSystemInfo) {
   dump.Add(&csd_version);
   dump.Finish();
                          
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -943,7 +942,7 @@ TEST(Dump, BigDump) {
 
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -1057,7 +1056,7 @@ TEST(Dump, OneMemoryInfo) {
   dump.Add(&stream);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -1114,7 +1113,7 @@ TEST(Dump, OneExceptionX86) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1188,7 +1187,7 @@ TEST(Dump, OneExceptionX86XState) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1273,7 +1272,7 @@ TEST(Dump, OneExceptionX86NoCPUFlags) {
 
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1355,7 +1354,7 @@ TEST(Dump, OneExceptionX86NoCPUFlagsNoSystemInfo) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1418,7 +1417,7 @@ TEST(Dump, OneExceptionARM) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1502,7 +1501,7 @@ TEST(Dump, OneExceptionARMOldFlags) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1601,7 +1600,7 @@ TEST(Dump, OneExceptionMIPS) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
