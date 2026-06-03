@@ -285,6 +285,9 @@ endif LINUX_HOST
 #
 if !DISABLE_TOOLS
 
+check_PROGRAMS += \
+	src/common/dumper_unittest
+
 # slipher: disabling these to avoid curl dependency
 # bin_PROGRAMS += \
 #	src/tools/linux/symupload/minidump_upload \
@@ -307,7 +310,6 @@ libexec_PROGRAMS += \
 endif
 
 check_PROGRAMS += \
-	src/common/dumper_unittest \
 	src/tools/linux/md2core/minidump_2_core_unittest
 if X86_HOST
 check_PROGRAMS += \
@@ -842,6 +844,11 @@ src_common_dumper_unittest_SOURCES = \
 	src/common/dwarf/dwarf2reader_cfi_unittest.cc \
 	src/common/dwarf/dwarf2reader_die_unittest.cc \
 	src/common/dwarf/dwarf2reader_test_common.h \
+	src/common/testdata/func-line-pairing.h \
+	src/common/tests/file_utils.cc
+
+if LINUX_HOST
+src_common_dumper_unittest_SOURCES += \
 	src/common/linux/crc32.cc \
 	src/common/linux/dump_symbols.cc \
 	src/common/linux/dump_symbols_unittest.cc \
@@ -860,9 +867,8 @@ src_common_dumper_unittest_SOURCES = \
 	src/common/linux/synth_elf.cc \
 	src/common/linux/synth_elf_unittest.cc \
 	src/common/linux/tests/crash_generator.cc \
-	src/common/linux/tests/crash_generator.h \
-	src/common/testdata/func-line-pairing.h \
-	src/common/tests/file_utils.cc
+	src/common/linux/tests/crash_generator.h
+endif
 src_common_dumper_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS) \
 	$(RUSTC_DEMANGLE_CFLAGS) \
