@@ -930,7 +930,10 @@ const uint8_t* CompilationUnit::ProcessAttribute(
           dieoffset, attr, form, reader_->ReadUnsignedLEB128(start, &len));
       return start + len;
   }
-  fprintf(stderr, "Unhandled form type\n");
+  fprintf(stderr,
+          "Unhandled form type 0x%x for attribute 0x%x "
+          "at offset 0x%" PRIx64 "\n",
+          form, attr, dieoffset);
   return nullptr;
 }
 
@@ -967,6 +970,10 @@ const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
   if (abbrev.tag == DW_TAG_compile_unit
       && is_split_dwarf_
       && dwo_id_ != skeleton_dwo_id_) {
+    fprintf(stderr,
+            "dwo_id (0x%" PRIx64 ") does not match "
+            "skeleton_dwo_id (0x%" PRIx64 ")\n",
+            dwo_id_, skeleton_dwo_id_);
     return nullptr;
   }
 
@@ -1025,19 +1032,26 @@ bool CompilationUnit::ProcessDIEs() {
       dieptr = SkipDIE(dieptr, abbrev);
       if (!dieptr) {
         fprintf(stderr,
-                "An error happens when skipping a DIE's attributes at offset "
-                "0x%" PRIx64
-                ". Stopped processing following DIEs in this CU.\n",
-                absolute_offset);
+                "An error happens when skipping a DIE's attributes at "
+                "offset 0x%" PRIx64 " in compilation unit at offset "
+                "0x%" PRIx64 " in file %s.\n"
+                "Stopped processing following DIEs in this CU.\n",
+                absolute_offset,
+                offset_from_section_start_,
+                path_.c_str());
         exit(1);
       }
     } else {
       dieptr = ProcessDIE(absolute_offset, dieptr, abbrev);
       if (!dieptr) {
         fprintf(stderr,
-                "An error happens when processing a DIE at offset 0x%" PRIx64
-                ". Stopped processing following DIEs in this CU.\n",
-                absolute_offset);
+                "An error happens when processing a DIE at offset "
+                "0x%" PRIx64 " in compilation unit at offset "
+                "0x%" PRIx64 " in file %s.\n"
+                "Stopped processing following DIEs in this CU.\n",
+                absolute_offset,
+                offset_from_section_start_,
+                path_.c_str());
         exit(1);
       }
     }
