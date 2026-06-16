@@ -554,7 +554,8 @@ class CompilationUnit {
   // compilation unit.  We also inherit the Dwarf2Handler from
   // the executable file, and call it as if we were still
   // processing the original compilation unit.
-  void SetSplitDwarf(uint64_t addr_base, uint64_t dwo_id);
+  void SetSplitDwarf(uint64_t addr_base, uint64_t dwo_id,
+                     std::string skeleton_path);
 
   // Begin reading a Dwarf2 compilation unit, and calling the
   // callbacks in the Dwarf2Handler
@@ -594,6 +595,8 @@ class CompilationUnit {
   uint64_t GetSourceLineOffset() { return source_line_offset_; }
 
   bool ShouldProcessSplitDwarf() { return should_process_split_dwarf_; }
+
+  const std::string& path() const { return path_; }
 
  private:
 
@@ -857,10 +860,13 @@ class CompilationUnit {
 
 #ifdef DWPREADER_WANTED
   // DWP reader.
-   std::unique_ptr<DwpReader> dwp_reader_;
+  std::unique_ptr<DwpReader> dwp_reader_;
 #endif
 
-   bool should_process_split_dwarf_;
+  // Path of the file containing the skeleton compilation unit.
+  std::string skeleton_path_;
+
+  bool should_process_split_dwarf_;
 
   // The value of the DW_AT_low_pc attribute, if any.
   uint64_t low_pc_;

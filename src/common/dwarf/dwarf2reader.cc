@@ -51,6 +51,7 @@
 #include <utility>
 
 #include <sys/stat.h>
+#include <time.h>
 
 #include "common/dwarf/bytereader-inl.h"
 #include "common/dwarf/bytereader.h"
@@ -154,6 +155,27 @@ const uint8_t* SkipFormAttribute(ByteReader* reader, uint16_t version,
   return nullptr;
 }
 
+std::string GetFileMTimeStr(const std::string& path) {
+  struct stat statbuf;
+  if (stat(path.c_str(), &statbuf) == 0) {
+    struct tm tm_struct;
+#ifdef _WIN32
+    if (localtime_s(&tm_struct, &statbuf.st_mtime) != 0) {
+      return "unknown";
+    }
+#else
+    if (localtime_r(&statbuf.st_mtime, &tm_struct) == nullptr) {
+      return "unknown";
+    }
+#endif
+    char buf[64];
+    if (strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %z", &tm_struct) > 0) {
+      return buf;
+    }
+  }
+  return "unknown";
+}
+
 }  // namespace
 
 const SectionMap::const_iterator GetSectionByName(const SectionMap&
@@ -211,10 +233,12 @@ CompilationUnit::CompilationUnit(const std::string& path,
 // processing the original compilation unit.
 
 void CompilationUnit::SetSplitDwarf(uint64_t addr_base,
-                                    uint64_t dwo_id) {
+                                    uint64_t dwo_id,
+                                    std::string skeleton_path) {
   is_split_dwarf_ = true;
   addr_base_ = addr_base;
   skeleton_dwo_id_ = dwo_id;
+  skeleton_path_ = std::move(skeleton_path);
 }
 
 // Read a DWARF2/3 abbreviation section.
@@ -971,9 +995,11 @@ const uint8_t* CompilationUnit::ProcessDIE(uint64_t dieoffset,
       && is_split_dwarf_
       && dwo_id_ != skeleton_dwo_id_) {
     fprintf(stderr,
-            "dwo_id (0x%" PRIx64 ") does not match "
-            "skeleton_dwo_id (0x%" PRIx64 ")\n",
-            dwo_id_, skeleton_dwo_id_);
+            "dwo_id (0x%" PRIx64 ") in %s (mtime: %s) does not match "
+            "skeleton_dwo_id (0x%" PRIx64 ") in %s (mtime: %s)\n",
+            dwo_id_, path_.c_str(), GetFileMTimeStr(path_).c_str(),
+            skeleton_dwo_id_, skeleton_path_.c_str(),
+            GetFileMTimeStr(skeleton_path_).c_str());
     return nullptr;
   }
 
