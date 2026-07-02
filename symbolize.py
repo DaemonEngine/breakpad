@@ -5,9 +5,10 @@ import os
 import subprocess
 
 
+# Assumes in-source build. TODO: make it work with install?
 def dump_syms_path(bin):
     if bin.endswith(".exe"): # Windows target
-        ds_path = "src/tools/windows/dump_syms_dwarf/dump_syms"
+        ds_path = "src/tools/windows/dump_syms_dwarf/dump_syms_dwarf"
     else: # Linux or NaCl target
         ds_path = "src/tools/linux/dump_syms/dump_syms"
     return os.path.join(os.path.dirname(__file__), ds_path)
