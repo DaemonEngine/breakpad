@@ -2277,6 +2277,9 @@ bool CallFrameInfo::State::ParseOperands(const char* format,
         operands->register_number = reader_->ReadUnsignedLEB128(cursor_, &len);
         if (len > bytes_left) return ReportIncomplete();
         cursor_ += len;
+        if (static_cast<int32_t>(operands->register_number) == Handler::kNaClCFARegister) {
+          operands->register_number = Handler::kCFARegister;
+        }
         break;
 
       case 'o':

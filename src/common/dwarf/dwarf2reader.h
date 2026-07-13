@@ -1235,7 +1235,11 @@ class CallFrameInfo {
 class CallFrameInfo::Handler {
  public:
   // The pseudo-register number for the canonical frame address.
-  enum { kCFARegister = -1 };
+  enum {
+    kCFARegister = -1,
+    kNaClCFARegister = -2,
+  };
+
 
   Handler() { }
   virtual ~Handler() { }
