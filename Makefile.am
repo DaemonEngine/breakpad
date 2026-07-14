@@ -52,8 +52,8 @@ AM_CXXFLAGS += -fPIC
 endif
 
 if WINDOWS_HOST
-# don't have stab.h, don't build stabs support
-AM_CPPFLAGS += -DNO_STABS_SUPPORT
+# Windows doesn't have stab.h
+AM_CPPFLAGS += -I$(top_srcdir)/src/third_party/stab/include
 endif
 
 if MINGW_HOST
@@ -432,6 +432,11 @@ bin_PROGRAMS += \
 	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
 endif
 
+if !DISABLE_TOOLS
+bin_PROGRAMS += \
+	src/tools/linux/dump_syms/dump_syms
+endif
+
 if MINGW_HOST
 # Windows crash support libraries
 noinst_LIBRARIES += \
@@ -786,36 +791,6 @@ src_tools_linux_pid2md_pid2md_SOURCES = \
 src_tools_linux_pid2md_pid2md_LDADD = \
 	src/client/linux/libbreakpad_client.a
 
-src_tools_linux_dump_syms_dump_syms_SOURCES = \
-	src/common/dwarf_cfi_to_module.cc \
-	src/common/dwarf_cu_to_module.cc \
-	src/common/dwarf_line_to_module.cc \
-	src/common/dwarf_range_list_handler.cc \
-	src/common/language.cc \
-	src/common/module.cc \
-	src/common/path_helper.cc \
-	src/common/stabs_reader.cc \
-	src/common/stabs_to_module.cc \
-	src/common/dwarf/bytereader.cc \
-	src/common/dwarf/dwarf2diehandler.cc \
-	src/common/dwarf/dwarf2reader.cc \
-	src/common/dwarf/elf_reader.cc \
-	src/common/linux/crc32.cc \
-	src/common/linux/dump_symbols.cc \
-	src/common/linux/dump_symbols.h \
-	src/common/linux/elf_symbols_to_module.cc \
-	src/common/linux/elf_symbols_to_module.h \
-	src/common/linux/elfutils.cc \
-	src/common/linux/file_id.cc \
-	src/common/linux/linux_libc_support.cc \
-	src/common/linux/memory_mapped_file.cc \
-	src/common/linux/safe_readlink.cc \
-	src/tools/linux/dump_syms/dump_syms.cc
-src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
-	$(RUST_DEMANGLE_CFLAGS)
-src_tools_linux_dump_syms_dump_syms_LDADD = \
-	$(RUST_DEMANGLE_LIBS)
-
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
 	src/common/path_helper.cc \
@@ -1013,6 +988,37 @@ src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_SOURCES = \
 	src/common/pecoff/pecoff_file_id.cc \
 	src/tools/windows/dump_syms_dwarf/dump_syms.cc
 src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_LDADD = \
+	$(SOCKET_LIBS)
+
+src_tools_linux_dump_syms_dump_syms_SOURCES = \
+	src/common/dwarf_cfi_to_module.cc \
+	src/common/dwarf_cu_to_module.cc \
+	src/common/dwarf_line_to_module.cc \
+	src/common/dwarf_range_list_handler.cc \
+	src/common/language.cc \
+	src/common/module.cc \
+	src/common/path_helper.cc \
+	src/common/stabs_reader.cc \
+	src/common/stabs_to_module.cc \
+	src/common/dwarf/bytereader.cc \
+	src/common/dwarf/dwarf2diehandler.cc \
+	src/common/dwarf/dwarf2reader.cc \
+	src/common/dwarf/elf_reader.cc \
+	src/common/linux/crc32.cc \
+	src/common/linux/dump_symbols.cc \
+	src/common/linux/dump_symbols.h \
+	src/common/linux/elf_symbols_to_module.cc \
+	src/common/linux/elf_symbols_to_module.h \
+	src/common/linux/elfutils.cc \
+	src/common/linux/file_id.cc \
+	src/common/linux/linux_libc_support.cc \
+	src/common/linux/memory_mapped_file.cc \
+	src/common/linux/safe_readlink.cc \
+	src/tools/linux/dump_syms/dump_syms.cc
+src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
+	$(RUST_DEMANGLE_CFLAGS)
+src_tools_linux_dump_syms_dump_syms_LDADD = \
+	$(RUST_DEMANGLE_LIBS) \
 	$(SOCKET_LIBS)
 endif
 
