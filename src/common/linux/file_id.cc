@@ -32,9 +32,10 @@
 // See file_id.h for documentation
 //
 
+#include "compat/inet.h"
+
 #include "common/linux/file_id.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <string.h>
 
