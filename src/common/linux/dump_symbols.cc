@@ -32,6 +32,7 @@
 // dump_symbols.cc: implement google_breakpad::WriteSymbolFile:
 // Find all the debugging info in a file and dump it as a Breakpad symbol file.
 
+#include "compat/linux.h"
 #include "compat/elf.h"
 #include "compat/link.h"
 #include "compat/mman.h"

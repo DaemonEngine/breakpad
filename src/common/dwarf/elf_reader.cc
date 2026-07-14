@@ -30,6 +30,7 @@
 #define _GNU_SOURCE  // needed for pread()
 #endif
 
+#include "compat/linux.h"
 #include "compat/elf.h"
 #include "compat/mman.h"
 
