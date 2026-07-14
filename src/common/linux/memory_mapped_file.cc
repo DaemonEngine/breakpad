@@ -31,6 +31,7 @@
 // See memory_mapped_file.h for details.
 
 #include "compat/mman.h"
+#include "compat/syscall.h"
 
 #include "common/linux/memory_mapped_file.h"
 
