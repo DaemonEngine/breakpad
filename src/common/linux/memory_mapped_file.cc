@@ -30,10 +30,11 @@
 // memory_mapped_file.cc: Implement google_breakpad::MemoryMappedFile.
 // See memory_mapped_file.h for details.
 
+#include "compat/mman.h"
+
 #include "common/linux/memory_mapped_file.h"
 
 #include <fcntl.h>
-#include <sys/mman.h>
 #if defined(__ANDROID__)
 #include <sys/stat.h>
 #endif

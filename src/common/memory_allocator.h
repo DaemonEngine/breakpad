@@ -30,10 +30,11 @@
 #ifndef GOOGLE_BREAKPAD_COMMON_MEMORY_ALLOCATOR_H_
 #define GOOGLE_BREAKPAD_COMMON_MEMORY_ALLOCATOR_H_
 
+#include "compat/mman.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
 #include <memory>
 #include <vector>
@@ -42,11 +43,7 @@
 #include <sanitizer/msan_interface.h>
 #endif
 
-#ifdef __APPLE__
-#define sys_mmap mmap
-#define sys_munmap munmap
-#define MAP_ANONYMOUS MAP_ANON
-#else
+#ifndef __APPLE__
 #include "third_party/lss/linux_syscall_support.h"
 #endif
 
