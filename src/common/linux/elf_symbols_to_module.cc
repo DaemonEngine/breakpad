@@ -30,6 +30,7 @@
 
 // Original author: Ted Mielczarek <ted.mielczarek@gmail.com>
 
+#include "compat/linux.h"
 #include "compat/elf.h"
 
 #include "common/linux/elf_symbols_to_module.h"

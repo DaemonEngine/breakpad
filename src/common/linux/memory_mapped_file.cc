@@ -30,6 +30,7 @@
 // memory_mapped_file.cc: Implement google_breakpad::MemoryMappedFile.
 // See memory_mapped_file.h for details.
 
+#include "compat/linux.h"
 #include "compat/mman.h"
 #include "compat/syscall.h"
 

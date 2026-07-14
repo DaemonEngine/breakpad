@@ -30,6 +30,7 @@
 #ifndef GOOGLE_BREAKPAD_COMMON_MEMORY_ALLOCATOR_H_
 #define GOOGLE_BREAKPAD_COMMON_MEMORY_ALLOCATOR_H_
 
+#include "compat/linux.h"
 #include "compat/mman.h"
 #include "compat/syscall.h"
 

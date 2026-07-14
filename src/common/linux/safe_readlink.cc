@@ -30,6 +30,7 @@
 // safe_readlink.cc: Implement google_breakpad::SafeReadLink.
 // See safe_readlink.h for details.
 
+#include "compat/linux.h"
 #include "compat/syscall.h"
 
 #include <stddef.h>
