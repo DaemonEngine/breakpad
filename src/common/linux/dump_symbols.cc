@@ -33,6 +33,7 @@
 // Find all the debugging info in a file and dump it as a Breakpad symbol file.
 
 #include "compat/elf.h"
+#include "compat/mman.h"
 
 #include "common/linux/dump_symbols.h"
 
@@ -45,7 +46,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
