@@ -74,7 +74,7 @@ AC_ARG_ENABLE(m32,
 AC_HEADER_STDC
 AC_SYS_LARGEFILE
 AX_PTHREAD
-AC_CHECK_HEADERS([a.out.h sys/random.h])
+AC_CHECK_HEADERS([a.out.h mach-o/nlist.h sys/random.h])
 AC_CHECK_FUNCS([arc4random getcontext getrandom])
 AM_CONDITIONAL([HAVE_GETCONTEXT], [test "x$ac_cv_func_getcontext" = xyes])
 
@@ -124,6 +124,9 @@ case $host in
   *-*-linux* | *-android* )
     LINUX_HOST=true
     ;;
+  *-apple-* )
+    MACOS_HOST=true
+    ;;
   *-*-cygwin* )
     WINDOWS_HOST=true
     ;;
@@ -134,6 +137,7 @@ case $host in
 esac
 
 AM_CONDITIONAL(LINUX_HOST, test x$LINUX_HOST = xtrue)
+AM_CONDITIONAL(MACOS_HOST, test x$MACOS_HOST = xtrue)
 # WINDOWS_HOST means MINGW or CYGWIN
 AM_CONDITIONAL(WINDOWS_HOST, test x$WINDOWS_HOST = xtrue)
 AM_CONDITIONAL(MINGW_HOST, test x$MINGW_HOST = xtrue)
