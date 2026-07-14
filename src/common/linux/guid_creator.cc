@@ -92,12 +92,12 @@ class GUIDGenerator {
 #endif
 
     // Put in the version according to RFC 4122.
-    guid->data3 &= 0x0fff;
-    guid->data3 |= 0x4000;
+    guid->COMPAT_GUID_DATA3 &= 0x0fff;
+    guid->COMPAT_GUID_DATA3 |= 0x4000;
 
     // Put in the variant according to RFC 4122.
-    guid->data4[0] &= 0x3f;
-    guid->data4[0] |= 0x80;
+    guid->COMPAT_GUID_DATA4[0] &= 0x3f;
+    guid->COMPAT_GUID_DATA4[0] |= 0x80;
 
     return true;
   }
@@ -178,9 +178,9 @@ bool GUIDToString(const GUID *guid, char *buf, int buf_len) {
   // Should allow more space the the max length of GUID.
   assert(buf_len > kGUIDStringLength);
   int num = snprintf(buf, buf_len, kGUIDFormatString,
-                     guid->data1, guid->data2, guid->data3,
-                     GUIDGenerator::BytesToUInt32(&(guid->data4[0])),
-                     GUIDGenerator::BytesToUInt32(&(guid->data4[4])));
+                     guid->COMPAT_GUID_DATA1, guid->COMPAT_GUID_DATA2, guid->COMPAT_GUID_DATA3,
+                     GUIDGenerator::BytesToUInt32(&(guid->COMPAT_GUID_DATA4[0])),
+                     GUIDGenerator::BytesToUInt32(&(guid->COMPAT_GUID_DATA4[4])));
   if (num != kGUIDStringLength)
     return false;
 
