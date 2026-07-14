@@ -30,6 +30,8 @@
 #define _GNU_SOURCE  // needed for pread()
 #endif
 
+#include "compat/elf.h"
+
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
@@ -46,7 +48,6 @@
 // Also need to add configure tests for zlib.
 //#include "zlib.h"
 
-#include "third_party/musl/include/elf.h"
 #include "elf_reader.h"
 #include "common/using_std_string.h"
 

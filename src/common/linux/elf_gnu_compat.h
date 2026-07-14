@@ -36,7 +36,7 @@
 #ifndef COMMON_LINUX_ELF_GNU_COMPAT_H_
 #define COMMON_LINUX_ELF_GNU_COMPAT_H_
 
-#include <elf.h>
+#include "compat/elf.h"
 
 // A note type on GNU systems corresponding to the .note.gnu.build-id section.
 #ifndef NT_GNU_BUILD_ID
