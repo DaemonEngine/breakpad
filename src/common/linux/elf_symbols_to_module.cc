@@ -30,10 +30,11 @@
 
 // Original author: Ted Mielczarek <ted.mielczarek@gmail.com>
 
+#include "compat/elf.h"
+
 #include "common/linux/elf_symbols_to_module.h"
 
 #include <cxxabi.h>
-#include <elf.h>
 #include <string.h>
 
 #include "common/byte_cursor.h"

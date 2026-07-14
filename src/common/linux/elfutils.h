@@ -33,7 +33,8 @@
 #ifndef COMMON_LINUX_ELFUTILS_H_
 #define COMMON_LINUX_ELFUTILS_H_
 
-#include <elf.h>
+#include "compat/elf.h"
+
 #include <link.h>
 #include <stdint.h>
 
