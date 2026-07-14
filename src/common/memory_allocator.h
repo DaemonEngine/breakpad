@@ -31,6 +31,7 @@
 #define GOOGLE_BREAKPAD_COMMON_MEMORY_ALLOCATOR_H_
 
 #include "compat/mman.h"
+#include "compat/syscall.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -41,10 +42,6 @@
 
 #if defined(MEMORY_SANITIZER)
 #include <sanitizer/msan_interface.h>
-#endif
-
-#ifndef __APPLE__
-#include "third_party/lss/linux_syscall_support.h"
 #endif
 
 namespace google_breakpad {
