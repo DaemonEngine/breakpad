@@ -65,7 +65,6 @@
 #include "common/stabs_reader.h"
 #include "common/stabs_to_module.h"
 #endif
-#include "common/using_std_string.h"
 
 // This namespace contains helper functions.
 namespace {
@@ -225,7 +224,7 @@ class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
   // Create a line-to-module converter using BYTE_READER.
   explicit DumperLineToModule(dwarf2reader::ByteReader* byte_reader)
       : byte_reader_(byte_reader) { }
-  void StartCompilationUnit(const string& compilation_dir) {
+  void StartCompilationUnit(const std::string& compilation_dir) {
     compilation_dir_ = compilation_dir;
   }
   void ReadProgram(const uint8_t* program, uint64_t length,
@@ -243,12 +242,12 @@ class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
     parser.Start();
   }
  private:
-  string compilation_dir_;
+  std::string compilation_dir_;
   dwarf2reader::ByteReader* byte_reader_;
 };
 
 template<typename ObjectFileReader>
-bool LoadDwarf(const string& dwarf_filename,
+bool LoadDwarf(const std::string& dwarf_filename,
                const typename ObjectFileReader::ObjectFileBase header,
                const bool big_endian,
                bool handle_inter_cu_refs,
@@ -268,7 +267,7 @@ bool LoadDwarf(const string& dwarf_filename,
   int num_sections = ObjectFileReader::GetNumberOfSections(header);
   for (int i = 0; i < num_sections; ++i) {
     const Shdr section = ObjectFileReader::FindSectionByIndex(header, i);
-    string name = ObjectFileReader::GetSectionName(header, section);
+    std::string name = ObjectFileReader::GetSectionName(header, section);
     const uint8_t* contents = reinterpret_cast<const uint8_t *>(ObjectFileReader::GetSectionPointer(header, section));
     file_context.AddSectionToSectionMap(name, contents,
                                         ObjectFileReader::GetSectionSize(header, section));
@@ -314,7 +313,7 @@ bool LoadDwarf(const string& dwarf_filename,
 // success, or false if HEADER's machine architecture is not
 // supported.
 bool DwarfCFIRegisterNames(const char *architecture,
-                           std::vector<string>* register_names) {
+                           std::vector<std::string>* register_names) {
   if (strcmp(architecture, "x86" ) == 0)
       *register_names = DwarfCFIToModule::RegisterNames::I386();
   else if (strcmp(architecture, "arm" ) == 0)
@@ -330,7 +329,7 @@ bool DwarfCFIRegisterNames(const char *architecture,
 }
 
 template<typename ObjectFileReader>
-bool LoadDwarfCFI(const string& dwarf_filename,
+bool LoadDwarfCFI(const std::string& dwarf_filename,
                   const typename ObjectFileReader::ObjectFileBase header,
                   const char* section_name,
                   const typename ObjectFileReader::Section section,
@@ -342,7 +341,7 @@ bool LoadDwarfCFI(const string& dwarf_filename,
   // Find the appropriate set of register names for this file's
   // architecture.
   const char *architecture = ObjectFileReader::Architecture(header);
-  std::vector<string> register_names;
+  std::vector<std::string> register_names;
   if (!DwarfCFIRegisterNames(architecture, &register_names)) {
     return false;
   }
@@ -382,7 +381,7 @@ bool LoadDwarfCFI(const string& dwarf_filename,
   return true;
 }
 
-bool LoadFile(const string& obj_file, MmapWrapper* map_wrapper,
+bool LoadFile(const std::string& obj_file, MmapWrapper* map_wrapper,
              const void** header) {
   int obj_fd = open(obj_file.c_str(), O_RDONLY);
   if (obj_fd < 0) {
@@ -409,10 +408,10 @@ bool LoadFile(const string& obj_file, MmapWrapper* map_wrapper,
 // Read the .gnu_debuglink and get the debug file name. If anything goes
 // wrong, return an empty string.
 template<typename ObjectFileReader>
-string ReadDebugLink(const char* debuglink,
+std::string ReadDebugLink(const char* debuglink,
                      size_t debuglink_size,
-                     const string& obj_file,
-                     const std::vector<string>& debug_dirs) {
+                     const std::string& obj_file,
+                     const std::vector<std::string>& debug_dirs) {
   size_t debuglink_len = strlen(debuglink) + 5;  // '\0' + CRC32.
   debuglink_len = 4 * ((debuglink_len + 3) / 4);  // Round to nearest 4 bytes.
 
@@ -425,10 +424,10 @@ string ReadDebugLink(const char* debuglink,
 
   bool found = false;
   int debuglink_fd = -1;
-  string debuglink_path;
-  std::vector<string>::const_iterator it;
+  std::string debuglink_path;
+  std::vector<std::string>::const_iterator it;
   for (it = debug_dirs.begin(); it < debug_dirs.end(); ++it) {
-    const string& debug_dir = *it;
+    const std::string& debug_dir = *it;
     debuglink_path = debug_dir + "/" + debuglink;
     debuglink_fd = open(debuglink_path.c_str(), O_RDONLY);
     if (debuglink_fd >= 0) {
@@ -441,7 +440,7 @@ string ReadDebugLink(const char* debuglink,
     fprintf(stderr, "Failed to find debug file for '%s' after trying:\n",
             obj_file.c_str());
     for (it = debug_dirs.begin(); it < debug_dirs.end(); ++it) {
-      const string debug_dir = *it;
+      const std::string debug_dir = *it;
       fprintf(stderr, "  %s/%s\n", debug_dir.c_str(), debuglink);
     }
     return "";
@@ -466,13 +465,13 @@ class LoadSymbolsInfo {
  public:
   typedef typename ObjectFileReader::Addr Addr;
 
-  explicit LoadSymbolsInfo(const std::vector<string>& dbg_dirs) :
+  explicit LoadSymbolsInfo(const std::vector<std::string>& dbg_dirs) :
     debug_dirs_(dbg_dirs),
     has_loading_addr_(false) {}
 
   // Keeps track of which sections have been loaded so sections don't
   // accidentally get loaded twice from two different files.
-  void LoadedSection(const string &section) {
+  void LoadedSection(const std::string &section) {
     if (loaded_sections_.count(section) == 0) {
       loaded_sections_.insert(section);
     } else {
@@ -483,7 +482,7 @@ class LoadSymbolsInfo {
 
   // The file and linked debug file are expected to have the same preferred
   // loading address.
-  void set_loading_addr(Addr addr, const string &filename) {
+  void set_loading_addr(Addr addr, const std::string &filename) {
     if (!has_loading_addr_) {
       loading_addr_ = addr;
       loaded_file_ = filename;
@@ -500,37 +499,37 @@ class LoadSymbolsInfo {
   }
 
   // Setters and getters
-  const std::vector<string>& debug_dirs() const {
+  const std::vector<std::string>& debug_dirs() const {
     return debug_dirs_;
   }
 
-  string debuglink_file() const {
+  std::string debuglink_file() const {
     return debuglink_file_;
   }
-  void set_debuglink_file(string file) {
+  void set_debuglink_file(std::string file) {
     debuglink_file_ = file;
   }
 
  private:
-  const std::vector<string>& debug_dirs_; // Directories in which to
+  const std::vector<std::string>& debug_dirs_; // Directories in which to
                                           // search for the debug file.
 
-  string debuglink_file_;  // Full path to the debug file.
+  std::string debuglink_file_;  // Full path to the debug file.
 
   bool has_loading_addr_;  // Indicate if LOADING_ADDR_ is valid.
 
   Addr loading_addr_;  // Saves the preferred loading address from the
                        // first call to LoadSymbols().
 
-  string loaded_file_;  // Name of the file loaded from the first call to
+  std::string loaded_file_;  // Name of the file loaded from the first call to
                         // LoadSymbols().
 
-  std::set<string> loaded_sections_;  // Tracks the Loaded sections
+  std::set<std::string> loaded_sections_;  // Tracks the Loaded sections
                                       // between calls to LoadSymbols().
 };
 
 template<typename ObjectFileReader>
-bool LoadSymbols(const string& obj_file,
+bool LoadSymbols(const std::string& obj_file,
                  const bool big_endian,
                  const typename ObjectFileReader::ObjectFileBase header,
                  const bool read_gnu_debug_link,
@@ -633,7 +632,7 @@ bool LoadSymbols(const string& obj_file,
         if (!info->debug_dirs().empty()) {
           const char* debuglink_contents = reinterpret_cast<const char *>
               (ObjectFileReader::GetSectionPointer(header, gnu_debuglink_section));
-          string debuglink_file
+          std::string debuglink_file
               = ReadDebugLink<ObjectFileReader>(debuglink_contents,
                                                 ObjectFileReader::GetSectionSize(header, gnu_debuglink_section),
                                                 obj_file, info->debug_dirs());
@@ -669,10 +668,10 @@ bool LoadSymbols(const string& obj_file,
 
 // Return the non-directory portion of FILENAME: the portion after the
 // last slash, or the whole filename if there are no slashes.
-string BaseFileName(const string &filename) {
+std::string BaseFileName(const std::string &filename) {
   // Lots of copies!  basename's behavior is less than ideal.
   char *c_filename = strdup(filename.c_str());
-  string base = basename(c_filename);
+  std::string base = basename(c_filename);
   free(c_filename);
   return base;
 }
@@ -680,14 +679,14 @@ string BaseFileName(const string &filename) {
 template<typename ObjectFileReader>
 bool ReadSymbolDataFromObjectFile(
     const typename ObjectFileReader::ObjectFileBase header,
-    const string& obj_filename,
-    const std::vector<string>& debug_dirs,
+    const std::string& obj_filename,
+    const std::vector<std::string>& debug_dirs,
     const DumpOptions& options,
     Module** out_module) {
 
   *out_module = NULL;
 
-  string identifier = ObjectFileReader::FileIdentifierFromMappedFile(header);
+  std::string identifier = ObjectFileReader::FileIdentifierFromMappedFile(header);
   if (identifier.empty()) {
     fprintf(stderr, "%s: unable to generate file identifier\n",
             obj_filename.c_str());
@@ -704,16 +703,16 @@ bool ReadSymbolDataFromObjectFile(
   if (!ObjectFileReader::Endianness(header, &big_endian))
     return false;
 
-  string name = BaseFileName(obj_filename);
-  string os = "windows";
-  string id = identifier;
+  std::string name = BaseFileName(obj_filename);
+  std::string os = "windows";
+  std::string id = identifier;
 
   LoadSymbolsInfo<ObjectFileReader> info(debug_dirs);
   scoped_ptr<Module> module(new Module(name, os, architecture, id));
   if (!LoadSymbols<ObjectFileReader>(obj_filename, big_endian, header,
                              !debug_dirs.empty(), &info,
                              options, module.get())) {
-    const string debuglink_file = info.debuglink_file();
+    const std::string debuglink_file = info.debuglink_file();
     if (debuglink_file.empty())
       return false;
 

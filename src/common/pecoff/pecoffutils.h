@@ -131,7 +131,7 @@ class PeCoffObjectFileReader {
   // Return the identifier for the file mapped into memory.
   // Return an empty string if the identifier could not be created
   // for the file.
-  static string FileIdentifierFromMappedFile(ObjectFileBase obj_base);
+  static std::string FileIdentifierFromMappedFile(ObjectFileBase obj_base);
 
   //
   // Helpers for PeCoffFileID

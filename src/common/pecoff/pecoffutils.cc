@@ -293,7 +293,7 @@ bool PeCoffObjectFileReader<PeCoffClassTraits>::ExportedSymbolsToModule(
 }
 
 template<class PeCoffClassTraits>
-string
+std::string
 PeCoffObjectFileReader<PeCoffClassTraits>::FileIdentifierFromMappedFile(
     ObjectFileBase obj_file) {
   uint8_t identifier[kMDGUIDSize];
@@ -324,7 +324,7 @@ PeCoffObjectFileReader<PeCoffClassTraits>::FileIdentifierFromMappedFile(
     identifier_str[buffer_idx++] = (lo >= 10) ? 'A' + lo - 10 : '0' + lo;
   }
   identifier_str[buffer_idx] = 0;
-  string id = identifier_str;
+  std::string id = identifier_str;
 
   // Append age
   char age_string[9];

@@ -40,7 +40,6 @@
 #include <vector>
 
 #include "common/symbol_data.h"
-#include "common/using_std_string.h"
 
 namespace google_breakpad {
 
@@ -62,16 +61,16 @@ struct DumpOptions {
 // If OBJ_FILE has been stripped but contains a .gnu_debuglink section,
 // then look for the debug file in DEBUG_DIRS.
 // SYMBOL_DATA allows limiting the type of symbol data written.
-bool WriteSymbolFile(const string &obj_file,
-                     const std::vector<string>& debug_dirs,
+bool WriteSymbolFile(const std::string &obj_file,
+                     const std::vector<std::string>& debug_dirs,
                      const DumpOptions& options,
                      std::ostream &sym_stream);
 
 // As above, but simply return the debugging information in MODULE
 // instead of writing it to a stream. The caller owns the resulting
 // Module object and must delete it when finished.
-bool ReadSymbolData(const string& obj_file,
-                    const std::vector<string>& debug_dirs,
+bool ReadSymbolData(const std::string& obj_file,
+                    const std::vector<std::string>& debug_dirs,
                     const DumpOptions& options,
                     Module** module);
 
