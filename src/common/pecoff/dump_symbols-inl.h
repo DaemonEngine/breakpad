@@ -78,7 +78,6 @@ using google_breakpad::Module;
 #ifndef NO_STABS_SUPPORT
 using google_breakpad::StabsToModule;
 #endif
-using google_breakpad::scoped_ptr;
 
 //
 // FDWrapper
@@ -708,7 +707,7 @@ bool ReadSymbolDataFromObjectFile(
   std::string id = identifier;
 
   LoadSymbolsInfo<ObjectFileReader> info(debug_dirs);
-  scoped_ptr<Module> module(new Module(name, os, architecture, id));
+  std::unique_ptr<Module> module(new Module(name, os, architecture, id));
   if (!LoadSymbols<ObjectFileReader>(obj_filename, big_endian, header,
                              !debug_dirs.empty(), &info,
                              options, module.get())) {

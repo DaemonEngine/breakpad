@@ -272,9 +272,9 @@ bool PeCoffObjectFileReader<PeCoffClassTraits>::ExportedSymbolsToModule(
           (export_rva < (data_directory_export_entry->mVirtualAddress + data_directory_export_entry->mSize)))
         continue;
 
-      Module::Extern* ext = new Module::Extern(export_rva + GetLoadingAddress(obj_base));
+      auto ext = std::make_unique<Module::Extern>(export_rva + GetLoadingAddress(obj_base));
       ext->name = export_name;
-      module->AddExtern(ext);
+      module->AddExtern(std::move(ext));
     }
 
     return true;
