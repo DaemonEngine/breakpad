@@ -40,8 +40,6 @@
 
 #include <memory>
 
-#include "common/scoped_ptr.h"
-
 namespace google_breakpad {
 
 // scoped_array<C> is like std::unique_ptr<C>, except that the caller must allocate
