@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     debug_dirs.push_back(argv[debug_dir_index]);
   }
 
-  SymbolData symbol_data = cfi ? ALL_SYMBOL_DATA : NO_CFI;
+  SymbolData symbol_data = cfi ? ALL_SYMBOL_DATA : NO_DATA;
   google_breakpad::DumpOptions options(symbol_data, handle_inter_cu_refs);
   if (!WriteSymbolFile(binary, debug_dirs, options, std::cout)) {
     fprintf(stderr, "Failed to write symbol file.\n");
