@@ -533,12 +533,14 @@ uint64_t CompilationUnit::Start() {
     return 0;
   }
 
+#ifdef DWPREADER_WANTED
   // If this is a skeleton compilation unit generated with split DWARF,
   // and the client needs the full debug info, we need to find the full
   // compilation unit in a .dwo or .dwp file.
   should_process_split_dwarf_ =
       !is_split_dwarf_ && dwo_name_ != nullptr &&
       handler_->NeedSplitDebugInfo();
+#endif
 
   return ourlength;
 }
@@ -1099,6 +1101,7 @@ inline int GetElfWidth(const ElfReader& elf) {
   return 0;
 }
 
+#ifdef DWPREADER_WANTED
 bool CompilationUnit::ProcessSplitDwarf(std::string& split_file,
                                         SectionMap& sections,
                                         ByteReader& split_byte_reader,
@@ -1186,7 +1189,9 @@ void CompilationUnit::ReadDebugSectionsFromDwo(ElfReader* elf_reader,
              section_size)));
   }
 }
+#endif
 
+#ifdef DWPREADER_WANTED
 DwpReader::DwpReader(const ByteReader& byte_reader, ElfReader* elf_reader)
     : elf_reader_(elf_reader), byte_reader_(byte_reader),
       cu_index_(nullptr), cu_index_size_(0), string_buffer_(nullptr),
@@ -1401,6 +1406,7 @@ uint32_t DwpReader::LookupCUv2(uint64_t dwo_id) {
   }
   return index;
 }
+#endif
 
 LineInfo::LineInfo(const uint8_t* buffer, uint64_t buffer_length,
                    ByteReader* reader, const uint8_t* string_buffer,
