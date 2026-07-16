@@ -158,7 +158,7 @@ class DwarfCUToModule: public RootDIEHandler {
                              const uint8_t* line_string_section,
                              uint64_t line_string_length,
                              Module* module, vector<Module::Line>* lines,
-                             map<uint32_t, Module::File*>* files) = 0;
+                             std::map<uint32_t, Module::File*>* files) = 0;
   };
 
   // The interface DwarfCUToModule uses to report warnings. The member
