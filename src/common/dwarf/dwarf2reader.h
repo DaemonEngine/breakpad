@@ -858,7 +858,7 @@ class CompilationUnit {
   // ElfReader for the dwo/dwo file.
   std::unique_ptr<ElfReader> split_elf_reader_;
 
-#ifdef DWPREADER_WANTED
+#if !defined(DWPREADER_UNWANTED)
   // DWP reader.
   std::unique_ptr<DwpReader> dwp_reader_;
 #endif
