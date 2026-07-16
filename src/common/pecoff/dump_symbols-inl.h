@@ -231,8 +231,9 @@ class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
                    uint64_t string_section_length,
                    const uint8_t* line_string_section,
                    uint64_t line_string_section_length,
-                   Module* module, std::vector<Module::Line>* lines) {
-    DwarfLineToModule handler(module, compilation_dir_, lines);
+                   Module* module, std::vector<Module::Line>* lines,
+                   std::map<uint32_t, Module::File*>* files) {
+    DwarfLineToModule handler(module, compilation_dir_, lines, files);
     google_breakpad::LineInfo parser(program, length, byte_reader_,
                                   string_section, string_section_length,
                                   line_string_section,
