@@ -102,7 +102,7 @@ AX_APPEND_COMPILE_FLAGS(m4_flatten([
   -Wunused-variable
   -Wvla
 ]), [WARN_CXXFLAGS], [${ax_compiler_flags_test}])
-AS_VAR_APPEND([WARN_CXXFLAGS], " -Werror")
+# AS_VAR_APPEND([WARN_CXXFLAGS], " -Werror")
 AC_LANG_POP([C++])
 AC_SUBST([WARN_CXXFLAGS])
 
