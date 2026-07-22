@@ -1310,6 +1310,7 @@ src_processor_microdump_stackwalk_LDADD = \
 	src/processor/disassembler_x86.o \
 	src/processor/dump_context.o \
 	src/processor/dump_object.o \
+	src/processor/fast_source_line_resolver.o \
 	src/processor/logging.o \
 	src/processor/microdump.o \
 	src/processor/microdump_processor.o \
@@ -1349,6 +1350,7 @@ src_processor_minidump_stackwalk_LDADD = \
 	src/processor/exploitability.o \
 	src/processor/exploitability_linux.o \
 	src/processor/exploitability_win.o \
+	src/processor/fast_source_line_resolver.o \
 	src/processor/logging.o \
 	src/processor/minidump.o \
 	src/processor/minidump_processor.o \
