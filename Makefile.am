@@ -60,6 +60,33 @@ if MINGW_HOST
 SOCKET_LIBS = -lws2_32
 AM_CPPFLAGS += -D_POSIX_C_SOURCE
 AM_CPPFLAGS += -D__USE_MINGW_ANSI_STDIO
+
+# From GYP:
+AM_CPPFLAGS += \
+	-DUNICODE \
+	-D_UNICODE
+
+AM_CPPFLAGS += \
+	-D_WIN32_WINNT=0x0600 \
+	-DWINVER=0x0600 \
+	-DWIN32 \
+	-D_WINDOWS \
+	-DWIN32_LEAN_AND_MEAN \
+	-DNOMINMAX
+
+AM_CPPFLAGS += \
+	-D_HAS_EXCEPTIONS=0 \
+	-D_CRT_SECURE_NO_DEPRECATE \
+	-D_CRT_NONSTDC_NO_WARNINGS \
+	-D_CRT_NONSTDC_NO_DEPRECATE
+
+AM_CPPFLAGS += \
+	-D_CRT_RAND_S
+
+# MSVC specific:
+#	-D_SECURE_ATL \
+#	-D_HAS_TR1=0 \
+#	-D_USING_V110_SDK71_
 endif
 
 # Specify include paths for ac macros
@@ -128,7 +155,15 @@ TEST_CFLAGS = \
 	-I$(top_srcdir)/src/testing
 TEST_LIBS = src/testing/libtesting.a
 TEST_DEPS = $(TEST_LIBS)
+if MINGW_HOST
+TEST_CFLAGS += \
+	-D_VARIADIC_MAX=10
+
+# MSVC specific:
+#	-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 endif
+endif
+
 
 ## Libraries
 check_LIBRARIES =
@@ -392,11 +427,124 @@ bin_PROGRAMS += \
 endif
 
 if MINGW_HOST
-# For MinGW, use gyp to generate a Makefile to build Windows client library
-Configuration ?= Debug
-all-local:
-	cd $(top_srcdir)/src ; ./tools/gyp/gyp --no-circular-check --no-parallel --depth=. -f make client/windows/breakpad_client.gyp
-	cd $(top_srcdir)/src ; $(MAKE) CXX="$(CXX)" CXXFLAGS="-DUNICODE -D_UNICODE $(AM_CPPFLAGS) $(CXXFLAGS)" AR="$(AR)" RC="$(WINDRES)" BUILDTYPE="$(Configuration)"
+# Windows crash support libraries
+noinst_LIBRARIES += \
+	src/client/windows/libcommon.a \
+	src/client/windows/handler/libexception_handler.a \
+	src/client/windows/crash_generation/libcrash_generation_client.a \
+	src/client/windows/crash_generation/libcrash_generation_server.a \
+	src/client/windows/sender/libcrash_report_sender.a
+
+src_client_windows_libcommon_a_SOURCES = \
+	src/common/windows/guid_string.cc \
+	src/common/windows/http_upload.cc \
+	src/common/windows/string_utils.cc
+
+src_client_windows_handler_libexception_handler_a_SOURCES = \
+	src/client/windows/handler/exception_handler.cc
+
+src_client_windows_crash_generation_libcrash_generation_client_a_SOURCES = \
+	src/client/windows/crash_generation/crash_generation_client.cc
+
+src_client_windows_crash_generation_libcrash_generation_server_a_SOURCES = \
+	src/client/windows/crash_generation/client_info.cc \
+	src/client/windows/crash_generation/crash_generation_server.cc \
+	src/client/windows/crash_generation/minidump_generator.cc
+
+src_client_windows_sender_libcrash_report_sender_a_SOURCES = \
+	src/client/windows/sender/crash_report_sender.cc
+
+src_client_windows_handler_libexception_handler_a_LIBADD = \
+	src/client/windows/crash_generation/libcrash_generation_client.a \
+	src/client/windows/libcommon.a
+
+src_client_windows_crash_generation_libcrash_generation_client_a_LIBADD = \
+	src/client/windows/libcommon.a
+
+src_client_windows_crash_generation_libcrash_generation_server_a_LIBADD = \
+	src/client/windows/libcommon.a
+
+src_client_windows_sender_libcrash_report_sender_a_LIBADD = \
+	src/client/windows/libcommon.a
+
+# Windows test support libraries
+noinst_LIBRARIES += \
+	src/client/windows/unittests/libprocessor_bits.a
+
+src_client_windows_unittests_libprocessor_bits_a_SOURCES = \
+	src/common/string_conversion.cc \
+	src/processor/basic_code_modules.cc \
+	src/processor/convert_old_arm64_context.cc \
+	src/processor/dump_context.cc \
+	src/processor/dump_object.cc \
+	src/processor/logging.cc \
+	src/processor/minidump.cc \
+	src/processor/pathname_stripper.cc \
+	src/processor/proc_maps_linux.cc
+
+# Windows client test executable
+check_PROGRAMS += \
+	src/client/windows/unittests/client_tests
+
+src_client_windows_unittests_client_tests_SOURCES = \
+	src/client/windows/unittests/exception_handler_test.cc \
+	src/client/windows/unittests/exception_handler_test.h \
+	src/client/windows/unittests/exception_handler_death_test.cc \
+	src/client/windows/unittests/exception_handler_nesting_test.cc \
+	src/client/windows/unittests/minidump_test.cc \
+	src/client/windows/unittests/dump_analysis.cc \
+	src/client/windows/unittests/dump_analysis.h \
+	src/client/windows/unittests/crash_generation_server_test.cc
+
+src_client_windows_unittests_client_tests_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+
+src_client_windows_unittests_client_tests_LDADD = \
+	$(TEST_LIBS) \
+	src/client/windows/unittests/libprocessor_bits.a \
+	src/client/windows/handler/libexception_handler.a \
+	src/client/windows/crash_generation/libcrash_generation_client.a \
+	src/client/windows/crash_generation/libcrash_generation_server.a \
+	src/client/windows/libcommon.a \
+	-ldbghelp \
+	-lversion \
+	-lpthread
+
+src_client_windows_unittests_client_tests_DEPENDENCIES = \
+	$(TEST_DEPS)
+
+# Windows crash generation application
+bin_PROGRAMS += \
+	src/client/windows/tests/crash_generation_app/crash_generation_app
+
+src_client_windows_tests_crash_generation_app_crash_generation_app_SOURCES = \
+	src/client/windows/tests/crash_generation_app/abstract_class.cc \
+	src/client/windows/tests/crash_generation_app/abstract_class.h \
+	src/client/windows/tests/crash_generation_app/crash_generation_app.cc \
+	src/client/windows/tests/crash_generation_app/crash_generation_app.h \
+	src/client/windows/tests/crash_generation_app/resource.h \
+	src/client/windows/tests/crash_generation_app/crash_generation_app.ico \
+	src/client/windows/tests/crash_generation_app/small.ico
+
+src_client_windows_tests_crash_generation_app_crash_generation_app_LDADD = \
+	src/client/windows/handler/libexception_handler.a \
+	src/client/windows/crash_generation/libcrash_generation_client.a \
+	src/client/windows/crash_generation/libcrash_generation_server.a \
+	src/client/windows/libcommon.a \
+	src/client/windows/tests/crash_generation_app/resource.o \
+	$(SOCKET_LIBS) \
+	-luser32
+
+src_client_windows_tests_crash_generation_app_crash_generation_app_LDFLAGS = \
+	-Wl,--subsystem=2 \
+	-municode
+
+src/client/windows/tests/crash_generation_app/resource.o: \
+	src/client/windows/tests/crash_generation_app/resource.rc \
+	src/client/windows/tests/crash_generation_app/resource.h \
+	src/client/windows/tests/crash_generation_app/crash_generation_app.ico \
+	src/client/windows/tests/crash_generation_app/small.ico
+	$(WINDRES) --input-format=rc --output-format=coff $< -o $@
 endif
 
 ## Tests
