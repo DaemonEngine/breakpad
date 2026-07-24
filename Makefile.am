@@ -1568,13 +1568,10 @@ EXTRA_DIST = \
 	src/client/solaris/handler/minidump_test.cc \
 	src/client/solaris/handler/solaris_lwp.cc \
 	src/client/solaris/handler/solaris_lwp.h \
-	src/client/windows/breakpad_client.gyp \
 	src/client/windows/handler/exception_handler.cc \
 	src/client/windows/handler/exception_handler.h \
-	src/client/windows/handler/exception_handler.gyp \
 	src/client/windows/sender/crash_report_sender.cc \
 	src/client/windows/sender/crash_report_sender.h \
-	src/client/windows/sender/crash_report_sender.gyp \
 	src/common/dwarf/dwarf2diehandler.h \
 	src/common/dwarf/dwarf2enums.h \
 	src/common/dwarf/line_state_machine.h \
