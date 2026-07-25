@@ -35,6 +35,7 @@ dnl Sanity check: the argument is just a file that should exist.
 AC_CONFIG_SRCDIR(README.md)
 AC_CONFIG_AUX_DIR(autotools)
 AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
 AM_INIT_AUTOMAKE(subdir-objects tar-ustar 1.11.1)
@@ -135,7 +136,16 @@ case $host in
     ANDROID_HOST=true
     ;;
 esac
+
 AM_CONDITIONAL(ANDROID_HOST, test x$ANDROID_HOST = xtrue)
+
+case $build_os in
+  mingw* | msys* | cygwin*)
+    WINDOWS_BUILD=true
+    ;;
+esac
+
+AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
 
 # Some tools (like mac ones) only support x86 currently.
 case $host_cpu in
