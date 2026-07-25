@@ -49,24 +49,6 @@ class ModuleFactory {
       const string& name) const = 0;
 };
 
-class BasicModuleFactory : public ModuleFactory {
- public:
-  virtual ~BasicModuleFactory() { }
-  virtual BasicSourceLineResolver::Module* CreateModule(
-      const string& name) const {
-    return new BasicSourceLineResolver::Module(name);
-  }
-};
-
-class FastModuleFactory : public ModuleFactory {
- public:
-  virtual ~FastModuleFactory() { }
-  virtual FastSourceLineResolver::Module* CreateModule(
-      const string& name) const {
-    return new FastSourceLineResolver::Module(name);
-  }
-};
-
 }  // namespace google_breakpad
 
 #endif  // PROCESSOR_MODULE_FACTORY_H__
