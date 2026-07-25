@@ -61,6 +61,12 @@ SOCKET_LIBS = -lws2_32
 AM_CPPFLAGS += -D_POSIX_C_SOURCE
 AM_CPPFLAGS += -D__USE_MINGW_ANSI_STDIO
 
+AM_LDFLAGS =
+
+if MINGW_STATIC
+AM_LDFLAGS += -static -static-libstdc++ -static-libgcc
+endif
+
 # From GYP:
 AM_CPPFLAGS += \
 	-DUNICODE \
@@ -536,6 +542,7 @@ src_client_windows_tests_crash_generation_app_crash_generation_app_LDADD = \
 	-luser32
 
 src_client_windows_tests_crash_generation_app_crash_generation_app_LDFLAGS = \
+	$(AM_LDFLAGS) \
 	-Wl,--subsystem=2 \
 	-municode
 
