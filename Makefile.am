@@ -628,6 +628,9 @@ endif
 
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 
+if WINE_HOST
+LOG_DRIVER = $(top_srcdir)/wine/test-driver
+else
 if ANDROID_HOST
 # Since Autotools 1.2, tests are run through a special "test driver" script.
 # Unfortunately, it's not possible anymore to specify an alternative shell to
@@ -642,6 +645,7 @@ else
 LOG_DRIVER = $(top_srcdir)/autotools/test-driver
 endif !TESTS_AS_ROOT
 endif !ANDROID_HOST
+endif !WINE_HOST
 
 src_tools_linux_symupload_minidump_upload_SOURCES = \
 	src/common/linux/http_upload.cc \
