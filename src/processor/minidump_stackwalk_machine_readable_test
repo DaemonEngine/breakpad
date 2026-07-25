@@ -30,8 +30,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 testdata_dir=$srcdir/src/processor/testdata
-./src/processor/minidump_stackwalk -m $testdata_dir/minidump2.dmp \
-                                      $testdata_dir/symbols | \
+${EXE_LAUNCHER:-} \
+./src/processor/minidump_stackwalk${EXE_EXT} \
+  -m $testdata_dir/minidump2.dmp \
+     $testdata_dir/symbols | \
  tr -d '\015' | \
  diff -u $testdata_dir/minidump2.stackwalk.machine_readable.out -
 exit $?
