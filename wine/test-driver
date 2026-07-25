@@ -99,18 +99,101 @@ else
   red= grn= lgn= blu= mgn= std=
 fi
 
-do_exit='rm -f $log_file $trs_file; (exit $st); exit $st'
+query_showcrashdialog ()
+{
+	wine REQ QUERY 'HKCU\Software\Wine\WineDbg' /v ShowCrashDialog 2>/dev/null \
+	| grep ShowCrashDialog \
+	| sed -e 's/.* 0x//'
+}
+
+init_launcher ()
+{
+	# Avoid the annoying pop-up when initializing the Wine prefix.
+	export DISPLAY=
+	export WAYLAND_DISPLAY=
+
+	# The /tmp directory may not be a wine-compatible filesystem.
+	# The tests can run in parallel, so we cannot clean-up a shared wineprefix
+	# after each test run.
+	# Option 1: TESTDRIVER_SHARED_WINEPREFIX=/some/path
+	# Create (if missing) and reuse (and not clean-up) a given shared wineprefix.
+	# Fast option, keeps wine prefix size low on parallel tests,
+	# can workaround /tmp not being wine-compatible.
+	if test -n "${TESTDRIVER_SHARED_WINEPREFIX:-}"; then
+		export WINEPREFIX="$(realpath "${TESTDRIVER_SHARED_WINEPREFIX}")"
+	# Option 2: TESTDRIVER_SHARED_TEMP_WINEPREFIX=true
+	# Create (if missing) and reuse (and not clean-up) a shared wineprefix in /tmp.
+	# Can be a security issue since executables are running from /tmp,
+	# and the directory cannot be randomized.
+	# Fast option, keeps wine prefix size low in /tmp on parallel tests,
+	# requires /tmp being wine-compatible.
+	elif "${TESTDRIVER_SHARED_TEMP_WINEPREFIX:-false}"; then
+		export WINEPREFIX="${TMPDIR:-$(dirname "$(mktemp -u)")}/wine-test-driver-$(whoami)"
+	# Option 3: TESTDRIVER_TEMP_WINEPREFIX=true
+	# Create and clean-up a wine prefix in /tmp for every test,
+	# Can be a security issue since executables are running from /tmp.
+	# Slow option, very high wine prefix size in /tmp on parallel tests,
+	# can saturate /tmp.
+	elif "${TESTDRIVER_TEMP_WINEPREFIX:-false}"; then
+		export WINEPREFIX="$(mktemp -d "${TMPDIR:-$(dirname "$(mktemp -u)")}/wine-test-driver-XXXXXXXX")"
+		export TESTDRIVER_WINEPREFIX_CLEANUP="${TESTDRIVER_WINEPREFIX_CLEANUP:-true}"
+	# Option 4: the default, but very slow:
+	# Creates and clean-up a wine prefix (in the repository) for every test,
+	# the most secure and reliable, but very slow and can leave dirt in repository
+	# on unhandled interruption.
+	# Slow option, very high wine prefix size in repository on parallel tests.
+	else
+		export WINEPREFIX="$(mktemp -d "${PWD}/.wine-test-driver-XXXXXXXX")"
+		export TESTDRIVER_WINEPREFIX_CLEANUP="${TESTDRIVER_WINEPREFIX_CLEANUP:-true}"
+	fi
+
+	# Useless when created by mktemp (already done), needed otherwise.
+	mkdir -p "${WINEPREFIX}" || exit $?
+	chmod 700 "${WINEPREFIX}" || exit $?
+
+	if ! test -f "${WINEPREFIX}/system.reg"; then
+		wineboot --init >/dev/null 2>&1
+		wineboot --wait >/dev/null 2>&1
+		case "$(query_showcrashdialog)" in
+			0);;
+			*)
+			wine REG ADD 'HKCU\Software\Wine\WineDbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f >/dev/null 2>&1;;
+		esac
+	fi
+
+	wineboot --wait >/dev/null 2>&1
+}
+
+cleanup_launcher ()
+{
+	if "${TESTDRIVER_WINEPREFIX_CLEANUP:-false}"; then
+		wineserver --kill >/dev/null 2>&1
+		wineserver --wait >/dev/null 2>&1
+		rm -rf "${WINEPREFIX}"
+	fi
+}
+
+do_exit='cleanup_launcher; rm -f $log_file $trs_file; (exit $st); exit $st'
 trap "st=129; $do_exit" 1
 trap "st=130; $do_exit" 2
 trap "st=141; $do_exit" 13
 trap "st=143; $do_exit" 15
 
+init_launcher
+
 # Test script is run here. We create the file first, then append to it,
 # to ameliorate tests themselves also writing to the log file. Our tests
 # don't, but others can (automake bug#35762).
 : >"$log_file"
-"$@" >>"$log_file" 2>&1
-estatus=$?
+case "${1}" in *.exe)
+wine "$@" >>"$log_file" 2>&1
+estatus=$?;;
+*)
+EXE_LAUNCHER='wine' EXE_EXT='.exe' "$@" >>"$log_file" 2>&1
+estatus=$?;;
+esac
+
+cleanup_launcher
 
 if test $enable_hard_errors = no && test $estatus -eq 99; then
   tweaked_estatus=1
