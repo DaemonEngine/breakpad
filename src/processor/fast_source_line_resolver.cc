@@ -54,6 +54,15 @@ using std::make_pair;
 
 namespace google_breakpad {
 
+class FastModuleFactory : public ModuleFactory {
+ public:
+  virtual ~FastModuleFactory() { }
+  virtual FastSourceLineResolver::Module* CreateModule(
+      const string& name) const {
+    return new FastSourceLineResolver::Module(name);
+  }
+};
+
 FastSourceLineResolver::FastSourceLineResolver()
   : SourceLineResolverBase(new FastModuleFactory) { }
 
