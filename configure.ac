@@ -110,6 +110,14 @@ dnl Test support for O_CLOEXEC
 AX_CHECK_DEFINE([fcntl.h], [O_CLOEXEC], [],
                 [AC_DEFINE([O_CLOEXEC], [0], [Fallback definition for old systems])])
 
+AC_ARG_ENABLE([static-mingw],
+  AS_HELP_STRING([--enable-static-mingw],
+                 [build MinGW binaries with static linking]),
+  [enable_static_mingw=$enableval],
+  [enable_static_mingw=no])
+
+AM_CONDITIONAL([MINGW_STATIC], [test "x$enable_static_mingw" = xyes])
+
 # Only build Linux client libs when compiling for Linux
 case $host in
   *-*-linux* | *-android* )
