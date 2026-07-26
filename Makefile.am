@@ -395,8 +395,10 @@ if MINGW_HOST
 # For MinGW, use gyp to generate a Makefile to build Windows client library
 Configuration ?= Debug
 all-local:
-	cd $(top_srcdir)/src ; ./tools/gyp/gyp --no-circular-check --no-parallel --depth=. -f make client/windows/breakpad_client.gyp
-	cd $(top_srcdir)/src ; $(MAKE) CXX="$(CXX)" CXXFLAGS="-DUNICODE -D_UNICODE $(AM_CPPFLAGS) $(CXXFLAGS)" AR="$(AR)" RC="$(WINDRES)" BUILDTYPE="$(Configuration)"
+	cd $(top_srcdir)/src ; GYP_DEFINES="OS=win" ./tools/gyp/gyp --no-circular-check --no-parallel --depth=. -f make client/windows/breakpad_client.gyp
+	cd $(top_srcdir)/src ; $(MAKE) CXX="$(CXX)" CXXFLAGS="-DUNICODE -D_UNICODE $(AM_CPPFLAGS) $(CXXFLAGS)" LDFLAGS="-static -static-libstdc++ -static-libgcc ${AM_LDFLAGS} ${LDFLAGS}" AR="$(AR)" RC="$(WINDRES)" BUILDTYPE="$(Configuration)"
+	cd $(top_srcdir)/src ; GYP_DEFINES="OS=win" ./tools/gyp/gyp --no-circular-check --no-parallel --depth=. -f make client/windows/unittests/client_tests.gyp
+	cd $(top_srcdir)/src ; $(MAKE) CXX="$(CXX)" CXXFLAGS="-DUNICODE -D_UNICODE $(AM_CPPFLAGS) $(CXXFLAGS)" LDFLAGS="-static -static-libstdc++ -static-libgcc ${AM_LDFLAGS} ${LDFLAGS}" AR="$(AR)" RC="$(WINDRES)" BUILDTYPE="$(Configuration)"
 endif
 
 ## Tests
