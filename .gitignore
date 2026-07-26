@@ -136,3 +136,6 @@ src/out/
 # Ignore Visual Studio artifacts
 src/tools/windows/dump_syms/Debug
 src/client/windows/Debug
+
+# wine/test-driver temporary files
+.wine-test-driver-*
