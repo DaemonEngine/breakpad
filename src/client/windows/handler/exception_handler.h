@@ -151,7 +151,13 @@ class ExceptionHandler {
   enum HandlerType {
     HANDLER_NONE = 0,
     HANDLER_EXCEPTION = 1 << 0,          // SetUnhandledExceptionFilter
+    // MinGW note: implementation is ifdef'd out. It could be enabled, but as of
+    // MinGW 16 the sole function that calls MinGW's handler is wcstok_s, so it
+    // wouldn't be too useful. (It would be more useful to call MSVCRT/UCRT's
+    // _set_invalid_parameter_handler).
     HANDLER_INVALID_PARAMETER = 1 << 1,  // _set_invalid_parameter_handler
+    // MinGW note: _set_purecall_handler is a no-op. Anyway GCC probably doesn't
+    // provide a special hook for this situation.
     HANDLER_PURECALL = 1 << 2,           // _set_purecall_handler
     HANDLER_ALL = HANDLER_EXCEPTION |
                   HANDLER_INVALID_PARAMETER |
