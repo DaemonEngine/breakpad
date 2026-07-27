@@ -235,6 +235,9 @@ TEST_F(ExceptionHandlerDeathTest, OutOfProcGuaranteedTest) {
   EXPECT_TRUE(gDumpCallbackCalled);
 }
 
+// Invalid handler and pure virtual flags are no-op on MinGW
+#ifdef _MSC_VER
+
 TEST_F(ExceptionHandlerDeathTest, InvalidParameterTest) {
   using google_breakpad::ExceptionHandler;
 
@@ -292,6 +295,8 @@ TEST_F(ExceptionHandlerDeathTest, PureVirtualCallTest) {
   // Calls a pure virtual function.
   EXPECT_EXIT(DoCrashPureVirtualCall(), ::testing::ExitedWithCode(0), "");
 }
+
+#endif  // _MSC_VER
 
 wstring find_minidump_in_directory(const wstring& directory) {
   wstring search_path = directory + L"\\*";
