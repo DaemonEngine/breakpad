@@ -64,7 +64,7 @@ class FastModuleFactory : public ModuleFactory {
  public:
   virtual ~FastModuleFactory() { }
   virtual FastSourceLineResolver::Module* CreateModule(
-      const string& name) const {
+      const std::string& name) const {
     return new FastSourceLineResolver::Module(name);
   }
 };

@@ -113,7 +113,7 @@ class BasicModuleFactory : public ModuleFactory {
  public:
   virtual ~BasicModuleFactory() { }
   virtual BasicSourceLineResolver::Module* CreateModule(
-      const string& name) const {
+      const std::string& name) const {
     return new BasicSourceLineResolver::Module(name);
   }
 };
