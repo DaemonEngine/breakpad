@@ -30,7 +30,9 @@
 #include <config.h>  // Must come first
 #endif
 
-#include <paths.h>
+#include "compat/linux.h"
+#include "compat/paths.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

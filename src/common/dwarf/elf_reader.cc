@@ -34,10 +34,13 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+#include "compat/elf.h"
+#include "compat/mman.h"
+
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -51,7 +54,6 @@
 // Also need to add configure tests for zlib.
 //#include "zlib.h"
 
-#include "third_party/musl/include/elf.h"
 #include "elf_reader.h"
 
 // EM_AARCH64 is not defined by elf.h of GRTE v3 on x86.

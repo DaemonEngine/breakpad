@@ -241,6 +241,9 @@ void ExceptionHandlerTest::DoCrashPureVirtualCall() {
   }
 }
 
+// Invalid handler and pure virtual flags are no-op on MinGW
+#ifdef _MSC_VER
+
 // This test validates that the minidump is written correctly.
 TEST_F(ExceptionHandlerTest, InvalidParameterMiniDumpTest) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
@@ -383,6 +386,8 @@ TEST_F(ExceptionHandlerTest, PureVirtualCallMiniDumpTest) {
   EXPECT_FALSE(mini.HasStream(TokenStream));
   EXPECT_FALSE(full.HasStream(TokenStream));
 }
+
+#endif  // _MSC_VER
 
 // Test that writing a minidump produces a valid minidump containing
 // some expected structures.

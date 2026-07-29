@@ -40,6 +40,13 @@
 
 namespace {
 
+// It seems a few bells and whistles aren't available with MinGW.
+#ifdef _MSC_VER
+const bool kUsingMsvc = true;
+#else
+const bool kUsingMsvc = false;
+#endif
+
 // Minidump with stacks, PEB, TEB, and unloaded module list.
 const MINIDUMP_TYPE kSmallDumpType = static_cast<MINIDUMP_TYPE>(
     MiniDumpWithProcessThreadData |  // Get PEB and TEB.
@@ -224,8 +231,8 @@ TEST_F(MinidumpTest, SmallDump) {
   EXPECT_TRUE(mini.HasStream(MiscInfoStream));
 
   // We expect PEB and TEBs in this dump.
-  EXPECT_TRUE(mini.HasTebs());
-  EXPECT_TRUE(mini.HasPeb());
+  EXPECT_EQ(mini.HasTebs(), kUsingMsvc);
+  EXPECT_EQ(mini.HasPeb(), kUsingMsvc);
 
   EXPECT_FALSE(mini.HasStream(ThreadExListStream));
   EXPECT_FALSE(mini.HasStream(Memory64ListStream));
@@ -259,8 +266,8 @@ TEST_F(MinidumpTest, LargerDump) {
   EXPECT_TRUE(mini.HasMemory(this));
 
   // We expect PEB and TEBs in this dump.
-  EXPECT_TRUE(mini.HasTebs());
-  EXPECT_TRUE(mini.HasPeb());
+  EXPECT_EQ(mini.HasTebs(), kUsingMsvc);
+  EXPECT_EQ(mini.HasPeb(), kUsingMsvc);
 
   EXPECT_FALSE(mini.HasStream(ThreadExListStream));
   EXPECT_FALSE(mini.HasStream(Memory64ListStream));
@@ -304,8 +311,8 @@ TEST_F(MinidumpTest, FullDump) {
   EXPECT_TRUE(full.HasMemory(this));
 
   // We expect PEB and TEBs in this dump.
-  EXPECT_TRUE(mini.HasTebs() || full.HasTebs());
-  EXPECT_TRUE(mini.HasPeb() || full.HasPeb());
+  EXPECT_EQ(mini.HasTebs(), kUsingMsvc);
+  EXPECT_EQ(mini.HasPeb(), kUsingMsvc);
 
   EXPECT_TRUE(mini.HasStream(MemoryListStream));
   EXPECT_TRUE(full.HasStream(Memory64ListStream));

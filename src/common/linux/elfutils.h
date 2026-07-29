@@ -32,8 +32,9 @@
 #ifndef COMMON_LINUX_ELFUTILS_H_
 #define COMMON_LINUX_ELFUTILS_H_
 
-#include <elf.h>
-#include <link.h>
+#include "compat/elf.h"
+#include "compat/link.h"
+
 #include <stdint.h>
 
 #include "common/memory_allocator.h"

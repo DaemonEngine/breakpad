@@ -109,6 +109,15 @@ bool TokenizeWithOptionalField(char* line,
 
 }  // namespace
 
+class BasicModuleFactory : public ModuleFactory {
+ public:
+  virtual ~BasicModuleFactory() { }
+  virtual BasicSourceLineResolver::Module* CreateModule(
+      const string& name) const {
+    return new BasicSourceLineResolver::Module(name);
+  }
+};
+
 static const char* kWhitespace = " \r\n";
 static const int kMaxErrorsPrinted = 5;
 static const int kMaxErrorsBeforeBailing = 100;

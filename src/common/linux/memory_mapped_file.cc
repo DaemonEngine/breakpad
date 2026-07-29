@@ -33,10 +33,13 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+#include "compat/mman.h"
+#include "compat/syscall.h"
+
 #include "common/linux/memory_mapped_file.h"
 
 #include <fcntl.h>
-#include <sys/mman.h>
 #if defined(__ANDROID__)
 #include <sys/stat.h>
 #endif

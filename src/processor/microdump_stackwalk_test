@@ -34,8 +34,10 @@ testdata_dir=$srcdir/src/processor/testdata
 set -e  # Bail out with an error if any of the commands below fails.
 for ARCH in $MICRODUMP_SUPPORTED_ARCHS; do
   echo "Testing microdump_stackwalk for arch $ARCH"
-  ./src/processor/microdump_stackwalk $testdata_dir/microdump-${ARCH}.dmp \
-                                      $testdata_dir/symbols/microdump | \
+  ${EXE_LAUNCHER:-} \
+  ./src/processor/microdump_stackwalk${EXE_EXT:-} \
+    $testdata_dir/microdump-${ARCH}.dmp \
+    $testdata_dir/symbols/microdump | \
    tr -d '\015' | \
    diff -u $testdata_dir/microdump.stackwalk-${ARCH}.out -
 done

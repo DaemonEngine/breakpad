@@ -34,11 +34,13 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+#include "compat/elf.h"
+
 #include "common/linux/elf_symbols_to_module.h"
 
 #include <assert.h>
 #include <cxxabi.h>
-#include <elf.h>
 #include <string.h>
 
 #include <memory>

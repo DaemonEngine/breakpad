@@ -33,9 +33,10 @@
 #include <config.h>  // Must come first
 #endif
 
-#include <stddef.h>
+#include "compat/linux.h"
+#include "compat/syscall.h"
 
-#include "third_party/lss/linux_syscall_support.h"
+#include <stddef.h>
 
 namespace google_breakpad {
 

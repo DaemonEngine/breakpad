@@ -35,9 +35,10 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/inet.h"
+
 #include "common/linux/file_id.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <string.h>
 
@@ -80,7 +81,7 @@ static bool ElfClassBuildIDNoteIdentifier(const void* section, size_t length,
     if (note_header->n_type == NT_GNU_BUILD_ID)
       break;
     note_header = reinterpret_cast<const Nhdr*>(
-        reinterpret_cast<const char*>(note_header) + sizeof(Nhdr) +
+                  reinterpret_cast<const char*>(note_header) + sizeof(Nhdr) +
         NotePadding(note_header->n_namesz) +
         NotePadding(note_header->n_descsz));
   }

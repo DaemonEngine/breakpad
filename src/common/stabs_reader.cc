@@ -35,6 +35,8 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+
 #include "common/stabs_reader.h"
 
 #include <assert.h>

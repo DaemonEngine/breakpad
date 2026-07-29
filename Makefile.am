@@ -51,8 +51,13 @@ AM_CXXFLAGS += -fPIC
 endif
 
 if WINDOWS_HOST
-# don't have stab.h, don't build stabs support
-AM_CPPFLAGS += -DNO_STABS_SUPPORT
+# Windows doesn't have stab.h
+AM_CPPFLAGS += -I$(top_srcdir)/src/third_party/stab/include
+endif
+
+if !DISABLE_TOOLS
+bin_PROGRAMS += \
+	src/tools/linux/dump_syms/dump_syms
 endif
 
 if MINGW_HOST
@@ -298,7 +303,6 @@ if LINUX_HOST
 bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
 	src/tools/linux/pid2md/pid2md \
-	src/tools/linux/dump_syms/dump_syms \
 	src/tools/linux/md2core/minidump-2-core
 if X86_HOST
 bin_PROGRAMS += \
@@ -727,6 +731,7 @@ src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 src_tools_linux_dump_syms_dump_syms_LDADD = \
 	$(RUSTC_DEMANGLE_LIBS) \
 	$(ZSTD_CFLAGS) \
+    $(SOCKET_LIBS) \
 	-lz
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \

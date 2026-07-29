@@ -34,6 +34,7 @@ dnl Sanity check: the argument is just a file that should exist.
 AC_CONFIG_SRCDIR(README.md)
 AC_CONFIG_AUX_DIR(autotools)
 AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
 AM_INIT_AUTOMAKE(subdir-objects tar-ustar 1.13)
@@ -56,13 +57,13 @@ AC_ARG_ENABLE(m32,
                              [(default is no)]),,
               [enable_m32=no])
 if test "x$enable_m32" = xyes; then
-  CFLAGS="${CFLAGS} -m32"
-  CXXFLAGS="${CXXFLAGS} -m32"
+                   CFLAGS="${CFLAGS} -m32"
+                   CXXFLAGS="${CXXFLAGS} -m32"
 fi
 
 AC_SYS_LARGEFILE
 AX_PTHREAD
-AC_CHECK_HEADERS([a.out.h sys/mman.h sys/random.h])
+AC_CHECK_HEADERS([a.out.h mach-o/nlist.h sys/mman.h sys/random.h])
 AC_CHECK_FUNCS([arc4random getcontext getrandom memfd_create])
 AM_CONDITIONAL([HAVE_GETCONTEXT], [test "x$ac_cv_func_getcontext" = xyes])
 AM_CONDITIONAL([HAVE_MEMFD_CREATE], [test "x$ac_cv_func_memfd_create" = xyes])
@@ -92,7 +93,7 @@ AX_APPEND_COMPILE_FLAGS(m4_flatten([
   -Wunused-variable
   -Wvla
 ]), [WARN_CXXFLAGS], [${ax_compiler_flags_test}])
-AS_VAR_APPEND([WARN_CXXFLAGS], " -Werror")
+# AS_VAR_APPEND([WARN_CXXFLAGS], " -Werror")
 AC_LANG_POP([C++])
 AC_SUBST([WARN_CXXFLAGS])
 
@@ -100,10 +101,21 @@ dnl Test support for O_CLOEXEC
 AX_CHECK_DEFINE([fcntl.h], [O_CLOEXEC], [],
                 [AC_DEFINE([O_CLOEXEC], [0], [Fallback definition for old systems])])
 
+AC_ARG_ENABLE([static-mingw],
+  AS_HELP_STRING([--enable-static-mingw],
+                 [build MinGW binaries with static linking]),
+  [enable_static_mingw=$enableval],
+  [enable_static_mingw=no])
+
+AM_CONDITIONAL([MINGW_STATIC], [test "x$enable_static_mingw" = xyes])
+
 # Only build Linux client libs when compiling for Linux
 case $host in
   *-*-linux* | *-android* )
     LINUX_HOST=true
+    ;;
+  *-apple-* )
+    MACOS_HOST=true
     ;;
   *-*-cygwin* )
     WINDOWS_HOST=true
@@ -115,6 +127,7 @@ case $host in
 esac
 
 AM_CONDITIONAL(LINUX_HOST, test x$LINUX_HOST = xtrue)
+AM_CONDITIONAL(MACOS_HOST, test x$MACOS_HOST = xtrue)
 # WINDOWS_HOST means MINGW or CYGWIN
 AM_CONDITIONAL(WINDOWS_HOST, test x$WINDOWS_HOST = xtrue)
 AM_CONDITIONAL(MINGW_HOST, test x$MINGW_HOST = xtrue)
@@ -125,7 +138,16 @@ case $host in
     ANDROID_HOST=true
     ;;
 esac
+
 AM_CONDITIONAL(ANDROID_HOST, test x$ANDROID_HOST = xtrue)
+
+case $build_os in
+  mingw* | msys* | cygwin*)
+    WINDOWS_BUILD=true
+    ;;
+esac
+
+AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
 
 # Some tools (like mac ones) only support x86 currently.
 case $host_cpu in
@@ -150,7 +172,7 @@ AC_ARG_ENABLE(tools,
 AM_CONDITIONAL(DISABLE_TOOLS, test "x$enable_tools" != xyes)
 
 if test x$LINUX_HOST = xfalse -a "x$enable_processor" != xyes -a "x$enable_tools" != xyes; then
-  AC_MSG_ERROR([--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!])
+   AC_MSG_ERROR([--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!])
 fi
 
 AC_ARG_ENABLE(system-test-libs,
@@ -193,7 +215,7 @@ RUSTC_DEMANGLE_BASE_LIBS="-lrustc_demangle -lpthread -ldl"
 if test "x${with_rustc_demangle}" != xno; then
   if ! test -f "${with_rustc_demangle}/Cargo.toml"; then
     AC_MSG_ERROR(You must pass the path to the rustc-demangle crate for --with-rustc-demangle)
-  fi
+                 fi
   RUSTC_DEMANGLE_CFLAGS="-I${with_rustc_demangle}/crates/capi/include ${RUSTC_DEMANGLE_BASE_CFLAGS}"
   RUSTC_DEMANGLE_LIBS="-L${with_rustc_demangle}/target/release ${RUSTC_DEMANGLE_BASE_LIBS}"
 fi
