@@ -55,11 +55,6 @@ if WINDOWS_HOST
 AM_CPPFLAGS += -I$(top_srcdir)/src/third_party/stab/include
 endif
 
-if !DISABLE_TOOLS
-bin_PROGRAMS += \
-	src/tools/linux/dump_syms/dump_syms
-endif
-
 if MINGW_HOST
 SOCKET_LIBS = -lws2_32
 AM_CPPFLAGS += -D_POSIX_C_SOURCE
@@ -289,6 +284,9 @@ endif LINUX_HOST
 # This includes symbol dumpers and uploaders
 #
 if !DISABLE_TOOLS
+
+bin_PROGRAMS += \
+	src/tools/linux/dump_syms/dump_syms
 
 check_PROGRAMS += \
 	src/common/dumper_unittest
