@@ -807,8 +807,6 @@ src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_SOURCES = \
 	src/common/pecoff/pecoffutils.cc \
 	src/common/pecoff/pecoff_file_id.cc \
 	src/tools/windows/dump_syms_dwarf/dump_syms.cc
-src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_CXXFLAGS = \
-	-DDWPREADER_UNWANTED
 src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_LDADD = \
 	$(SOCKET_LIBS)
 
