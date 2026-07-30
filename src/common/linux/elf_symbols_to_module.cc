@@ -162,12 +162,19 @@ bool ELFSymbolsToModule(const uint8_t* symtab_section,
       ext->name = SymbolString(iterator->name_offset, strings);
 #if !defined(__ANDROID__)  // Android NDK doesn't provide abi::__cxa_demangle.
       int status = 0;
-      char* demangled =
-          abi::__cxa_demangle(ext->name.c_str(), NULL, NULL, &status);
-      if (demangled) {
-        if (status == 0)
-          ext->name = demangled;
-        free(demangled);
+#if defined(__FreeBSD__)
+      // Skip demangling NaCl local names encoded as _ZZ* because
+      // FreeBSD's libcxxrt demangler may crash on them.
+      if (ext->name.compare(0, 2, "_ZZ") == 0)
+#endif
+      {
+        char* demangled =
+            abi::__cxa_demangle(ext->name.c_str(), NULL, NULL, &status);
+        if (demangled) {
+          if (status == 0)
+            ext->name = demangled;
+          free(demangled);
+        }
       }
 #endif
       module->AddExtern(ext);

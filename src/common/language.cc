@@ -79,6 +79,14 @@ class CPPLanguage: public Language {
     demangled->clear();
     return kDontDemangle;
 #else
+#if defined(__FreeBSD__)
+    // Skip demangling NaCl local names encoded as _ZZ* because
+    // FreeBSD's libcxxrt demangler may crash on them.
+    if (mangled.compare(0, 3, "_ZZ") == 0) {
+      demangled->clear();
+      return kDontDemangle;
+    }
+#endif
     // Attempting to demangle non-C++ symbols with the C++ demangler would print
     // warnings and fail, so return kDontDemangle for these.
     if (!IsMangledName(mangled)) {
