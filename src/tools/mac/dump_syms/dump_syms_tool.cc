@@ -140,8 +140,8 @@ static bool SetArchitecture(DumpSymbols& dump_symbols,
 
 static bool Start(const Options& options) {
   SymbolData symbol_data =
-      (options.handle_inlines ? INLINES : NO_DATA) |
-      (options.cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
+      (options.handle_inlines ? INLINES : NO_SYMBOL_DATA) |
+      (options.cfi ? CFI : NO_SYMBOL_DATA) | SYMBOLS_AND_FILES;
   DumpSymbols dump_symbols(symbol_data, options.handle_inter_cu_refs,
                            options.enable_multiple, options.module_name,
                            options.prefer_extern_name);

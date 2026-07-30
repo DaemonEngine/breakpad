@@ -156,8 +156,8 @@ int main(int argc, char** argv) {
       return 1;
     }
   } else {
-    SymbolData symbol_data = (handle_inlines ? INLINES : NO_DATA) |
-                             (cfi ? CFI : NO_DATA) | SYMBOLS_AND_FILES;
+    SymbolData symbol_data = (handle_inlines ? INLINES : NO_SYMBOL_DATA) |
+                             (cfi ? CFI : NO_SYMBOL_DATA) | SYMBOLS_AND_FILES;
     google_breakpad::DumpOptions options(symbol_data, handle_inter_cu_refs,
                                          enable_multiple_field, preserve_load_address);
     if (!WriteSymbolFile(binary, obj_name, obj_os, module_id, debug_dirs, options,
