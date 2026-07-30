@@ -35,7 +35,7 @@
 
 // Control what data is used from the symbol file.
 enum SymbolData {
-  NO_DATA = 0,
+  NO_SYMBOL_DATA = 0,
   SYMBOLS_AND_FILES = 1,
   CFI = 1 << 1,
   INLINES = 1 << 2,
