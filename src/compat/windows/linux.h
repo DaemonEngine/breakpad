@@ -21,6 +21,10 @@
 #define NAME_MAX 255
 #endif
 
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 0
+#endif
+
 typedef int64_t breakpad_off_t;
 
 static inline int getpagesize(void) {
