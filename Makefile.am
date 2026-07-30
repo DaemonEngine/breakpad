@@ -332,14 +332,6 @@ bin_PROGRAMS += \
 	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
 endif
 
-if MINGW_HOST
-# For MinGW, use gyp to generate a Makefile to build Windows client library
-Configuration ?= Debug
-all-local:
-	cd $(top_srcdir)/src ; ./tools/gyp/gyp --no-circular-check --no-parallel --depth=. -f make client/windows/breakpad_client.gyp
-	cd $(top_srcdir)/src ; $(MAKE) CXX="$(CXX)" CXXFLAGS="-DUNICODE -D_UNICODE $(AM_CPPFLAGS) $(CXXFLAGS)" AR="$(AR)" RC="$(WINDRES)" BUILDTYPE="$(Configuration)"
-endif
-
 ## Target definitions
 
 # All targets that were defined above should now be
