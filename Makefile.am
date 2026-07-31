@@ -42,6 +42,10 @@ AM_CXXFLAGS += -I$(top_srcdir)/src/common/android/include
 AM_CXXFLAGS += -I$(top_srcdir)/src/common/android/testing/include
 endif
 
+if WINDOWS_HOST
+# Windows doesn't have stab.h
+AM_CPPFLAGS += -I$(top_srcdir)/src/third_party/stab/include
+endif
 AM_CXXFLAGS += $(WARN_CXXFLAGS)
 
 if LINUX_HOST
@@ -50,10 +54,6 @@ AM_CFLAGS += -fPIC
 AM_CXXFLAGS += -fPIC
 endif
 
-if WINDOWS_HOST
-# Windows doesn't have stab.h
-AM_CPPFLAGS += -I$(top_srcdir)/src/third_party/stab/include
-endif
 
 if MINGW_HOST
 SOCKET_LIBS = -lws2_32
