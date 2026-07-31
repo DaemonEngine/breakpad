@@ -79,6 +79,10 @@ bool Language::IsMangledName(const std::string& name) {
   // Non-C++ symbols are not coded that way, but may have leading underscores.
   size_t i = name.find_first_not_of('_');
   return i > 0 && i != std::string::npos && i <= 4 && name[i] == 'Z';
+#elif defined(__FreeBSD__)
+  // Skip demangling NaCl local names with the _ZZ prefix because
+  // FreeBSD's libcxxrt demangler may crash on them.
+  return name.compare(0, 2, "_Z") == 0 && name.compare(0, 3, "_ZZ") != 0;
 #else
   // Linux C++ symbols always start with "_Z".
   return name.size() > 2 && name[0] == '_' && name[1] == 'Z';
