@@ -129,7 +129,9 @@ TEST_LIBS = src/testing/libtesting.a
 TEST_DEPS = $(TEST_LIBS)
 endif
 
-
+if WINE_HOST
+LOG_DRIVER = $(top_srcdir)/wine/test-driver
+else
 ## Setup test driver
 if ANDROID_HOST
 # Since Autotools 1.2, tests are run through a special "test driver" script.
@@ -144,6 +146,7 @@ else
 LOG_DRIVER = $(top_srcdir)/autotools/test-driver
 endif !TESTS_AS_ROOT
 endif !ANDROID_HOST
+endif !WINE_HOST
 
 ## Libraries
 check_LIBRARIES =
