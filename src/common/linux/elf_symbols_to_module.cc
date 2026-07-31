@@ -48,6 +48,7 @@
 
 #include "common/byte_cursor.h"
 #include "common/module.h"
+#include "common/language.h"
 
 namespace google_breakpad {
 
@@ -169,13 +170,15 @@ bool ELFSymbolsToModule(const uint8_t* symtab_section,
       auto ext = std::make_unique<Module::Extern>(iterator->value);
       ext->name = SymbolString(iterator->name_offset, strings);
 #if !defined(__ANDROID__)  // Android NDK doesn't provide abi::__cxa_demangle.
-      int status = 0;
-      char* demangled =
-          abi::__cxa_demangle(ext->name.c_str(), nullptr, nullptr, &status);
-      if (demangled) {
-        if (status == 0)
-          ext->name = demangled;
-        free(demangled);
+      if (Language::IsMangledName(ext->name)) {
+        int status = 0;
+        char* demangled =
+            abi::__cxa_demangle(ext->name.c_str(), nullptr, nullptr, &status);
+        if (demangled) {
+          if (status == 0)
+            ext->name = demangled;
+          free(demangled);
+        }
       }
 #endif
       module->AddExtern(std::move(ext));
