@@ -71,6 +71,20 @@ bool IsObjectiveCMethod(const std::string& name) {
 
 namespace google_breakpad {
 
+bool Language::IsMangledName(const std::string& name) {
+  // NOTE: For proper cross-compilation support, this should depend on target
+  // binary's platform, not current build platform.
+#if defined(__APPLE__)
+  // Mac C++ symbols can have up to 4 underscores, followed by a "Z".
+  // Non-C++ symbols are not coded that way, but may have leading underscores.
+  size_t i = name.find_first_not_of('_');
+  return i > 0 && i != std::string::npos && i <= 4 && name[i] == 'Z';
+#else
+  // Linux C++ symbols always start with "_Z".
+  return name.size() > 2 && name[0] == '_' && name[1] == 'Z';
+#endif
+}
+
 // C++ language-specific operations.
 class CPPLanguage: public Language {
  public:
@@ -90,7 +104,7 @@ class CPPLanguage: public Language {
 #else
     // Attempting to demangle non-C++ symbols with the C++ demangler would print
     // warnings and fail, so return kDontDemangle for these.
-    if (!IsMangledName(mangled)) {
+    if (!Language::IsMangledName(mangled)) {
       demangled->clear();
       return kDontDemangle;
     }
@@ -113,21 +127,6 @@ class CPPLanguage: public Language {
     }
 
     return result;
-#endif
-  }
-
- private:
-  static bool IsMangledName(const std::string& name) {
-    // NOTE: For proper cross-compilation support, this should depend on target
-    // binary's platform, not current build platform.
-#if defined(__APPLE__)
-    // Mac C++ symbols can have up to 4 underscores, followed by a "Z".
-    // Non-C++ symbols are not coded that way, but may have leading underscores.
-    size_t i = name.find_first_not_of('_');
-    return i > 0 && i != std::string::npos && i <= 4 && name[i] == 'Z';
-#else
-    // Linux C++ symbols always start with "_Z".
-    return name.size() > 2 && name[0] == '_' && name[1] == 'Z';
 #endif
   }
 };

@@ -89,6 +89,8 @@ class Language {
     return kDontDemangle;
   }
 
+  static bool IsMangledName(const std::string& name);
+
   // Instances for specific languages.
   static const Language * const CPlusPlus,
                         * const Java,
