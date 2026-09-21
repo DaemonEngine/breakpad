@@ -249,14 +249,23 @@ struct DwarfCUToModule::CUContext {
     info->buffer_ = map_entry->second.first;
     info->size_ = map_entry->second.second;
     if (version > 4) {
+      // .debug_addr is optional: DWARF 5 range lists reference it only through
+      // address-index entries (DW_RLE_base_addressx, DW_RLE_startx_*).
+      // Compilers such as GCC emit plain addresses and DW_RLE_offset_pair and
+      // omit the section, which must not discard the ranges of every function
+      // using DW_AT_ranges.  Entries that do need the table resolve to 0; see
+      // RangeListReader::GetAddressAtIndex.
       SectionMap::const_iterator map_entry
           = GetSectionByName(section_map, ".debug_addr");
-      if (map_entry == section_map.end()) {
-        return false;
+      if (map_entry != section_map.end()) {
+        info->addr_buffer_ = map_entry->second.first;
+        info->addr_buffer_size_ = map_entry->second.second;
+        info->addr_base_ = addr_base;
+      } else {
+        info->addr_buffer_ = nullptr;
+        info->addr_buffer_size_ = 0;
+        info->addr_base_ = 0;
       }
-      info->addr_buffer_ = map_entry->second.first;
-      info->addr_buffer_size_ = map_entry->second.second;
-      info->addr_base_ = addr_base;
     }
     return true;
   }

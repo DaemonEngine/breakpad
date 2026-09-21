@@ -42,6 +42,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <list>
 #include <map>
@@ -299,12 +300,37 @@ class RangeListReader {
     return reader_->AddressSize();
   }
 
+  // Report, once, that the address table is missing or an address index is out
+  // of range; the affected range entries are then resolved to 0.  The message
+  // is printed only once to avoid flooding stderr for large binaries.
+  static void ReportAddressTableUnavailable() {
+    static bool reported = false;
+    if (!reported) {
+      reported = true;
+      fprintf(stderr,
+              "dump_syms: warning: .debug_addr is missing or an address index "
+              "is out of range; address-index range entries resolve to 0\n");
+    }
+  }
+
   // Read the address at this CU's addr_index in the .debug_addr section.
+  //
+  // .debug_addr is optional: for DWARF 5, compilers only emit it when
+  // address-index forms (DW_FORM_addrx*, DW_RLE_base_addressx,
+  // DW_RLE_startx_*) are actually used.  GCC uses plain addresses and
+  // DW_RLE_offset_pair instead and therefore omits the section, so resolve
+  // such entries to 0 rather than asserting.
   uint64_t GetAddressAtIndex(uint64_t addr_index) {
-    assert(cu_info_->addr_buffer_ != nullptr);
+    if (cu_info_->addr_buffer_ == nullptr) {
+      ReportAddressTableUnavailable();
+      return 0;
+    }
     uint64_t offset =
         cu_info_->addr_base_ + addr_index * reader_->AddressSize();
-    assert(offset < cu_info_->addr_buffer_size_);
+    if (offset >= cu_info_->addr_buffer_size_) {
+      ReportAddressTableUnavailable();
+      return 0;
+    }
     return reader_->ReadAddress(cu_info_->addr_buffer_ + offset);
   }
 
@@ -741,14 +767,27 @@ class CompilationUnit {
 
   // Called to handle common portions of DW_FORM_addrx and variations, as well
   // as DW_FORM_GNU_addr_index.
+  //
+  // The .debug_addr section is optional (see
+  // RangeListReader::GetAddressAtIndex) and addr_index can be out of range for
+  // malformed input, so degrade to 0 instead of doing null pointer arithmetic
+  // or reading outside the section.
   void ProcessAttributeAddrIndex(uint64_t offset,
                                  enum DwarfAttribute attr,
                                  enum DwarfForm form,
                                  uint64_t addr_index) {
-    const uint8_t* addr_ptr =
-        addr_buffer_ + addr_base_ + addr_index * reader_->AddressSize();
+    if (addr_buffer_ == nullptr) {
+      ProcessAttributeUnsigned(offset, attr, form, 0);
+      return;
+    }
+    const uint64_t addr_offset =
+        addr_base_ + addr_index * reader_->AddressSize();
+    if (addr_offset >= addr_buffer_length_) {
+      ProcessAttributeUnsigned(offset, attr, form, 0);
+      return;
+    }
     ProcessAttributeUnsigned(
-        offset, attr, form, reader_->ReadAddress(addr_ptr));
+        offset, attr, form, reader_->ReadAddress(addr_buffer_ + addr_offset));
   }
 
   // Processes all DIEs for this compilation unit
