@@ -1,8 +1,11 @@
 #ifndef SRC_COMPAT_LINUX_H_
 #define SRC_COMPAT_LINUX_H_
 
-#ifndef _SSIZE_T_DEFINED
+// Include <stdint.h> before testing the guard: recent MinGW-w64 CRT headers
+// define ssize_t and set _SSIZE_T_DEFINED from <stdint.h>, so the typedef
+// below must not be applied in that case.
 #include <stdint.h>
+#ifndef _SSIZE_T_DEFINED
 #if defined(_WIN32)
 typedef __int64 ssize_t;
 #elif defined(__APPLE__)
