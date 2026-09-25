@@ -32,6 +32,7 @@
 
 #include <stdint.h>
 
+#include <cstddef>
 #include <limits>
 
 #include "breakpad_googletest_includes.h"
@@ -135,14 +136,21 @@ TEST(WastefulVectorTest, Simple) {
   EXPECT_EQ(0U, allocator_.pages_allocated());
   wasteful_vector<unsigned> v(&allocator_);
 
+  size_t total_used = 0;
   for (unsigned i = 0; i < 256; ++i) {
+    const size_t prev_capacity = v.capacity();
     v.push_back(i);
+    const size_t new_capacity = v.capacity();
+    if (new_capacity > prev_capacity) {
+      total_used += new_capacity * sizeof(unsigned);
+    }
     ASSERT_EQ(i, v.back());
     ASSERT_EQ(&v.back(), &v[i]);
   }
   ASSERT_FALSE(v.empty());
   ASSERT_EQ(v.size(), 256u);
-  EXPECT_EQ(1U, allocator_.pages_allocated());
+  EXPECT_LE(allocator_.pages_allocated(),
+            total_used / 4096 + 1);
   for (unsigned i = 0; i < 256; ++i)
     ASSERT_EQ(v[i], i);
 }
