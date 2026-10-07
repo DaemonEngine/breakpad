@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -28,6 +27,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // minidump_generator_test.cc: Unit tests for google_breakpad::MinidumpGenerator
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <AvailabilityMacros.h>
 #ifndef MAC_OS_X_VERSION_10_6
@@ -84,19 +87,19 @@ static void* Junk(void* data) {
   while (!*wait) {
     usleep(10000);
   }
-  return NULL;
+  return nullptr;
 }
 
 TEST_F(MinidumpGeneratorTest, InProcess) {
   MinidumpGenerator generator;
   string dump_filename =
-      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), NULL);
+      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), nullptr);
 
   // Run an extra thread since MinidumpGenerator assumes there
   // are 2 or more threads.
   pthread_t junk_thread;
   bool quit = false;
-  ASSERT_EQ(0, pthread_create(&junk_thread, NULL, Junk, &quit));
+  ASSERT_EQ(0, pthread_create(&junk_thread, nullptr, Junk, &quit));
 
   ASSERT_TRUE(generator.Write(dump_filename.c_str()));
   // Ensure that minidump file exists and is > 0 bytes.
@@ -106,7 +109,7 @@ TEST_F(MinidumpGeneratorTest, InProcess) {
 
   // join the background thread
   quit = true;
-  pthread_join(junk_thread, NULL);
+  pthread_join(junk_thread, nullptr);
 
   // Read the minidump, sanity check some data.
   Minidump minidump(dump_filename.c_str());
@@ -181,7 +184,7 @@ TEST_F(MinidumpGeneratorTest, OutOfProcess) {
   // Write a minidump of the child process.
   MinidumpGenerator generator(child_task, MACH_PORT_NULL);
   string dump_filename =
-      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), NULL);
+      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), nullptr);
   ASSERT_TRUE(generator.Write(dump_filename.c_str()));
 
   // Ensure that minidump file exists and is > 0 bytes.
@@ -245,7 +248,7 @@ TEST_F(MinidumpGeneratorTest, CrossArchitectureDump) {
   const char* argv[] = {
     helper_path.c_str(),
     machPortName,
-    NULL
+    nullptr
   };
   pid_t pid = spawn_child_process(argv);
   ASSERT_NE(-1, pid);
@@ -260,7 +263,7 @@ TEST_F(MinidumpGeneratorTest, CrossArchitectureDump) {
   // Write a minidump of the child process.
   MinidumpGenerator generator(child_task, MACH_PORT_NULL);
   string dump_filename =
-      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), NULL);
+      MinidumpGenerator::UniqueNameInDirectory(tempDir.path(), nullptr);
   ASSERT_TRUE(generator.Write(dump_filename.c_str()));
 
   // Ensure that minidump file exists and is > 0 bytes.

@@ -1,5 +1,4 @@
-// Copyright (c) 2020, Google Inc.
-// All rights reserved.
+// Copyright 2020 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,15 +28,21 @@
 
 // pid2md.cc: An utility to generate a minidump from a running process
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "client/linux/minidump_writer/minidump_writer.h"
+#include "common/path_helper.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
-    fprintf(stderr, "Usage: %s <process id> <minidump file>\n\n", argv[0]);
+    fprintf(stderr, "Usage: %s <process id> <minidump file>\n\n",
+            google_breakpad::BaseName(argv[0]).c_str());
     fprintf(stderr,
             "A tool to generate a minidump from a running process. The process "
             "resumes its\nactivity once the operation is completed. Permission "

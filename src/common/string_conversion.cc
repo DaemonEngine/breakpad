@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,12 +26,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <string.h>
 
 #include "common/convert_UTF.h"
 #include "common/scoped_ptr.h"
 #include "common/string_conversion.h"
-#include "common/using_std_string.h"
 
 namespace google_breakpad {
 
@@ -118,7 +120,7 @@ static inline uint16_t Swap(uint16_t value) {
   return (value >> 8) | static_cast<uint16_t>(value << 8);
 }
 
-string UTF16ToUTF8(const vector<uint16_t>& in, bool swap) {
+std::string UTF16ToUTF8(const vector<uint16_t>& in, bool swap) {
   const UTF16* source_ptr = &in[0];
   scoped_array<uint16_t> source_buffer;
 

@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -34,8 +33,6 @@
 #define GOOGLE_BREAKPAD_PROCESSOR_SYMBOL_SUPPLIER_H__
 
 #include <string>
-#include "common/using_std_string.h"
-
 namespace google_breakpad {
 
 class CodeModule;
@@ -65,7 +62,7 @@ class SymbolSupplier {
   // must be a pointer to a valid string
   virtual SymbolResult GetSymbolFile(const CodeModule* module,
                                      const SystemInfo* system_info,
-                                     string* symbol_file) = 0;
+                                     std::string* symbol_file) = 0;
   // Same as above, except also places symbol data into symbol_data.
   // If symbol_data is NULL, the data is not returned.
   // TODO(nealsid) Once we have symbol data caching behavior implemented
@@ -73,8 +70,8 @@ class SymbolSupplier {
   // and make this pure virtual
   virtual SymbolResult GetSymbolFile(const CodeModule* module,
                                      const SystemInfo* system_info,
-                                     string* symbol_file,
-                                     string* symbol_data) = 0;
+                                     std::string* symbol_file,
+                                     std::string* symbol_data) = 0;
 
   // Same as above, except allocates data buffer on heap and then places the
   // symbol data into the buffer as C-string.
@@ -86,7 +83,7 @@ class SymbolSupplier {
   // allocation failure.
   virtual SymbolResult GetCStringSymbolData(const CodeModule* module,
                                             const SystemInfo* system_info,
-                                            string* symbol_file,
+                                            std::string* symbol_file,
                                             char** symbol_data,
                                             size_t* symbol_data_size) = 0;
 

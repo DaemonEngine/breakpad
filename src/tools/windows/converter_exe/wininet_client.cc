@@ -1,4 +1,4 @@
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2019 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -25,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "tools/windows/converter_exe/wininet_client.h"
 
@@ -141,8 +145,8 @@ bool WinInetClient::Connect(HttpHandle session_handle,
                                          ToHINTERNET(session_handle),
                                          server,
                                          static_cast<INTERNET_PORT>(port),
-                                         NULL,
-                                         NULL,
+                                         nullptr,
+                                         nullptr,
                                          INTERNET_SERVICE_HTTP,
                                          0,
                                          0));
@@ -166,9 +170,9 @@ bool WinInetClient::OpenRequest(HttpHandle connection_handle,
                                       uri,
                                       version,
                                       referrer,
-                                      NULL,
+                                      nullptr,
                                       is_secure ? INTERNET_FLAG_SECURE : 0,
-                                      NULL));
+                                      0));
   return !!(*request_handle);
 }
 
@@ -180,7 +184,7 @@ bool WinInetClient::SendRequest(HttpHandle request_handle,
   return !!::HttpSendRequest(ToHINTERNET(request_handle),
                              headers,
                              headers_length,
-                             NULL,
+                             nullptr,
                              0);
 }
 
@@ -202,7 +206,7 @@ bool WinInetClient::GetHttpStatusCode(HttpHandle request_handle,
     return false;
   }
 
-  *status_code = _tcstol(http_status_string, NULL, 10);
+  *status_code = _tcstol(http_status_string, nullptr, 10);
   return true;
 }
 
@@ -220,7 +224,7 @@ bool WinInetClient::GetContentLength(HttpHandle request_handle,
                        0)) {
     *content_length = kUnknownContentLength;
   } else {
-    *content_length = wcstol(content_length_string, NULL, 10);
+    *content_length = wcstol(content_length_string, nullptr, 10);
   }
   return true;
 }

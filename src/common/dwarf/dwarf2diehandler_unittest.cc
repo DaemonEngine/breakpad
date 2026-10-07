@@ -1,6 +1,6 @@
 // -*- mode: c++ -*-
 
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -12,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,6 +32,10 @@
 
 // dwarf2diehander_unittest.cc: Unit tests for google_breakpad::DIEDispatcher.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <stdint.h>
 
 #include <string>
@@ -40,7 +44,6 @@
 #include "breakpad_googletest_includes.h"
 
 #include "common/dwarf/dwarf2diehandler.h"
-#include "common/using_std_string.h"
 
 using std::make_pair;
 
@@ -53,12 +56,12 @@ using ::testing::Return;
 using ::testing::Sequence;
 using ::testing::StrEq;
 
-using dwarf2reader::DIEDispatcher;
-using dwarf2reader::DIEHandler;
-using dwarf2reader::DwarfAttribute;
-using dwarf2reader::DwarfForm;
-using dwarf2reader::DwarfTag;
-using dwarf2reader::RootDIEHandler;
+using google_breakpad::DIEDispatcher;
+using google_breakpad::DIEHandler;
+using google_breakpad::DwarfAttribute;
+using google_breakpad::DwarfForm;
+using google_breakpad::DwarfTag;
+using google_breakpad::RootDIEHandler;
 
 class MockDIEHandler: public DIEHandler {
  public:
@@ -71,7 +74,7 @@ class MockDIEHandler: public DIEHandler {
   MOCK_METHOD4(ProcessAttributeBuffer,
                void(DwarfAttribute, DwarfForm, const uint8_t*, uint64_t));
   MOCK_METHOD3(ProcessAttributeString,
-               void(DwarfAttribute, DwarfForm, const string&));
+               void(DwarfAttribute, DwarfForm, const std::string&));
   MOCK_METHOD3(ProcessAttributeSignature,
                void(DwarfAttribute, DwarfForm, uint64_t));
   MOCK_METHOD0(EndAttributes, bool());
@@ -90,7 +93,7 @@ class MockRootDIEHandler: public RootDIEHandler {
   MOCK_METHOD4(ProcessAttributeBuffer,
                void(DwarfAttribute, DwarfForm, const uint8_t*, uint64_t));
   MOCK_METHOD3(ProcessAttributeString,
-               void(DwarfAttribute, DwarfForm, const string&));
+               void(DwarfAttribute, DwarfForm, const std::string&));
   MOCK_METHOD3(ProcessAttributeSignature,
                void(DwarfAttribute, DwarfForm, uint64_t));
   MOCK_METHOD0(EndAttributes, bool());
@@ -191,7 +194,7 @@ TEST(Dwarf2DIEHandler, PassAttributeValues) {
   const uint8_t buffer[10] = {
     0x24, 0x24, 0x35, 0x9a, 0xca, 0xcf, 0xa8, 0x84, 0xa7, 0x18
   };
-  string str = "\xc8\x26\x2e\x0d\xa4\x9c\x37\xd6\xfb\x1d";
+  std::string str = "\xc8\x26\x2e\x0d\xa4\x9c\x37\xd6\xfb\x1d";
 
   // Set expectations.
   {
@@ -339,7 +342,7 @@ TEST(Dwarf2DIEHandler, FindAndSkipChildren) {
       EXPECT_CALL(mock_root_handler,
                   FindChildHandler(0x97412be24875de9dLL,
                                    (DwarfTag) 0x505a068b))
-        .WillOnce(Return((DIEHandler*) NULL));
+        .WillOnce(Return((DIEHandler*) nullptr));
 
       // Third child DIE.
       EXPECT_CALL(mock_root_handler,

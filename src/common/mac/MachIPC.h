@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -143,6 +142,18 @@ class MachMsgPortDescriptor : public mach_msg_port_descriptor_t {
   operator mach_port_t() const {
     return GetMachPort();
   }
+
+  // Assignment operator
+  MachMsgPortDescriptor& operator=(const MachMsgPortDescriptor& desc) {
+    if (this != &desc) {
+      name = desc.name;
+      pad1 = desc.pad1;
+      pad2 = desc.pad2;
+      disposition = desc.disposition;
+      type = desc.type;
+    }
+    return *this;
+  }
 };
 
 //==============================================================================
@@ -165,7 +176,7 @@ class MachMessage {
 
   // The receiver of the message can retrieve the raw data this way
   uint8_t* GetData() {
-    return GetDataLength() > 0 ? GetDataPacket()->data : NULL;
+    return GetDataLength() > 0 ? GetDataPacket()->data : nullptr;
   }
 
   uint32_t GetDataLength() {

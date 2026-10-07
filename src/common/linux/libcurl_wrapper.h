@@ -1,5 +1,4 @@
-// Copyright (c) 2009, Google Inc.
-// All rights reserved.
+// Copyright 2009 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -37,48 +36,44 @@
 #include <string>
 #include <map>
 
-#include "common/using_std_string.h"
-
 namespace google_breakpad {
+
+// This class is only safe to be used on single-threaded code because of its
+// usage of libcurl's curl_global_cleanup().
 class LibcurlWrapper {
  public:
   LibcurlWrapper();
   virtual ~LibcurlWrapper();
   virtual bool Init();
-  virtual bool SetProxy(const string& proxy_host,
-                        const string& proxy_userpwd);
-  virtual bool AddFile(const string& upload_file_path,
-                       const string& basename);
-  virtual bool SendRequest(const string& url,
-                           const std::map<string, string>& parameters,
+  virtual bool SetProxy(const std::string& proxy_host,
+                        const std::string& proxy_userpwd);
+  virtual bool AddFile(const std::string& upload_file_path,
+                       const std::string& basename);
+  virtual bool SendRequest(const std::string& url,
+                           const std::map<std::string, std::string>& parameters,
                            long* http_status_code,
-                           string* http_header_data,
-                           string* http_response_data);
-  bool SendGetRequest(const string& url,
+                           std::string* http_header_data,
+                           std::string* http_response_data);
+  bool SendGetRequest(const std::string& url, long* http_status_code,
+                      std::string* http_header_data,
+                      std::string* http_response_data);
+  bool SendPutRequest(const std::string& url, const std::string& path,
+                      long* http_status_code, std::string* http_header_data,
+                      std::string* http_response_data);
+  bool SendSimplePostRequest(const std::string& url, const std::string& body,
+                             const std::string& content_type,
                       long* http_status_code,
-                      string* http_header_data,
-                      string* http_response_data);
-  bool SendPutRequest(const string& url,
-                      const string& path,
-                      long* http_status_code,
-                      string* http_header_data,
-                      string* http_response_data);
-  bool SendSimplePostRequest(const string& url,
-                             const string& body,
-                             const string& content_type,
-                             long* http_status_code,
-                             string* http_header_data,
-                             string* http_response_data);
+                             std::string* http_header_data,
+                             std::string* http_response_data);
 
  private:
   // This function initializes class state corresponding to function
   // pointers into the CURL library.
   bool SetFunctionPointers();
 
-  bool SendRequestInner(const string& url,
-                        long* http_status_code,
-                        string* http_header_data,
-                        string* http_response_data);
+  bool SendRequestInner(const std::string& url, long* http_status_code,
+                        std::string* http_header_data,
+                        std::string* http_response_data);
 
   void Reset();
 
@@ -87,7 +82,7 @@ class LibcurlWrapper {
   bool init_ok_;                 // Whether init succeeded
   void* curl_lib_;               // Pointer to result of dlopen() on
                                  // curl library
-  string last_curl_error_;  // The text of the last error when
+  std::string last_curl_error_;  // The text of the last error when
                                  // dealing
   // with CURL.
 
@@ -112,6 +107,7 @@ class LibcurlWrapper {
   CURLcode (*easy_getinfo_)(CURL*, CURLINFO info, ...);
   void (*easy_reset_)(CURL*);
   void (*formfree_)(struct curl_httppost*);
+  void (*global_cleanup_)(void);
 
 };
 }

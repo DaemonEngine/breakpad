@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved
+// Copyright 2008 Google LLC
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -10,7 +9,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,8 +30,12 @@
 //  minidump_test
 //
 //  Created by Neal Sidhwaney on 4/13/08.
-//  Copyright 2008 Google Inc. All rights reserved.
+//  Copyright 2008 Google LLC
 //
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "client/mac/handler/testcases/breakpad_nlist_test.h"
 #include <mach-o/nlist.h>
@@ -70,7 +73,7 @@ void BreakpadNlistTest::CompareToNM() {
     symbolNames[0] = (const char*)symbolName;
     symbolNames[1] = "\0";
     breakpad_nlist_64("/usr/lib/dyld", &list, symbolNames);
-    uint64_t nmAddr = strtol(oneNMAddr, NULL, 16);
+    uint64_t nmAddr = strtol(oneNMAddr, nullptr, 16);
     if (!IsSymbolMoreThanOnceInDyld(symbolName)) {
       CPTAssert(nmAddr == symbolList[0].n_value);
     }

@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -39,10 +38,10 @@
 #include <mach/mach.h>
 #include <TargetConditionals.h>
 
+#include <memory>
 #include <string>
 
 #include "client/mac/handler/ucontext_compat.h"
-#include "common/scoped_ptr.h"
 
 #if !TARGET_OS_IPHONE
 #include "client/mac/crash_generation/crash_generation_client.h"
@@ -160,7 +159,7 @@ class ExceptionHandler {
 #if TARGET_OS_IPHONE
     return false;
 #else
-    return crash_generation_client_.get() != NULL;
+    return crash_generation_client_.get() != nullptr;
 #endif
   }
 
@@ -268,11 +267,11 @@ class ExceptionHandler {
 
   // Old signal handler for SIGABRT. Used to be able to restore it when
   // uninstalling.
-  scoped_ptr<struct sigaction> old_handler_;
+  std::unique_ptr<struct sigaction> old_handler_;
 
 #if !TARGET_OS_IPHONE
   // Client for out-of-process dump generation.
-  scoped_ptr<CrashGenerationClient> crash_generation_client_;
+  std::unique_ptr<CrashGenerationClient> crash_generation_client_;
 #endif
 };
 

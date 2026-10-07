@@ -1,5 +1,4 @@
-// Copyright (c) 2011, Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,6 +28,10 @@
 
 // elf_core_dump_unittest.cc: Unit tests for google_breakpad::ElfCoreDump.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <sys/procfs.h>
 
 #include <set>
@@ -39,7 +42,6 @@
 #include "common/linux/memory_mapped_file.h"
 #include "common/tests/file_utils.h"
 #include "common/linux/tests/crash_generator.h"
-#include "common/using_std_string.h"
 
 using google_breakpad::AutoTempDir;
 using google_breakpad::CrashGenerator;
@@ -52,10 +54,10 @@ using std::set;
 TEST(ElfCoreDumpTest, DefaultConstructor) {
   ElfCoreDump core;
   EXPECT_FALSE(core.IsValid());
-  EXPECT_EQ(NULL, core.GetHeader());
+  EXPECT_EQ(nullptr, core.GetHeader());
   EXPECT_EQ(0U, core.GetProgramHeaderCount());
-  EXPECT_EQ(NULL, core.GetProgramHeader(0));
-  EXPECT_EQ(NULL, core.GetFirstProgramHeaderOfType(PT_LOAD));
+  EXPECT_EQ(nullptr, core.GetProgramHeader(0));
+  EXPECT_EQ(nullptr, core.GetFirstProgramHeaderOfType(PT_LOAD));
   EXPECT_FALSE(core.GetFirstNote().IsValid());
 }
 
@@ -64,7 +66,7 @@ TEST(ElfCoreDumpTest, TestElfHeader) {
   memset(&header, 0, sizeof(header));
 
   AutoTempDir temp_dir;
-  string core_path = temp_dir.path() + "/core";
+  std::string core_path = temp_dir.path() + "/core";
   const char* core_file = core_path.c_str();
   MemoryMappedFile mapped_core_file;
   ElfCoreDump core;
@@ -73,10 +75,10 @@ TEST(ElfCoreDumpTest, TestElfHeader) {
   ASSERT_TRUE(mapped_core_file.Map(core_file, 0));
   core.SetContent(mapped_core_file.content());
   EXPECT_FALSE(core.IsValid());
-  EXPECT_EQ(NULL, core.GetHeader());
+  EXPECT_EQ(nullptr, core.GetHeader());
   EXPECT_EQ(0U, core.GetProgramHeaderCount());
-  EXPECT_EQ(NULL, core.GetProgramHeader(0));
-  EXPECT_EQ(NULL, core.GetFirstProgramHeaderOfType(PT_LOAD));
+  EXPECT_EQ(nullptr, core.GetProgramHeader(0));
+  EXPECT_EQ(nullptr, core.GetFirstProgramHeaderOfType(PT_LOAD));
   EXPECT_FALSE(core.GetFirstNote().IsValid());
 
   ASSERT_TRUE(WriteFile(core_file, &header, sizeof(header)));
@@ -130,16 +132,20 @@ TEST(ElfCoreDumpTest, TestElfHeader) {
 TEST(ElfCoreDumpTest, ValidCoreFile) {
   CrashGenerator crash_generator;
   if (!crash_generator.HasDefaultCorePattern()) {
-    fprintf(stderr, "ElfCoreDumpTest.ValidCoreFile test is skipped "
-            "due to non-default core pattern");
-    return;
+    GTEST_SKIP() << "ElfCoreDumpTest.ValidCoreFile test is skipped "
+                    "due to non-default core pattern";
+  }
+
+  if (!crash_generator.HasResourceLimitsAmenableToCrashCollection()) {
+    GTEST_SKIP() << "ElfCoreDumpTest.ValidCoreFile test is skipped "
+                    "due to inadequate system resource limits";
   }
 
   const unsigned kNumOfThreads = 3;
   const unsigned kCrashThread = 1;
   const int kCrashSignal = SIGABRT;
   ASSERT_TRUE(crash_generator.CreateChildCrash(kNumOfThreads, kCrashThread,
-                                               kCrashSignal, NULL));
+                                               kCrashSignal, nullptr));
   pid_t expected_crash_thread_id = crash_generator.GetThreadId(kCrashThread);
   set<pid_t> expected_thread_ids;
   for (unsigned i = 0; i < kNumOfThreads; ++i) {
@@ -203,13 +209,13 @@ TEST(ElfCoreDumpTest, ValidCoreFile) {
 
     switch (note.GetType()) {
       case NT_PRPSINFO: {
-        EXPECT_TRUE(description.data() != NULL);
+        EXPECT_TRUE(description.data() != nullptr);
         EXPECT_EQ(sizeof(elf_prpsinfo), description.length());
         ++num_nt_prpsinfo;
         break;
       }
       case NT_PRSTATUS: {
-        EXPECT_TRUE(description.data() != NULL);
+        EXPECT_TRUE(description.data() != nullptr);
         EXPECT_EQ(sizeof(elf_prstatus), description.length());
         const elf_prstatus* status = description.GetData<elf_prstatus>(0);
         actual_thread_ids.insert(status->pr_pid);
@@ -224,7 +230,7 @@ TEST(ElfCoreDumpTest, ValidCoreFile) {
       }
 #if defined(__i386__) || defined(__x86_64__)
       case NT_FPREGSET: {
-        EXPECT_TRUE(description.data() != NULL);
+        EXPECT_TRUE(description.data() != nullptr);
         EXPECT_EQ(sizeof(user_fpregs_struct), description.length());
         ++num_nt_fpregset;
         break;
@@ -232,7 +238,7 @@ TEST(ElfCoreDumpTest, ValidCoreFile) {
 #endif
 #if defined(__i386__)
       case NT_PRXFPREG: {
-        EXPECT_TRUE(description.data() != NULL);
+        EXPECT_TRUE(description.data() != nullptr);
         EXPECT_EQ(sizeof(user_fpxregs_struct), description.length());
         ++num_nt_prxfpreg;
         break;

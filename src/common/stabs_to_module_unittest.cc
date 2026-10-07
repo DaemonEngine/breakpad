@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,10 @@
 // Original author: Jim Blandy <jimb@mozilla.com> <jimb@red-bean.com>
 
 // dump_stabs_unittest.cc: Unit tests for StabsToModule.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <vector>
 
@@ -56,13 +59,13 @@ TEST(StabsToModule, SimpleCU) {
 
   // Now check to see what has been added to the Module.
   Module::File *file = m.FindExistingFile("source-file-name");
-  ASSERT_TRUE(file != NULL);
+  ASSERT_TRUE(file != nullptr);
 
   vector<Module::Function*> functions;
   m.GetFunctions(&functions, functions.end());
   ASSERT_EQ((size_t) 1, functions.size());
   Module::Function *function = functions[0];
-  EXPECT_STREQ("function", function->name.c_str());
+  EXPECT_STREQ("function", function->name.str().c_str());
   EXPECT_EQ(0xfde4abbed390c394LL, function->address);
   EXPECT_EQ(0x10U, function->ranges[0].size);
   EXPECT_EQ(0U, function->parameter_size);
@@ -122,7 +125,7 @@ TEST(StabsToModule, DuplicateFunctionNames) {
 
   // Now check to see what has been added to the Module.
   Module::File *file = m.FindExistingFile("compilation-unit");
-  ASSERT_TRUE(file != NULL);
+  ASSERT_TRUE(file != nullptr);
 
   vector<Module::Function*> functions;
   m.GetFunctions(&functions, functions.end());
@@ -155,16 +158,16 @@ TEST(InferSizes, LineSize) {
 
   // Now check to see what has been added to the Module.
   Module::File *file1 = m.FindExistingFile("source-file-name-1");
-  ASSERT_TRUE(file1 != NULL);
+  ASSERT_TRUE(file1 != nullptr);
   Module::File *file2 = m.FindExistingFile("source-file-name-2");
-  ASSERT_TRUE(file2 != NULL);
+  ASSERT_TRUE(file2 != nullptr);
 
   vector<Module::Function*> functions;
   m.GetFunctions(&functions, functions.end());
   ASSERT_EQ((size_t) 1, functions.size());
 
   Module::Function *function = functions[0];
-  EXPECT_STREQ("function", function->name.c_str());
+  EXPECT_STREQ("function", function->name.str().c_str());
   EXPECT_EQ(0xb4513962eff94e92LL, function->address);
   EXPECT_EQ(0x1000100000000ULL, function->ranges[0].size); // inferred from CU end
   EXPECT_EQ(0U, function->parameter_size);
@@ -202,7 +205,7 @@ TEST(FunctionNames, Mangled) {
 
   // Now check to see what has been added to the Module.
   Module::File *file = m.FindExistingFile("compilation-unit");
-  ASSERT_TRUE(file != NULL);
+  ASSERT_TRUE(file != nullptr);
 
   vector<Module::Function*> functions;
   m.GetFunctions(&functions, functions.end());
@@ -211,10 +214,9 @@ TEST(FunctionNames, Mangled) {
   Module::Function *function = functions[0];
   // This is GCC-specific, but we shouldn't be seeing STABS data anywhere
   // but Linux.
-  EXPECT_STREQ("std::vector<unsigned long long, "
-               "std::allocator<unsigned long long> >::"
-               "push_back(unsigned long long const&)",
-               function->name.c_str());
+  EXPECT_THAT(function->name.str(), ::testing::ContainsRegex(
+    "std::vector<unsigned long long, std::allocator<unsigned long long>\\s?>::"
+    "push_back\\(unsigned long long const&\\)"));
   EXPECT_EQ(0xf2cfda63cef7f46dLL, function->address);
   EXPECT_LT(0U, function->ranges[0].size); // should have used dummy size
   EXPECT_EQ(0U, function->parameter_size);

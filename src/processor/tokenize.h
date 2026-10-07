@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -35,8 +34,6 @@
 #include <string>
 #include <vector>
 
-#include "common/using_std_string.h"
-
 namespace google_breakpad {
 
 // Splits line into at most max_tokens tokens, separated by any of the
@@ -56,7 +53,7 @@ bool Tokenize(char* line,
               std::vector<char*>* tokens);
 // For convenience, since you need a char* to pass to Tokenize.
 // You can call StringToVector on a string, and use &vec[0].
-void StringToVector(const string& str, std::vector<char>& vec);
+void StringToVector(const std::string& str, std::vector<char>& vec);
 
 }  // namespace google_breakpad
 

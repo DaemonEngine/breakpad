@@ -36,8 +36,8 @@ namespace google_breakpad {
 
 // Not explicitly exported, but not static so it can be used in unit tests.
 bool ReadSymbolDataInternal(const uint8_t* obj_file,
-                            const string& obj_filename,
-                            const std::vector<string>& debug_dirs,
+                            const std::string& obj_filename,
+                            const std::vector<std::string>& debug_dirs,
                             const DumpOptions& options,
                             Module** module) {
   if (!IsValidPeCoff(obj_file)) {
@@ -60,8 +60,8 @@ bool ReadSymbolDataInternal(const uint8_t* obj_file,
   return false;
 }
 
-bool WriteSymbolFile(const string &obj_file,
-                     const std::vector<string>& debug_dirs,
+bool WriteSymbolFile(const std::string &obj_file,
+                     const std::vector<std::string>& debug_dirs,
                      const DumpOptions& options,
                      std::ostream &sym_stream) {
   Module* module;
@@ -73,8 +73,8 @@ bool WriteSymbolFile(const string &obj_file,
   return result;
 }
 
-bool ReadSymbolData(const string& obj_file,
-                    const std::vector<string>& debug_dirs,
+bool ReadSymbolData(const std::string& obj_file,
+                    const std::vector<std::string>& debug_dirs,
                     const DumpOptions& options,
                     Module** module) {
   MmapWrapper map_wrapper;

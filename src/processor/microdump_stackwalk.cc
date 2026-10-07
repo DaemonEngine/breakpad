@@ -1,5 +1,4 @@
-// Copyright (c) 2014 Google Inc.
-// All rights reserved.
+// Copyright 2014 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,17 +29,20 @@
 // microdump_stackwalk.cc: Process a microdump with MicrodumpProcessor, printing
 // the results, including stack traces.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "common/path_helper.h"
-#include "common/scoped_ptr.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
 #include "google_breakpad/processor/microdump.h"
 #include "google_breakpad/processor/microdump_processor.h"
@@ -57,8 +59,8 @@ struct Options {
   bool machine_readable;
   bool output_stack_contents;
 
-  string microdump_file;
-  std::vector<string> symbol_paths;
+  std::string microdump_file;
+  std::vector<std::string> symbol_paths;
 };
 
 using google_breakpad::BasicSourceLineResolver;
@@ -66,7 +68,6 @@ using google_breakpad::Microdump;
 using google_breakpad::MicrodumpProcessor;
 using google_breakpad::ProcessResult;
 using google_breakpad::ProcessState;
-using google_breakpad::scoped_ptr;
 using google_breakpad::SimpleSymbolSupplier;
 using google_breakpad::StackFrameSymbolizer;
 
@@ -91,9 +92,9 @@ int PrintMicrodumpProcess(const Options& options) {
   }
   file_stream.seekg(0, std::ios_base::beg);
   file_stream.read(&bytes[0], bytes.size());
-  string microdump_content(&bytes[0], bytes.size());
+  std::string microdump_content(&bytes[0], bytes.size());
 
-  scoped_ptr<SimpleSymbolSupplier> symbol_supplier;
+  std::unique_ptr<SimpleSymbolSupplier> symbol_supplier;
   if (!options.symbol_paths.empty()) {
     symbol_supplier.reset(new SimpleSymbolSupplier(options.symbol_paths));
   }
@@ -110,7 +111,12 @@ int PrintMicrodumpProcess(const Options& options) {
     if (options.machine_readable) {
       PrintProcessStateMachineReadable(process_state);
     } else {
-      PrintProcessState(process_state, options.output_stack_contents, &resolver);
+      // Microdump has only one thread, |output_requesting_thread_only|'s value
+      // has no effect.
+      PrintProcessState(process_state, options.output_stack_contents,
+                        /*dump_stack_pointers=*/false,
+                        /*output_requesting_thread_only=*/false,
+                        /*output_thread_index=*/-1, &resolver);
     }
     return 0;
   }

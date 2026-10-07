@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <assert.h>
 #include <dirent.h>
@@ -60,7 +63,7 @@ CrashGenerationServer::CrashGenerationServer(
   OnClientExitingCallback exit_callback,
   void* exit_context,
   bool generate_dumps,
-  const string* dump_path) :
+  const std::string* dump_path) :
     server_fd_(listen_fd),
     dump_callback_(dump_callback),
     dump_context_(dump_context),
@@ -102,7 +105,7 @@ CrashGenerationServer::Start()
   control_pipe_in_ = control_pipe[0];
   control_pipe_out_ = control_pipe[1];
 
-  if (pthread_create(&thread_, NULL,
+  if (pthread_create(&thread_, nullptr,
                      ThreadMain, reinterpret_cast<void*>(this)))
     return false;
 
@@ -260,7 +263,7 @@ CrashGenerationServer::ClientEvent(short revents)
     return true;
   }
 
-  string minidump_filename;
+  std::string minidump_filename;
   if (!MakeMinidumpFilename(minidump_filename))
     return true;
 
@@ -306,7 +309,7 @@ CrashGenerationServer::ControlEvent(short revents)
 }
 
 bool
-CrashGenerationServer::MakeMinidumpFilename(string& outFilename)
+CrashGenerationServer::MakeMinidumpFilename(std::string& outFilename)
 {
   GUID guid;
   char guidString[kGUIDStringLength+1];
@@ -327,7 +330,7 @@ void*
 CrashGenerationServer::ThreadMain(void* arg)
 {
   reinterpret_cast<CrashGenerationServer*>(arg)->Run();
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace google_breakpad

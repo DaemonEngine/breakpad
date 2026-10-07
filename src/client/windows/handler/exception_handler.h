@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -66,12 +65,12 @@
 #pragma warning(disable:4530)
 
 #include <list>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "client/windows/common/ipc_protocol.h"
 #include "client/windows/crash_generation/crash_generation_client.h"
-#include "common/scoped_ptr.h"
 #include "google_breakpad/common/minidump_format.h"
 
 namespace google_breakpad {
@@ -281,7 +280,9 @@ class ExceptionHandler {
   }
 
   // Returns whether out-of-process dump generation is used or not.
-  bool IsOutOfProcess() const { return crash_generation_client_.get() != NULL; }
+  bool IsOutOfProcess() const {
+    return crash_generation_client_.get() != nullptr;
+  }
 
   // Calling RegisterAppMemory(p, len) causes len bytes starting
   // at address p to be copied to the minidump when a crash happens.
@@ -392,7 +393,7 @@ class ExceptionHandler {
   MinidumpCallback callback_;
   void* callback_context_;
 
-  scoped_ptr<CrashGenerationClient> crash_generation_client_;
+  std::unique_ptr<CrashGenerationClient> crash_generation_client_;
 
   // The directory in which a minidump will be written, set by the dump_path
   // argument to the constructor, or set_dump_path.

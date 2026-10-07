@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -25,7 +24,11 @@
 // DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <unistd.h>
 
@@ -85,13 +88,13 @@ TEST(DisassemblerX86Test, SimpleReturnInstruction) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_TRUE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_controlflow, dis.currentInstructionGroup());
-  const libdis::x86_insn_t* instruction = dis.currentInstruction();
-  EXPECT_EQ(libdis::insn_controlflow, instruction->group);
-  EXPECT_EQ(libdis::insn_return, instruction->type);
+  EXPECT_EQ(insn_controlflow, dis.currentInstructionGroup());
+  const x86_insn_t* instruction = dis.currentInstruction();
+  EXPECT_EQ(insn_controlflow, instruction->group);
+  EXPECT_EQ(insn_return, instruction->type);
   EXPECT_EQ(0U, dis.NextInstruction());
   EXPECT_FALSE(dis.currentInstructionValid());
-  EXPECT_EQ(NULL, dis.currentInstruction());
+  EXPECT_EQ(nullptr, dis.currentInstruction());
 }
 
 TEST(DisassemblerX86Test, SimpleInvalidInstruction) {
@@ -106,18 +109,18 @@ TEST(DisassemblerX86Test, BadReadLeadsToBranch) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadRead());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_logic, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_logic, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_BRANCH_TARGET, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_controlflow, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_controlflow, dis.currentInstructionGroup());
 }
 
 TEST(DisassemblerX86Test, BadWriteLeadsToPushedArg) {
@@ -127,13 +130,13 @@ TEST(DisassemblerX86Test, BadWriteLeadsToPushedArg) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadWrite());
   EXPECT_EQ(3U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_arithmetic, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_arithmetic, dis.currentInstructionGroup());
   EXPECT_EQ(1U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
@@ -141,7 +144,7 @@ TEST(DisassemblerX86Test, BadWriteLeadsToPushedArg) {
   EXPECT_EQ(5U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_ARGUMENT_PASSED, dis.flags());
-  EXPECT_EQ(libdis::insn_controlflow, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_controlflow, dis.currentInstructionGroup());
   EXPECT_FALSE(dis.endOfBlock());
 }
 
@@ -152,18 +155,18 @@ TEST(DisassemblerX86Test, BadReadLeadsToBlockWrite) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadRead());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_BLOCK_WRITE, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_string, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_string, dis.currentInstructionGroup());
 }
 
 TEST(DisassemblerX86Test, BadReadClobberThenWrite) {
@@ -172,18 +175,18 @@ TEST(DisassemblerX86Test, BadReadClobberThenWrite) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_arithmetic, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_arithmetic, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadRead());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
 }
 
 TEST(DisassemblerX86Test, BadReadXCHGThenWrite) {
@@ -192,23 +195,23 @@ TEST(DisassemblerX86Test, BadReadXCHGThenWrite) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_arithmetic, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_arithmetic, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadRead());
   EXPECT_EQ(1U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_WRITE, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_move, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_move, dis.currentInstructionGroup());
 }
 
 TEST(DisassemblerX86Test, BadReadThenCMP) {
@@ -217,17 +220,17 @@ TEST(DisassemblerX86Test, BadReadThenCMP) {
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(0U, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_arithmetic, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_arithmetic, dis.currentInstructionGroup());
   EXPECT_TRUE(dis.setBadRead());
   EXPECT_EQ(3U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_COMPARISON, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_comparison, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_comparison, dis.currentInstructionGroup());
   EXPECT_EQ(2U, dis.NextInstruction());
   EXPECT_TRUE(dis.currentInstructionValid());
   EXPECT_EQ(google_breakpad::DISX86_BAD_COMPARISON, dis.flags());
   EXPECT_FALSE(dis.endOfBlock());
-  EXPECT_EQ(libdis::insn_controlflow, dis.currentInstructionGroup());
+  EXPECT_EQ(insn_controlflow, dis.currentInstructionGroup());
 }
 }

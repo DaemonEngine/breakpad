@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2008 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "client/windows/crash_generation/client_info.h"
 #include "client/windows/common/ipc_protocol.h"
@@ -49,12 +52,12 @@ ClientInfo::ClientInfo(CrashGenerationServer* crash_server,
       assert_info_(assert_info),
       custom_client_info_(custom_client_info),
       thread_id_(thread_id),
-      process_handle_(NULL),
-      dump_requested_handle_(NULL),
-      dump_generated_handle_(NULL),
-      dump_request_wait_handle_(NULL),
-      process_exit_wait_handle_(NULL),
-      crash_id_(NULL) {
+      process_handle_(nullptr),
+      dump_requested_handle_(nullptr),
+      dump_generated_handle_(nullptr),
+      dump_request_wait_handle_(nullptr),
+      process_exit_wait_handle_(nullptr),
+      crash_id_(0) {
   GetSystemTimeAsFileTime(&start_time_);
 }
 
@@ -72,26 +75,26 @@ bool ClientInfo::Initialize() {
   }
   crash_id_ = start_time_.dwLowDateTime;
 
-  dump_requested_handle_ = CreateEvent(NULL,    // Security attributes.
-                                       TRUE,    // Manual reset.
-                                       FALSE,   // Initial state.
-                                       NULL);   // Name.
+  dump_requested_handle_ = CreateEvent(nullptr,    // Security attributes.
+                                       TRUE,       // Manual reset.
+                                       FALSE,      // Initial state.
+                                       nullptr);   // Name.
   if (!dump_requested_handle_) {
     return false;
   }
 
-  dump_generated_handle_ = CreateEvent(NULL,    // Security attributes.
-                                       TRUE,    // Manual reset.
-                                       FALSE,   // Initial state.
-                                       NULL);   // Name.
-  return dump_generated_handle_ != NULL;
+  dump_generated_handle_ = CreateEvent(nullptr,    // Security attributes.
+                                       TRUE,       // Manual reset.
+                                       FALSE,      // Initial state.
+                                       nullptr);   // Name.
+  return dump_generated_handle_ != nullptr;
 }
 
 void ClientInfo::UnregisterDumpRequestWaitAndBlockUntilNoPending() {
   if (dump_request_wait_handle_) {
     // Wait for callbacks that might already be running to finish.
     UnregisterWaitEx(dump_request_wait_handle_, INVALID_HANDLE_VALUE);
-    dump_request_wait_handle_ = NULL;
+    dump_request_wait_handle_ = nullptr;
   }
 }
 
@@ -103,7 +106,7 @@ void ClientInfo::UnregisterProcessExitWait(bool block_until_no_pending) {
     } else {
       UnregisterWait(process_exit_wait_handle_);
     }
-    process_exit_wait_handle_ = NULL;
+    process_exit_wait_handle_ = nullptr;
   }
 }
 

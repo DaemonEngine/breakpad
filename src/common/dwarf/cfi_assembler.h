@@ -1,7 +1,6 @@
 // -*- mode: C++ -*-
 
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -41,13 +40,10 @@
 
 #include "common/dwarf/dwarf2enums.h"
 #include "common/test_assembler.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 
 namespace google_breakpad {
 
-using dwarf2reader::DwarfPointerEncoding;
-using google_breakpad::test_assembler::Endianness;
 using google_breakpad::test_assembler::Label;
 using google_breakpad::test_assembler::Section;
 
@@ -95,11 +91,11 @@ class CFISection: public Section {
   // true, use the .eh_frame format, as described by the Linux
   // Standards Base Core Specification, instead of the DWARF CFI
   // format.
-  CFISection(Endianness endianness, size_t address_size,
+  CFISection(google_breakpad::test_assembler::Endianness endianness, size_t address_size,
              bool eh_frame = false)
       : Section(endianness), address_size_(address_size), eh_frame_(eh_frame),
-        pointer_encoding_(dwarf2reader::DW_EH_PE_absptr),
-        encoded_pointer_bases_(), entry_length_(NULL), in_fde_(false) {
+        pointer_encoding_(DW_EH_PE_absptr),
+        encoded_pointer_bases_(), entry_length_(nullptr), in_fde_(false) {
     // The 'start', 'Here', and 'Mark' members of a CFISection all refer
     // to section offsets.
     start() = 0;
@@ -135,11 +131,9 @@ class CFISection: public Section {
   // CIE's position in the section.
   CFISection& CIEHeader(uint64_t code_alignment_factor,
                         int data_alignment_factor,
-                        unsigned return_address_register,
-                        uint8_t version = 3,
-                        const string& augmentation = "",
-                        bool dwarf64 = false,
-                        uint8_t address_size = 8,
+                        unsigned return_address_register, uint8_t version = 3,
+                        const std::string& augmentation = "",
+                        bool dwarf64 = false, uint8_t address_size = 8,
                         uint8_t segment_size = 0);
 
   // Append a Frame Description Entry header to this section with the
@@ -165,7 +159,7 @@ class CFISection: public Section {
 
   // Append the contents of BLOCK as a DW_FORM_block value: an
   // unsigned LEB128 length, followed by that many bytes of data.
-  CFISection& Block(const string& block) {
+  CFISection& Block(const std::string& block) {
     ULEB128(block.size());
     Append(block);
     return *this;

@@ -1,5 +1,4 @@
-// Copyright (c) 2013 Google Inc.
-// All rights reserved.
+// Copyright 2013 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,7 +31,12 @@
 // See stackwalker_ppc64.h for documentation.
 
 
-#include "common/scoped_ptr.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
+#include <memory>
+
 #include "processor/stackwalker_ppc64.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -57,7 +61,7 @@ StackwalkerPPC64::StackwalkerPPC64(const SystemInfo* system_info,
 StackFrame* StackwalkerPPC64::GetContextFrame() {
   if (!context_) {
     BPLOG(ERROR) << "Can't get context frame without context";
-    return NULL;
+    return nullptr;
   }
 
   StackFramePPC64* frame = new StackFramePPC64();
@@ -77,7 +81,7 @@ StackFrame* StackwalkerPPC64::GetCallerFrame(const CallStack* stack,
                                              bool stack_scan_allowed) {
   if (!memory_ || !stack) {
     BPLOG(ERROR) << "Can't get caller frame without memory or stack";
-    return NULL;
+    return nullptr;
   }
 
   // The instruction pointers for previous frames are saved on the stack.
@@ -99,7 +103,7 @@ StackFrame* StackwalkerPPC64::GetCallerFrame(const CallStack* stack,
   if (!memory_->GetMemoryAtAddress(last_frame->context.gpr[1],
                                    &stack_pointer) ||
       stack_pointer <= last_frame->context.gpr[1]) {
-    return NULL;
+    return nullptr;
   }
 
   // Mac OS X/Darwin gives 1 as the return address from the bottom-most
@@ -110,10 +114,10 @@ StackFrame* StackwalkerPPC64::GetCallerFrame(const CallStack* stack,
   uint64_t instruction;
   if (!memory_->GetMemoryAtAddress(stack_pointer + 16, &instruction) ||
       instruction <= 1) {
-    return NULL;
+    return nullptr;
   }
 
-  scoped_ptr<StackFramePPC64> frame(new StackFramePPC64());
+  std::unique_ptr<StackFramePPC64> frame(new StackFramePPC64());
 
   frame->context = last_frame->context;
   frame->context.srr0 = instruction;
@@ -123,11 +127,10 @@ StackFrame* StackwalkerPPC64::GetCallerFrame(const CallStack* stack,
   frame->trust = StackFrame::FRAME_TRUST_FP;
 
   // Should we terminate the stack walk? (end-of-stack or broken invariant)
-  if (TerminateWalk(instruction,
-                    stack_pointer,
-                    last_frame->context.gpr[1],
-                    stack->frames()->size() == 1)) {
-    return NULL;
+  if (TerminateWalk(instruction, stack_pointer, last_frame->context.gpr[1],
+                    /*is_context_frame=*/last_frame->trust ==
+                        StackFrame::FRAME_TRUST_CONTEXT)) {
+    return nullptr;
   }
 
   // frame->context.srr0 is the return address, which is one instruction

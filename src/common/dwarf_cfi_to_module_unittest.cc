@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,12 +30,15 @@
 
 // dwarf_cfi_to_module_unittest.cc: Tests for google_breakpad::DwarfCFIToModule.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <string>
 #include <vector>
 
 #include "breakpad_googletest_includes.h"
 #include "common/dwarf_cfi_to_module.h"
-#include "common/using_std_string.h"
 
 using std::vector;
 
@@ -47,11 +49,13 @@ using testing::Test;
 using testing::_;
 
 struct MockCFIReporter: public DwarfCFIToModule::Reporter {
-  MockCFIReporter(const string& file, const string& section)
-      : Reporter(file, section) { }
+  MockCFIReporter(const std::string& file, const std::string& section)
+      : Reporter(file, section) {}
   MOCK_METHOD2(UnnamedRegister, void(size_t offset, int reg));
-  MOCK_METHOD2(UndefinedNotSupported, void(size_t offset, const string& reg));
-  MOCK_METHOD2(ExpressionsNotSupported, void(size_t offset, const string& reg));
+  MOCK_METHOD2(UndefinedNotSupported,
+               void(size_t offset, const std::string& reg));
+  MOCK_METHOD2(ExpressionsNotSupported,
+               void(size_t offset, const std::string& reg));
 };
 
 struct DwarfCFIToModuleFixture {
@@ -77,7 +81,7 @@ struct DwarfCFIToModuleFixture {
   }
 
   Module module;
-  vector<string> register_names;
+  vector<std::string> register_names;
   MockCFIReporter reporter;
   DwarfCFIToModule handler;
   vector<Module::StackFrameEntry*> entries;
@@ -277,7 +281,7 @@ TEST_F(Rule, DefaultReturnAddressRuleLater) {
 }
 
 TEST(RegisterNames, I386) {
-  vector<string> names = DwarfCFIToModule::RegisterNames::I386();
+  vector<std::string> names = DwarfCFIToModule::RegisterNames::I386();
 
   EXPECT_EQ("$eax", names[0]);
   EXPECT_EQ("$ecx", names[1]);
@@ -286,7 +290,7 @@ TEST(RegisterNames, I386) {
 }
 
 TEST(RegisterNames, ARM) {
-  vector<string> names = DwarfCFIToModule::RegisterNames::ARM();
+  vector<std::string> names = DwarfCFIToModule::RegisterNames::ARM();
 
   EXPECT_EQ("r0", names[0]);
   EXPECT_EQ("r10", names[10]);
@@ -296,7 +300,7 @@ TEST(RegisterNames, ARM) {
 }
 
 TEST(RegisterNames, X86_64) {
-  vector<string> names = DwarfCFIToModule::RegisterNames::X86_64();
+  vector<std::string> names = DwarfCFIToModule::RegisterNames::X86_64();
 
   EXPECT_EQ("$rax", names[0]);
   EXPECT_EQ("$rdx", names[1]);
@@ -304,3 +308,15 @@ TEST(RegisterNames, X86_64) {
   EXPECT_EQ("$rsp", names[7]);
   EXPECT_EQ("$rip", names[16]);
 }
+
+TEST(RegisterNames, RISCV) {
+  vector<std::string> names = DwarfCFIToModule::RegisterNames::RISCV();
+
+  EXPECT_EQ("pc", names[0]);
+  EXPECT_EQ("t6", names[31]);
+  EXPECT_EQ("f0", names[32]);
+  EXPECT_EQ("f31", names[63]);
+  EXPECT_EQ("v0", names[96]);
+  EXPECT_EQ("v31", names[127]);
+}
+

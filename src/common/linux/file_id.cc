@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,6 +31,10 @@
 // See file_id.h for documentation
 //
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "compat/inet.h"
 
 #include "common/linux/file_id.h"
@@ -46,10 +49,11 @@
 #include "common/linux/elfutils.h"
 #include "common/linux/linux_libc_support.h"
 #include "common/linux/memory_mapped_file.h"
-#include "common/using_std_string.h"
+#include "common/memory_allocator.h"
 #include "third_party/lss/linux_syscall_support.h"
 
 namespace google_breakpad {
+namespace elf {
 
 // Used in a few places for backwards-compatibility.
 const size_t kMDGUIDSize = sizeof(MDGUID);
@@ -57,7 +61,10 @@ const size_t kMDGUIDSize = sizeof(MDGUID);
 FileID::FileID(const char* path) : path_(path) {}
 
 // ELF note name and desc are 32-bits word padded.
-#define NOTE_PADDING(a) ((a + 3) & ~3)
+template <typename T>
+inline T NotePadding(T size) {
+  return PageAllocator::AlignUp(size, 4);
+}
 
 // These functions are also used inside the crashed process, so be safe
 // and use the syscall/libc wrappers instead of direct syscalls or libc.
@@ -75,8 +82,8 @@ static bool ElfClassBuildIDNoteIdentifier(const void* section, size_t length,
       break;
     note_header = reinterpret_cast<const Nhdr*>(
                   reinterpret_cast<const char*>(note_header) + sizeof(Nhdr) +
-                  NOTE_PADDING(note_header->n_namesz) +
-                  NOTE_PADDING(note_header->n_descsz));
+        NotePadding(note_header->n_namesz) +
+        NotePadding(note_header->n_descsz));
   }
   if (reinterpret_cast<const void*>(note_header) >= section_end ||
       note_header->n_descsz == 0) {
@@ -84,7 +91,7 @@ static bool ElfClassBuildIDNoteIdentifier(const void* section, size_t length,
   }
 
   const uint8_t* build_id = reinterpret_cast<const uint8_t*>(note_header) +
-    sizeof(Nhdr) + NOTE_PADDING(note_header->n_namesz);
+                            sizeof(Nhdr) + NotePadding(note_header->n_namesz);
   identifier.insert(identifier.end(),
                     build_id,
                     build_id + note_header->n_descsz);
@@ -96,6 +103,13 @@ static bool ElfClassBuildIDNoteIdentifier(const void* section, size_t length,
 // and copy it into |identifier|.
 static bool FindElfBuildIDNote(const void* elf_mapped_base,
                                wasteful_vector<uint8_t>& identifier) {
+  void* note_section;
+  size_t note_size;
+  if (FindElfSection(elf_mapped_base, ".note.gnu.build-id", SHT_NOTE,
+                     (const void**)&note_section, &note_size)) {
+    return ElfClassBuildIDNoteIdentifier(note_section, note_size, identifier);
+  }
+
   PageAllocator allocator;
   // lld normally creates 2 PT_NOTEs, gold normally creates 1.
   auto_wasteful_vector<ElfSegment, 2> segs(&allocator);
@@ -105,13 +119,6 @@ static bool FindElfBuildIDNote(const void* elf_mapped_base,
         return true;
       }
     }
-  }
-
-  void* note_section;
-  size_t note_size;
-  if (FindElfSection(elf_mapped_base, ".note.gnu.build-id", SHT_NOTE,
-                     (const void**)&note_section, &note_size)) {
-    return ElfClassBuildIDNoteIdentifier(note_section, note_size, identifier);
   }
 
   return false;
@@ -125,8 +132,10 @@ static bool HashElfTextSection(const void* elf_mapped_base,
 
   void* text_section;
   size_t text_size;
-  if (!FindElfSection(elf_mapped_base, ".text", SHT_PROGBITS,
-                      (const void**)&text_section, &text_size) ||
+  if ((!FindElfSection(elf_mapped_base, ".text", SHT_PROGBITS,
+                       (const void**)&text_section, &text_size) &&
+       !FindElfSection(elf_mapped_base, "text", SHT_PROGBITS,
+                       (const void**)&text_section, &text_size)) ||
       text_size == 0) {
     return false;
   }
@@ -165,8 +174,8 @@ bool FileID::ElfFileIdentifier(wasteful_vector<uint8_t>& identifier) {
 
 // These three functions are not ever called in an unsafe context, so it's OK
 // to allocate memory and use libc.
-static string bytes_to_hex_string(const uint8_t* bytes, size_t count) {
-  string result;
+static std::string bytes_to_hex_string(const uint8_t* bytes, size_t count) {
+  std::string result;
   for (unsigned int idx = 0; idx < count; ++idx) {
     char buf[3];
     snprintf(buf, sizeof(buf), "%02X", bytes[idx]);
@@ -176,7 +185,7 @@ static string bytes_to_hex_string(const uint8_t* bytes, size_t count) {
 }
 
 // static
-string FileID::ConvertIdentifierToUUIDString(
+std::string FileID::ConvertIdentifierToUUIDString(
     const wasteful_vector<uint8_t>& identifier) {
   uint8_t identifier_swapped[kMDGUIDSize] = { 0 };
 
@@ -194,9 +203,10 @@ string FileID::ConvertIdentifierToUUIDString(
 }
 
 // static
-string FileID::ConvertIdentifierToString(
+std::string FileID::ConvertIdentifierToString(
     const wasteful_vector<uint8_t>& identifier) {
   return bytes_to_hex_string(&identifier[0], identifier.size());
 }
 
+}  // elf
 }  // namespace google_breakpad

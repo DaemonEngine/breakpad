@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,30 +31,40 @@
 // language.cc: Subclasses and singletons for google_breakpad::Language.
 // See language.h for details.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/language.h"
 
 #include <stdlib.h>
+#include <array>
 
 #if !defined(__ANDROID__)
 #include <cxxabi.h>
 #endif
 
-#if defined(HAVE_RUST_DEMANGLE)
-#include <rust_demangle.h>
+#if defined(HAVE_RUSTC_DEMANGLE)
+#include <rustc_demangle.h>
 #endif
 
 #include <limits>
 
 namespace {
 
-string MakeQualifiedNameWithSeparator(const string& parent_name,
-                                      const char* separator,
-                                      const string& name) {
+std::string MakeQualifiedNameWithSeparator(const std::string& parent_name,
+                                           const char* separator,
+                                           const std::string& name) {
   if (parent_name.empty()) {
     return name;
   }
 
   return parent_name + separator + name;
+}
+
+bool IsObjectiveCMethod(const std::string& name) {
+  return name.size() >= 2 && (name[0] == '-' || name[0] == '+') &&
+         name[1] == '[';
 }
 
 }  // namespace
@@ -67,13 +76,13 @@ class CPPLanguage: public Language {
  public:
   CPPLanguage() {}
 
-  string MakeQualifiedName(const string& parent_name,
-                           const string& name) const {
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
     return MakeQualifiedNameWithSeparator(parent_name, "::", name);
   }
 
-  virtual DemangleResult DemangleName(const string& mangled,
-                                      string* demangled) const {
+  virtual DemangleResult DemangleName(const std::string& mangled,
+                                      std::string* demangled) const {
 #if defined(__ANDROID__)
     // Android NDK doesn't provide abi::__cxa_demangle.
     demangled->clear();
@@ -88,7 +97,7 @@ class CPPLanguage: public Language {
 
     int status;
     char* demangled_c =
-        abi::__cxa_demangle(mangled.c_str(), NULL, NULL, &status);
+        abi::__cxa_demangle(mangled.c_str(), nullptr, nullptr, &status);
 
     DemangleResult result;
     if (status == 0) {
@@ -108,14 +117,14 @@ class CPPLanguage: public Language {
   }
 
  private:
-  static bool IsMangledName(const string& name) {
+  static bool IsMangledName(const std::string& name) {
     // NOTE: For proper cross-compilation support, this should depend on target
     // binary's platform, not current build platform.
 #if defined(__APPLE__)
     // Mac C++ symbols can have up to 4 underscores, followed by a "Z".
     // Non-C++ symbols are not coded that way, but may have leading underscores.
     size_t i = name.find_first_not_of('_');
-    return i > 0 && i != string::npos && i <= 4 && name[i] == 'Z';
+    return i > 0 && i != std::string::npos && i <= 4 && name[i] == 'Z';
 #else
     // Linux C++ symbols always start with "_Z".
     return name.size() > 2 && name[0] == '_' && name[1] == 'Z';
@@ -125,13 +134,52 @@ class CPPLanguage: public Language {
 
 CPPLanguage CPPLanguageSingleton;
 
+// Objective-C language-specific operations.
+class ObjectiveCLanguage: public Language {
+ public:
+  ObjectiveCLanguage() {}
+
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
+    // In Objective-C, names are not qualified. Objective-C methods are already
+    // fully qualified as `-[Class method]` or `+[Class method]`.
+    return name;
+  }
+};
+
+ObjectiveCLanguage ObjectiveCLanguageSingleton;
+
+// Objective-C++ language-specific operations.
+class ObjectiveCPlusPlusLanguage: public CPPLanguage {
+ public:
+  ObjectiveCPlusPlusLanguage() {}
+
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
+    // Starting with DWARF v5, clang/LLVM emits Objective-C method
+    // declarations nested inside the class/interface type's structure
+    // block. When processing these declarations, dump_syms retrieves
+    // the parent class name as the enclosing scope.
+    //
+    // Since Objective-C method names are already fully qualified
+    // (e.g., `-[Class method]`), we should not qualify them with
+    // C++ `::` prefixes.
+    if (IsObjectiveCMethod(name)) {
+      return name;
+    }
+    return MakeQualifiedNameWithSeparator(parent_name, "::", name);
+  }
+};
+
+ObjectiveCPlusPlusLanguage ObjectiveCPlusPlusLanguageSingleton;
+
 // Java language-specific operations.
 class JavaLanguage: public Language {
  public:
   JavaLanguage() {}
 
-  string MakeQualifiedName(const string& parent_name,
-                           const string& name) const {
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
     return MakeQualifiedNameWithSeparator(parent_name, ".", name);
   }
 };
@@ -143,13 +191,13 @@ class SwiftLanguage: public Language {
  public:
   SwiftLanguage() {}
 
-  string MakeQualifiedName(const string& parent_name,
-                           const string& name) const {
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
     return MakeQualifiedNameWithSeparator(parent_name, ".", name);
   }
 
-  virtual DemangleResult DemangleName(const string& mangled,
-                                      string* demangled) const {
+  virtual DemangleResult DemangleName(const std::string& mangled,
+                                      std::string* demangled) const {
     // There is no programmatic interface to a Swift demangler. Pass through the
     // mangled form because it encodes more information than the qualified name
     // that would have been built by MakeQualifiedName(). The output can be
@@ -167,24 +215,24 @@ class RustLanguage: public Language {
  public:
   RustLanguage() {}
 
-  string MakeQualifiedName(const string& parent_name,
-                           const string& name) const {
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
     return MakeQualifiedNameWithSeparator(parent_name, ".", name);
   }
 
-  virtual DemangleResult DemangleName(const string& mangled,
-                                      string* demangled) const {
+  virtual DemangleResult DemangleName(const std::string& mangled,
+                                      std::string* demangled) const {
     // Rust names use GCC C++ name mangling, but demangling them with
     // abi_demangle doesn't produce stellar results due to them having
     // another layer of encoding.
     // If callers provide rustc-demangle, use that.
-#if defined(HAVE_RUST_DEMANGLE)
-    char* rust_demangled = rust_demangle(mangled.c_str());
-    if (rust_demangled == nullptr) {
+#if defined(HAVE_RUSTC_DEMANGLE)
+    std::array<char, 1 * 1024 * 1024> rustc_demangled;
+    if (rustc_demangle(mangled.c_str(), rustc_demangled.data(),
+                       rustc_demangled.size()) == 0) {
       return kDemangleFailure;
     }
-    demangled->assign(rust_demangled);
-    free_rust_demangled_name(rust_demangled);
+    demangled->assign(rustc_demangled.data());
 #else
     // Otherwise, pass through the mangled name so callers can demangle
     // after the fact.
@@ -202,8 +250,8 @@ class AssemblerLanguage: public Language {
   AssemblerLanguage() {}
 
   bool HasFunctions() const { return false; }
-  string MakeQualifiedName(const string& parent_name,
-                           const string& name) const {
+  std::string MakeQualifiedName(const std::string& parent_name,
+                                const std::string& name) const {
     return name;
   }
 };
@@ -215,5 +263,8 @@ const Language * const Language::Java = &JavaLanguageSingleton;
 const Language * const Language::Swift = &SwiftLanguageSingleton;
 const Language * const Language::Rust = &RustLanguageSingleton;
 const Language * const Language::Assembler = &AssemblerLanguageSingleton;
+const Language * const Language::ObjectiveC = &ObjectiveCLanguageSingleton;
+const Language * const Language::ObjectiveCPlusPlus =
+    &ObjectiveCPlusPlusLanguageSingleton;
 
 } // namespace google_breakpad

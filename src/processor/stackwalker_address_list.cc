@@ -1,5 +1,4 @@
-// Copyright (c) 2013 Google Inc.
-// All rights reserved.
+// Copyright 2013 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,6 +32,10 @@
 //
 // Author: Chris Hamilton <chrisha@chromium.org>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 
 #include <vector>
@@ -51,40 +54,37 @@ StackwalkerAddressList::StackwalkerAddressList(
     size_t frame_count,
     const CodeModules* modules,
     StackFrameSymbolizer* frame_symbolizer)
-    : Stackwalker(NULL, NULL, modules, frame_symbolizer),
+    : Stackwalker(nullptr, nullptr, modules, frame_symbolizer),
       frames_(frames),
-      frame_count_(frame_count) {
+      frame_count_(frame_count),
+      next_frame_index_(0) {
   assert(frames);
   assert(frame_symbolizer);
 }
 
 StackFrame* StackwalkerAddressList::GetContextFrame() {
   if (frame_count_ == 0)
-    return NULL;
+    return nullptr;
 
   StackFrame* frame = new StackFrame();
   frame->instruction = frames_[0];
   frame->trust = StackFrame::FRAME_TRUST_PREWALKED;
+
+  next_frame_index_ = 1;
+
   return frame;
 }
 
-StackFrame* StackwalkerAddressList::GetCallerFrame(const CallStack* stack,
+StackFrame* StackwalkerAddressList::GetCallerFrame(const CallStack*,
                                                    bool stack_scan_allowed) {
-  if (!stack) {
-    BPLOG(ERROR) << "Can't get caller frame without stack";
-    return NULL;
-  }
-
-  size_t frame_index = stack->frames()->size();
-
   // There are no more frames to fetch.
-  if (frame_index >= frame_count_)
-    return NULL;
+  if (next_frame_index_ >= frame_count_)
+    return nullptr;
 
   // All frames have the highest level of trust because they were
   // explicitly provided.
   StackFrame* frame = new StackFrame();
-  frame->instruction = frames_[frame_index];
+  frame->instruction = frames_[next_frame_index_++];
   frame->trust = StackFrame::FRAME_TRUST_PREWALKED;
   return frame;
 }

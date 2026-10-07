@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//    * Neither the name of Google Inc. nor the names of its
+//    * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,16 +26,24 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "google_breakpad/processor/minidump_processor.h"
 
 #include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include <algorithm>
+#include <limits>
+#include <map>
+#include <memory>
 #include <string>
+#include <utility>
 
-#include "common/scoped_ptr.h"
 #include "common/stdio_wrapper.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/minidump.h"
 #include "google_breakpad/processor/process_state.h"
@@ -46,6 +53,10 @@
 #include "processor/stackwalker_x86.h"
 #include "processor/symbolic_constants_win.h"
 
+#ifdef __linux__
+#include "processor/disassembler_objdump.h"
+#endif
+
 namespace google_breakpad {
 
 MinidumpProcessor::MinidumpProcessor(SymbolSupplier* supplier,
@@ -53,7 +64,9 @@ MinidumpProcessor::MinidumpProcessor(SymbolSupplier* supplier,
     : frame_symbolizer_(new StackFrameSymbolizer(supplier, resolver)),
       own_frame_symbolizer_(true),
       enable_exploitability_(false),
-      enable_objdump_(false) {
+      enable_objdump_(false),
+      enable_objdump_for_exploitability_(false),
+      max_thread_count_(-1) {
 }
 
 MinidumpProcessor::MinidumpProcessor(SymbolSupplier* supplier,
@@ -62,7 +75,9 @@ MinidumpProcessor::MinidumpProcessor(SymbolSupplier* supplier,
     : frame_symbolizer_(new StackFrameSymbolizer(supplier, resolver)),
       own_frame_symbolizer_(true),
       enable_exploitability_(enable_exploitability),
-      enable_objdump_(false) {
+      enable_objdump_(false),
+      enable_objdump_for_exploitability_(false),
+      max_thread_count_(-1) {
 }
 
 MinidumpProcessor::MinidumpProcessor(StackFrameSymbolizer* frame_symbolizer,
@@ -70,7 +85,9 @@ MinidumpProcessor::MinidumpProcessor(StackFrameSymbolizer* frame_symbolizer,
     : frame_symbolizer_(frame_symbolizer),
       own_frame_symbolizer_(false),
       enable_exploitability_(enable_exploitability),
-      enable_objdump_(false) {
+      enable_objdump_(false),
+      enable_objdump_for_exploitability_(false),
+      max_thread_count_(-1) {
   assert(frame_symbolizer_);
 }
 
@@ -116,7 +133,7 @@ ProcessResult MinidumpProcessor::Process(
     has_requesting_thread = exception->GetThreadID(&requesting_thread_id);
 
     process_state->crash_reason_ = GetCrashReason(
-        dump, &process_state->crash_address_);
+        dump, &process_state->crash_address_, enable_objdump_);
 
     process_state->exception_record_.set_code(
         exception->exception()->exception_record.exception_code,
@@ -182,22 +199,47 @@ ProcessResult MinidumpProcessor::Process(
   }
 
   BPLOG(INFO) << "Minidump " << dump->path() << " has " <<
-      (has_cpu_info            ? "" : "no ") << "CPU info, " <<
-      (has_os_info             ? "" : "no ") << "OS info, " <<
-      (breakpad_info != NULL   ? "" : "no ") << "Breakpad info, " <<
-      (exception != NULL       ? "" : "no ") << "exception, " <<
-      (module_list != NULL     ? "" : "no ") << "module list, " <<
-      (threads != NULL         ? "" : "no ") << "thread list, " <<
-      (has_dump_thread         ? "" : "no ") << "dump thread, " <<
-      (has_requesting_thread   ? "" : "no ") << "requesting thread, and " <<
-      (has_process_create_time ? "" : "no ") << "process create time";
+      (has_cpu_info             ? "" : "no ") << "CPU info, " <<
+      (has_os_info              ? "" : "no ") << "OS info, " <<
+      (breakpad_info != nullptr ? "" : "no ") << "Breakpad info, " <<
+      (exception != nullptr     ? "" : "no ") << "exception, " <<
+      (module_list != nullptr   ? "" : "no ") << "module list, " <<
+      (threads != nullptr       ? "" : "no ") << "thread list, " <<
+      (has_dump_thread          ? "" : "no ") << "dump thread, " <<
+      (has_requesting_thread    ? "" : "no ") << "requesting thread, and " <<
+      (has_process_create_time  ? "" : "no ") << "process create time";
 
   bool interrupted = false;
   bool found_requesting_thread = false;
   unsigned int thread_count = threads->thread_count();
+  process_state->original_thread_count_ = thread_count;
 
   // Reset frame_symbolizer_ at the beginning of stackwalk for each minidump.
   frame_symbolizer_->Reset();
+
+  MinidumpThreadNameList* thread_names = dump->GetThreadNameList();
+  std::map<uint32_t, std::string> thread_id_to_name;
+  if (thread_names) {
+    const unsigned int thread_name_count = thread_names->thread_name_count();
+    for (unsigned int thread_name_index = 0;
+         thread_name_index < thread_name_count; ++thread_name_index) {
+      MinidumpThreadName* thread_name =
+          thread_names->GetThreadNameAtIndex(thread_name_index);
+      if (!thread_name) {
+        BPLOG(ERROR) << "Could not get thread name for thread at index "
+                     << thread_name_index;
+        return PROCESS_ERROR_GETTING_THREAD_NAME;
+      }
+      uint32_t thread_id;
+      if (!thread_name->GetThreadID(&thread_id)) {
+        BPLOG(ERROR) << "Could not get thread ID for thread at index "
+                     << thread_name_index;
+        return PROCESS_ERROR_GETTING_THREAD_NAME;
+      }
+      thread_id_to_name.insert(
+          std::make_pair(thread_id, thread_name->GetThreadName()));
+    }
+  }
 
   for (unsigned int thread_index = 0;
        thread_index < thread_count;
@@ -205,7 +247,7 @@ ProcessResult MinidumpProcessor::Process(
     char thread_string_buffer[64];
     snprintf(thread_string_buffer, sizeof(thread_string_buffer), "%d/%d",
              thread_index, thread_count);
-    string thread_string = dump->path() + ":" + thread_string_buffer;
+    std::string thread_string = dump->path() + ":" + thread_string_buffer;
 
     MinidumpThread* thread = threads->GetThreadAtIndex(thread_index);
     if (!thread) {
@@ -220,6 +262,14 @@ ProcessResult MinidumpProcessor::Process(
     }
 
     thread_string += " id " + HexString(thread_id);
+    auto thread_name_iter = thread_id_to_name.find(thread_id);
+    std::string thread_name;
+    if (thread_name_iter != thread_id_to_name.end()) {
+      thread_name = thread_name_iter->second;
+    }
+    if (!thread_name.empty()) {
+      thread_string += " name [" + thread_name + "]";
+    }
     BPLOG(INFO) << "Looking at thread " << thread_string;
 
     // If this thread is the thread that produced the minidump, don't process
@@ -227,6 +277,7 @@ ProcessResult MinidumpProcessor::Process(
     // dump of itself (when both its context and its stack are in flux),
     // processing that stack wouldn't provide much useful data.
     if (has_dump_thread && thread_id == dump_thread_id) {
+      process_state->original_thread_count_--;
       continue;
     }
 
@@ -247,6 +298,13 @@ ProcessResult MinidumpProcessor::Process(
       // be the index of the current thread when it's pushed into the
       // vector.
       process_state->requesting_thread_ = process_state->threads_.size();
+      if (max_thread_count_ >= 0) {
+        thread_count =
+            std::min(thread_count,
+                     std::max(static_cast<unsigned int>(
+                                  process_state->requesting_thread_ + 1),
+                              static_cast<unsigned int>(max_thread_count_)));
+      }
 
       found_requesting_thread = true;
 
@@ -285,7 +343,7 @@ ProcessResult MinidumpProcessor::Process(
     // returns.  process_state->modules_ is owned by the ProcessState object
     // (just like the StackFrame objects), and is much more suitable for this
     // task.
-    scoped_ptr<Stackwalker> stackwalker(
+    std::unique_ptr<Stackwalker> stackwalker(
         Stackwalker::StackwalkerForCPU(process_state->system_info(),
                                        context,
                                        thread_memory,
@@ -293,7 +351,7 @@ ProcessResult MinidumpProcessor::Process(
                                        process_state->unloaded_modules_,
                                        frame_symbolizer_));
 
-    scoped_ptr<CallStack> stack(new CallStack());
+    std::unique_ptr<CallStack> stack(new CallStack());
     if (stackwalker.get()) {
       if (!stackwalker->Walk(stack.get(),
                              &process_state->modules_without_symbols_,
@@ -311,6 +369,7 @@ ProcessResult MinidumpProcessor::Process(
     stack->set_tid(thread_id);
     process_state->threads_.push_back(stack.release());
     process_state->thread_memory_regions_.push_back(thread_memory);
+    process_state->thread_names_.push_back(std::move(thread_name));
   }
 
   if (interrupted) {
@@ -333,12 +392,11 @@ ProcessResult MinidumpProcessor::Process(
   // If an exploitability run was requested we perform the platform specific
   // rating.
   if (enable_exploitability_) {
-    scoped_ptr<Exploitability> exploitability(
-        Exploitability::ExploitabilityForPlatform(dump,
-                                                  process_state,
-                                                  enable_objdump_));
+    std::unique_ptr<Exploitability> exploitability(
+        Exploitability::ExploitabilityForPlatform(
+          dump, process_state, enable_objdump_for_exploitability_));
     // The engine will be null if the platform is not supported
-    if (exploitability != NULL) {
+    if (exploitability != nullptr) {
       process_state->exploitability_ = exploitability->CheckExploitability();
     } else {
       process_state->exploitability_ = EXPLOITABILITY_ERR_NOENGINE;
@@ -349,8 +407,8 @@ ProcessResult MinidumpProcessor::Process(
   return PROCESS_OK;
 }
 
-ProcessResult MinidumpProcessor::Process(
-    const string& minidump_file, ProcessState* process_state) {
+ProcessResult MinidumpProcessor::Process(const std::string& minidump_file,
+                                         ProcessState* process_state) {
   BPLOG(INFO) << "Processing minidump in file " << minidump_file;
 
   Minidump dump(minidump_file);
@@ -369,7 +427,7 @@ static const MDRawSystemInfo* GetSystemInfo(Minidump* dump,
                                             MinidumpSystemInfo** system_info) {
   MinidumpSystemInfo* minidump_system_info = dump->GetSystemInfo();
   if (!minidump_system_info)
-    return NULL;
+    return nullptr;
 
   if (system_info)
     *system_info = minidump_system_info;
@@ -401,8 +459,8 @@ static uint64_t GetAddressForArchitecture(const MDCPUArchitecture architecture,
 // raw_info: pointer to source MDRawSystemInfo.
 // cpu_info: address of target string, cpu info text will be appended to it.
 static void GetARMCpuInfo(const MDRawSystemInfo* raw_info,
-                          string* cpu_info) {
-  assert(raw_info != NULL && cpu_info != NULL);
+                          std::string* cpu_info) {
+  assert(raw_info != nullptr && cpu_info != nullptr);
 
   // Write ARM architecture version.
   char cpu_string[32];
@@ -472,7 +530,7 @@ static void GetARMCpuInfo(const MDRawSystemInfo* raw_info,
   uint32_t cpuid = raw_info->cpu.arm_cpu_info.cpuid;
   if (cpuid != 0) {
     // Extract vendor name from CPUID
-    const char* vendor = NULL;
+    const char* vendor = nullptr;
     uint32_t vendor_id = (cpuid >> 24) & 0xff;
     for (size_t i = 0; i < sizeof(vendors)/sizeof(vendors[0]); ++i) {
       if (vendors[i].id == vendor_id) {
@@ -490,7 +548,7 @@ static void GetARMCpuInfo(const MDRawSystemInfo* raw_info,
 
     // Extract part name from CPUID
     uint32_t part_id = (cpuid & 0xff00fff0);
-    const char* part = NULL;
+    const char* part = nullptr;
     for (size_t i = 0; i < sizeof(parts)/sizeof(parts[0]); ++i) {
       if (parts[i].id == part_id) {
         part = parts[i].name;
@@ -498,7 +556,7 @@ static void GetARMCpuInfo(const MDRawSystemInfo* raw_info,
       }
     }
     cpu_info->append(" ");
-    if (part != NULL) {
+    if (part != nullptr) {
       cpu_info->append(part);
     } else {
       snprintf(cpu_string, sizeof(cpu_string), "part(0x%x)", part_id);
@@ -541,7 +599,7 @@ bool MinidumpProcessor::GetCPUInfo(Minidump* dump, SystemInfo* info) {
       else
         info->cpu = "amd64";
 
-      const string* cpu_vendor = system_info->GetCPUVendor();
+      const std::string* cpu_vendor = system_info->GetCPUVendor();
       if (cpu_vendor) {
         info->cpu_info = *cpu_vendor;
         info->cpu_info.append(" ");
@@ -589,6 +647,16 @@ bool MinidumpProcessor::GetCPUInfo(Minidump* dump, SystemInfo* info) {
     }
     case MD_CPU_ARCHITECTURE_MIPS64: {
       info->cpu = "mips64";
+      break;
+    }
+
+    case MD_CPU_ARCHITECTURE_RISCV: {
+      info->cpu = "riscv";
+      break;
+    }
+
+    case MD_CPU_ARCHITECTURE_RISCV64: {
+      info->cpu = "riscv64";
       break;
     }
 
@@ -691,7 +759,7 @@ bool MinidumpProcessor::GetOSInfo(Minidump* dump, SystemInfo* info) {
            raw_system_info->build_number);
   info->os_version = os_version_string;
 
-  const string* csd_version = system_info->GetCSDVersion();
+  const std::string* csd_version = system_info->GetCSDVersion();
   if (csd_version) {
     info->os_version.append(" ");
     info->os_version.append(*csd_version);
@@ -726,8 +794,83 @@ bool MinidumpProcessor::GetProcessCreateTime(Minidump* dump,
   return true;
 }
 
+#ifdef __linux__
+
+static bool IsCanonicalAddress(uint64_t address) {
+  uint64_t sign_bit = (address >> 63) & 1;
+  for (int shift = 48; shift < 63; ++shift) {
+    if (sign_bit != ((address >> shift) & 1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static void CalculateFaultAddressFromInstruction(Minidump* dump,
+                                                 uint64_t* address) {
+  MinidumpException* exception = dump->GetException();
+  if (exception == nullptr) {
+    BPLOG(INFO) << "Failed to get exception.";
+    return;
+  }
+
+  MinidumpContext* context = exception->GetContext();
+  if (context == nullptr) {
+    BPLOG(INFO) << "Failed to get exception context.";
+    return;
+  }
+
+  uint64_t instruction_ptr = 0;
+  if (!context->GetInstructionPointer(&instruction_ptr)) {
+    BPLOG(INFO) << "Failed to get instruction pointer.";
+    return;
+  }
+
+  // Get memory region containing instruction pointer.
+  MinidumpMemoryList* memory_list = dump->GetMemoryList();
+  MinidumpMemoryRegion* memory_region =
+    memory_list ?
+    memory_list->GetMemoryRegionForAddress(instruction_ptr) : nullptr;
+  if (!memory_region) {
+    BPLOG(INFO) << "No memory region around instruction pointer.";
+    return;
+  }
+
+  DisassemblerObjdump disassembler(context->GetContextCPU(), memory_region,
+                                   instruction_ptr);
+  if (!disassembler.IsValid()) {
+    BPLOG(INFO) << "Disassembling fault instruction failed.";
+    return;
+  }
+
+  // It's possible that we reach here when the faulting address is already
+  // correct, so we only update it if we find that at least one of the src/dest
+  // addresses is non-canonical. If both are non-canonical, we arbitrarily set
+  // it to the larger of the two, as this is more likely to be a known poison
+  // value.
+
+  bool valid_read, valid_write;
+  uint64_t read_address, write_address;
+
+  valid_read = disassembler.CalculateSrcAddress(*context, read_address);
+  valid_read &= !IsCanonicalAddress(read_address);
+
+  valid_write = disassembler.CalculateDestAddress(*context, write_address);
+  valid_write &= !IsCanonicalAddress(write_address);
+
+  if (valid_read && valid_write) {
+    *address = read_address > write_address ? read_address : write_address;
+  } else if (valid_read) {
+    *address = read_address;
+  } else if (valid_write) {
+    *address = write_address;
+  }
+}
+#endif // __linux__
+
 // static
-string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
+std::string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address,
+                                              bool enable_objdump) {
   MinidumpException* exception = dump->GetException();
   if (!exception)
     return "";
@@ -750,9 +893,9 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
   snprintf(flags_string, sizeof(flags_string), "0x%08x", exception_flags);
   snprintf(reason_string, sizeof(reason_string), "0x%08x / %s", exception_code,
            flags_string);
-  string reason = reason_string;
+  std::string reason = reason_string;
 
-  const MDRawSystemInfo* raw_system_info = GetSystemInfo(dump, NULL);
+  const MDRawSystemInfo* raw_system_info = GetSystemInfo(dump, nullptr);
   if (!raw_system_info)
     return reason;
 
@@ -1135,8 +1278,19 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
           reason = "EXC_RPC_ALERT / ";
           reason.append(flags_string);
           break;
+        case MD_EXCEPTION_MAC_RESOURCE:
+          reason = "EXC_RESOURCE / ";
+          reason.append(flags_string);
+          break;
+        case MD_EXCEPTION_MAC_GUARD:
+          reason = "EXC_GUARD / ";
+          reason.append(flags_string);
+          break;
         case MD_EXCEPTION_MAC_SIMULATED:
           reason = "Simulated Exception";
+          break;
+        case MD_NS_EXCEPTION_SIMULATED:
+          reason = "Uncaught NSException";
           break;
       }
       break;
@@ -1169,10 +1323,7 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
           // This information is useful in addition to the code address, which
           // will be present in the crash thread's instruction field anyway.
           if (raw_exception->exception_record.number_parameters >= 1) {
-            MDAccessViolationTypeWin av_type =
-                static_cast<MDAccessViolationTypeWin>
-                (raw_exception->exception_record.exception_information[0]);
-            switch (av_type) {
+            switch (raw_exception->exception_record.exception_information[0]) {
               case MD_ACCESS_VIOLATION_WIN_READ:
                 reason = "EXCEPTION_ACCESS_VIOLATION_READ";
                 break;
@@ -1202,14 +1353,11 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
           // an attempt to read data, 1 if it was an attempt to write data,
           // and 8 if this was a data execution violation.
           // exception_information[2] contains the underlying NTSTATUS code,
-          // which is the explanation for why this error occured.
+          // which is the explanation for why this error occurred.
           // This information is useful in addition to the code address, which
           // will be present in the crash thread's instruction field anyway.
           if (raw_exception->exception_record.number_parameters >= 1) {
-            MDInPageErrorTypeWin av_type =
-                static_cast<MDInPageErrorTypeWin>
-                (raw_exception->exception_record.exception_information[0]);
-            switch (av_type) {
+            switch (raw_exception->exception_record.exception_information[0]) {
               case MD_IN_PAGE_ERROR_WIN_READ:
                 reason = "EXCEPTION_IN_PAGE_ERROR_READ";
                 break;
@@ -1294,7 +1442,217 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
           reason = "EXCEPTION_POSSIBLE_DEADLOCK";
           break;
         case MD_EXCEPTION_CODE_WIN_STACK_BUFFER_OVERRUN:
-          reason = "EXCEPTION_STACK_BUFFER_OVERRUN";
+          if (raw_exception->exception_record.number_parameters >= 1) {
+            switch (raw_exception->exception_record.exception_information[0]) {
+              // Note - we skip the '0'/GS case as it exists for legacy reasons.
+              case MD_FAST_FAIL_VTGUARD_CHECK_FAILURE:
+                reason = "FAST_FAIL_VTGUARD_CHECK_FAILURE";
+                break;
+              case MD_FAST_FAIL_STACK_COOKIE_CHECK_FAILURE:
+                reason = "FAST_FAIL_STACK_COOKIE_CHECK_FAILURE";
+                break;
+              case MD_FAST_FAIL_CORRUPT_LIST_ENTRY:
+                reason = "FAST_FAIL_CORRUPT_LIST_ENTRY";
+                break;
+              case MD_FAST_FAIL_INCORRECT_STACK:
+                reason = "FAST_FAIL_INCORRECT_STACK";
+                break;
+              case MD_FAST_FAIL_INVALID_ARG:
+                reason = "FAST_FAIL_INVALID_ARG";
+                break;
+              case MD_FAST_FAIL_GS_COOKIE_INIT:
+                reason = "FAST_FAIL_GS_COOKIE_INIT";
+                break;
+              case MD_FAST_FAIL_FATAL_APP_EXIT:
+                reason = "FAST_FAIL_FATAL_APP_EXIT";
+                break;
+              case MD_FAST_FAIL_RANGE_CHECK_FAILURE:
+                reason = "FAST_FAIL_RANGE_CHECK_FAILURE";
+                break;
+              case MD_FAST_FAIL_UNSAFE_REGISTRY_ACCESS:
+                reason = "FAST_FAIL_UNSAFE_REGISTRY_ACCESS";
+                break;
+              case MD_FAST_FAIL_GUARD_ICALL_CHECK_FAILURE:
+                reason = "FAST_FAIL_GUARD_ICALL_CHECK_FAILURE";
+                break;
+              case MD_FAST_FAIL_GUARD_WRITE_CHECK_FAILURE:
+                reason = "FAST_FAIL_GUARD_WRITE_CHECK_FAILURE";
+                break;
+              case MD_FAST_FAIL_INVALID_FIBER_SWITCH:
+                reason = "FAST_FAIL_INVALID_FIBER_SWITCH";
+                break;
+              case MD_FAST_FAIL_INVALID_SET_OF_CONTEXT:
+                reason = "FAST_FAIL_INVALID_SET_OF_CONTEXT";
+                break;
+              case MD_FAST_FAIL_INVALID_REFERENCE_COUNT:
+                reason = "FAST_FAIL_INVALID_REFERENCE_COUNT";
+                break;
+              case MD_FAST_FAIL_INVALID_JUMP_BUFFER:
+                reason = "FAST_FAIL_INVALID_JUMP_BUFFER";
+                break;
+              case MD_FAST_FAIL_MRDATA_MODIFIED:
+                reason = "FAST_FAIL_MRDATA_MODIFIED";
+                break;
+              case MD_FAST_FAIL_CERTIFICATION_FAILURE:
+                reason = "FAST_FAIL_CERTIFICATION_FAILURE";
+                break;
+              case MD_FAST_FAIL_INVALID_EXCEPTION_CHAIN:
+                reason = "FAST_FAIL_INVALID_EXCEPTION_CHAIN";
+                break;
+              case MD_FAST_FAIL_CRYPTO_LIBRARY:
+                reason = "FAST_FAIL_CRYPTO_LIBRARY";
+                break;
+              case MD_FAST_FAIL_INVALID_CALL_IN_DLL_CALLOUT:
+                reason = "FAST_FAIL_INVALID_CALL_IN_DLL_CALLOUT";
+                break;
+              case MD_FAST_FAIL_INVALID_IMAGE_BASE:
+                reason = "FAST_FAIL_INVALID_IMAGE_BASE";
+                break;
+              case MD_FAST_FAIL_DLOAD_PROTECTION_FAILURE:
+                reason = "FAST_FAIL_DLOAD_PROTECTION_FAILURE";
+                break;
+              case MD_FAST_FAIL_UNSAFE_EXTENSION_CALL:
+                reason = "FAST_FAIL_UNSAFE_EXTENSION_CALL";
+                break;
+              case MD_FAST_FAIL_DEPRECATED_SERVICE_INVOKED:
+                reason = "FAST_FAIL_DEPRECATED_SERVICE_INVOKED";
+                break;
+              case MD_FAST_FAIL_INVALID_BUFFER_ACCESS:
+                reason = "FAST_FAIL_INVALID_BUFFER_ACCESS";
+                break;
+              case MD_FAST_FAIL_INVALID_BALANCED_TREE:
+                reason = "FAST_FAIL_INVALID_BALANCED_TREE";
+                break;
+              case MD_FAST_FAIL_INVALID_NEXT_THREAD:
+                reason = "FAST_FAIL_INVALID_NEXT_THREAD";
+                break;
+              case MD_FAST_FAIL_GUARD_ICALL_CHECK_SUPPRESSED:
+                reason = "FAST_FAIL_GUARD_ICALL_CHECK_SUPPRESSED";
+                break;
+              case MD_FAST_FAIL_APCS_DISABLED:
+                reason = "FAST_FAIL_APCS_DISABLED";
+                break;
+              case MD_FAST_FAIL_INVALID_IDLE_STATE:
+                reason = "FAST_FAIL_INVALID_IDLE_STATE";
+                break;
+              case MD_FAST_FAIL_MRDATA_PROTECTION_FAILURE:
+                reason = "FAST_FAIL_MRDATA_PROTECTION_FAILURE";
+                break;
+              case MD_FAST_FAIL_UNEXPECTED_HEAP_EXCEPTION:
+                reason = "FAST_FAIL_UNEXPECTED_HEAP_EXCEPTION";
+                break;
+              case MD_FAST_FAIL_INVALID_LOCK_STATE:
+                reason = "FAST_FAIL_INVALID_LOCK_STATE";
+                break;
+              case MD_FAST_FAIL_GUARD_JUMPTABLE:
+                reason = "FAST_FAIL_GUARD_JUMPTABLE";
+                break;
+              case MD_FAST_FAIL_INVALID_LONGJUMP_TARGET:
+                reason = "FAST_FAIL_INVALID_LONGJUMP_TARGET";
+                break;
+              case MD_FAST_FAIL_INVALID_DISPATCH_CONTEXT:
+                reason = "FAST_FAIL_INVALID_DISPATCH_CONTEXT";
+                break;
+              case MD_FAST_FAIL_INVALID_THREAD:
+                reason = "FAST_FAIL_INVALID_THREAD";
+                break;
+              case MD_FAST_FAIL_INVALID_SYSCALL_NUMBER:
+                reason = "FAST_FAIL_INVALID_SYSCALL_NUMBER";
+                break;
+              case MD_FAST_FAIL_INVALID_FILE_OPERATION:
+                reason = "FAST_FAIL_INVALID_FILE_OPERATION";
+                break;
+              case MD_FAST_FAIL_LPAC_ACCESS_DENIED:
+                reason = "FAST_FAIL_LPAC_ACCESS_DENIED";
+                break;
+              case MD_FAST_FAIL_GUARD_SS_FAILURE:
+                reason = "FAST_FAIL_GUARD_SS_FAILURE";
+                break;
+              case MD_FAST_FAIL_LOADER_CONTINUITY_FAILURE:
+                reason = "FAST_FAIL_LOADER_CONTINUITY_FAILURE";
+                break;
+              case MD_FAST_FAIL_GUARD_EXPORT_SUPPRESSION_FAILURE:
+                reason = "FAST_FAIL_GUARD_EXPORT_SUPPRESSION_FAILURE";
+                break;
+              case MD_FAST_FAIL_INVALID_CONTROL_STACK:
+                reason = "FAST_FAIL_INVALID_CONTROL_STACK";
+                break;
+              case MD_FAST_FAIL_SET_CONTEXT_DENIED:
+                reason = "FAST_FAIL_SET_CONTEXT_DENIED";
+                break;
+              case MD_FAST_FAIL_INVALID_IAT:
+                reason = "FAST_FAIL_INVALID_IAT";
+                break;
+              case MD_FAST_FAIL_HEAP_METADATA_CORRUPTION:
+                reason = "FAST_FAIL_HEAP_METADATA_CORRUPTION";
+                break;
+              case MD_FAST_FAIL_PAYLOAD_RESTRICTION_VIOLATION:
+                reason = "FAST_FAIL_PAYLOAD_RESTRICTION_VIOLATION";
+                break;
+              case MD_FAST_FAIL_LOW_LABEL_ACCESS_DENIED:
+                reason = "FAST_FAIL_LOW_LABEL_ACCESS_DENIED";
+                break;
+              case MD_FAST_FAIL_ENCLAVE_CALL_FAILURE:
+                reason = "FAST_FAIL_ENCLAVE_CALL_FAILURE";
+                break;
+              case MD_FAST_FAIL_UNHANDLED_LSS_EXCEPTON:
+                reason = "FAST_FAIL_UNHANDLED_LSS_EXCEPTON";
+                break;
+              case MD_FAST_FAIL_ADMINLESS_ACCESS_DENIED:
+                reason = "FAST_FAIL_ADMINLESS_ACCESS_DENIED";
+                break;
+              case MD_FAST_FAIL_UNEXPECTED_CALL:
+                reason = "FAST_FAIL_UNEXPECTED_CALL";
+                break;
+              case MD_FAST_FAIL_CONTROL_INVALID_RETURN_ADDRESS:
+                reason = "FAST_FAIL_CONTROL_INVALID_RETURN_ADDRESS";
+                break;
+              case MD_FAST_FAIL_UNEXPECTED_HOST_BEHAVIOR:
+                reason = "FAST_FAIL_UNEXPECTED_HOST_BEHAVIOR";
+                break;
+              case MD_FAST_FAIL_FLAGS_CORRUPTION:
+                reason = "FAST_FAIL_FLAGS_CORRUPTION";
+                break;
+              case MD_FAST_FAIL_VEH_CORRUPTION:
+                reason = "FAST_FAIL_VEH_CORRUPTION";
+                break;
+              case MD_FAST_FAIL_ETW_CORRUPTION:
+                reason = "FAST_FAIL_ETW_CORRUPTION";
+                break;
+              case MD_FAST_FAIL_RIO_ABORT:
+                reason = "FAST_FAIL_RIO_ABORT";
+                break;
+              case MD_FAST_FAIL_INVALID_PFN:
+                reason = "FAST_FAIL_INVALID_PFN";
+                break;
+              case MD_FAST_FAIL_GUARD_ICALL_CHECK_FAILURE_XFG:
+                reason = "FAST_FAIL_GUARD_ICALL_CHECK_FAILURE_XFG";
+                break;
+              case MD_FAST_FAIL_CAST_GUARD:
+                reason = "FAST_FAIL_CAST_GUARD";
+                break;
+              case MD_FAST_FAIL_HOST_VISIBILITY_CHANGE:
+                reason = "FAST_FAIL_HOST_VISIBILITY_CHANGE";
+                break;
+              case MD_FAST_FAIL_KERNEL_CET_SHADOW_STACK_ASSIST:
+                reason = "FAST_FAIL_KERNEL_CET_SHADOW_STACK_ASSIST";
+                break;
+              case MD_FAST_FAIL_PATCH_CALLBACK_FAILED:
+                reason = "FAST_FAIL_PATCH_CALLBACK_FAILED";
+                break;
+              case MD_FAST_FAIL_NTDLL_PATCH_FAILED:
+                reason = "FAST_FAIL_NTDLL_PATCH_FAILED";
+                break;
+              case MD_FAST_FAIL_INVALID_FLS_DATA:
+                reason = "FAST_FAIL_INVALID_FLS_DATA";
+                break;
+              default:
+                reason = "EXCEPTION_STACK_BUFFER_OVERRUN";
+                break;
+            }
+          } else {
+            reason = "EXCEPTION_STACK_BUFFER_OVERRUN";
+          }
           break;
         case MD_EXCEPTION_CODE_WIN_HEAP_CORRUPTION:
           reason = "EXCEPTION_HEAP_CORRUPTION";
@@ -1443,6 +1801,21 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
               break;
             case MD_EXCEPTION_FLAG_LIN_SEGV_PKUERR:
               reason.append("SEGV_PKUERR");
+              break;
+            case MD_EXCEPTION_FLAG_LIN_SEGV_ACCADI:
+              reason.append("SEGV_ACCADI");
+              break;
+            case MD_EXCEPTION_FLAG_LIN_SEGV_ADIDERR:
+              reason.append("SEGV_ADIDERR");
+              break;
+            case MD_EXCEPTION_FLAG_LIN_SEGV_ADIPERR:
+              reason.append("SEGV_ADIPERR");
+              break;
+            case MD_EXCEPTION_FLAG_LIN_SEGV_MTEAERR:
+              reason.append("SEGV_MTEAERR");
+              break;
+            case MD_EXCEPTION_FLAG_LIN_SEGV_MTESERR:
+              reason.append("SEGV_MTESERR");
               break;
             default:
               reason.append(flags_string);
@@ -1737,13 +2110,24 @@ string MinidumpProcessor::GetCrashReason(Minidump* dump, uint64_t* address) {
     *address = GetAddressForArchitecture(
       static_cast<MDCPUArchitecture>(raw_system_info->processor_architecture),
       *address);
+
+#ifdef __linux__
+    // For invalid accesses to non-canonical addresses, amd64 cpus don't provide
+    // the fault address, so recover it from the disassembly and register state
+    // if possible.
+    if (enable_objdump
+        && raw_system_info->processor_architecture == MD_CPU_ARCHITECTURE_AMD64
+        && std::numeric_limits<uint64_t>::max() == *address) {
+      CalculateFaultAddressFromInstruction(dump, address);
+    }
+#endif // __linux__
   }
 
   return reason;
 }
 
 // static
-string MinidumpProcessor::GetAssertion(Minidump* dump) {
+std::string MinidumpProcessor::GetAssertion(Minidump* dump) {
   MinidumpAssertion* assertion = dump->GetAssertion();
   if (!assertion)
     return "";
@@ -1752,7 +2136,7 @@ string MinidumpProcessor::GetAssertion(Minidump* dump) {
   if (!raw_assertion)
     return "";
 
-  string assertion_string;
+  std::string assertion_string;
   switch (raw_assertion->type) {
   case MD_ASSERTION_INFO_TYPE_INVALID_PARAMETER:
     assertion_string = "Invalid parameter passed to library function";
@@ -1770,17 +2154,17 @@ string MinidumpProcessor::GetAssertion(Minidump* dump) {
   }
   }
 
-  string expression = assertion->expression();
+  std::string expression = assertion->expression();
   if (!expression.empty()) {
     assertion_string.append(" " + expression);
   }
 
-  string function = assertion->function();
+  std::string function = assertion->function();
   if (!function.empty()) {
     assertion_string.append(" in function " + function);
   }
 
-  string file = assertion->file();
+  std::string file = assertion->file();
   if (!file.empty()) {
     assertion_string.append(", in file " + file);
   }

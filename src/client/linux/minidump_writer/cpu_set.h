@@ -1,5 +1,4 @@
-// Copyright (c) 2013, Google Inc.
-// All rights reserved.
+// Copyright 2013 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -80,7 +79,7 @@ public:
       size_t item_len = static_cast<size_t>(p_end - p);
       const char* item_next =
           static_cast<const char*>(my_memchr(p, ',', item_len));
-      if (item_next != NULL) {
+      if (item_next != nullptr) {
         p = item_next + 1;
         item_len = static_cast<size_t>(item_next - item);
       } else {

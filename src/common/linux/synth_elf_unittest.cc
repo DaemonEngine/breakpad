@@ -1,5 +1,4 @@
-// Copyright (c) 2011 Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,12 +31,15 @@
 // synth_elf_unittest.cc:
 // Unittests for google_breakpad::synth_elf::ELF
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <elf.h>
 
 #include "breakpad_googletest_includes.h"
 #include "common/linux/elfutils.h"
 #include "common/linux/synth_elf.h"
-#include "common/using_std_string.h"
 
 using google_breakpad::ElfClass32;
 using google_breakpad::ElfClass64;
@@ -62,7 +64,7 @@ public:
 
 TEST_F(StringTableTest, Empty) {
   EXPECT_EQ(1U, table.Size());
-  string contents;
+  std::string contents;
   ASSERT_TRUE(table.GetContents(&contents));
   const char* kExpectedContents = "\0";
   EXPECT_EQ(0, memcmp(kExpectedContents,
@@ -73,9 +75,9 @@ TEST_F(StringTableTest, Empty) {
 }
 
 TEST_F(StringTableTest, Basic) {
-  const string s1("table fills with strings");
-  const string s2("offsets preserved as labels");
-  const string s3("verified with tests");
+  const std::string s1("table fills with strings");
+  const std::string s2("offsets preserved as labels");
+  const std::string s3("verified with tests");
   const char* kExpectedContents = 
     "\0table fills with strings\0"
     "offsets preserved as labels\0"
@@ -83,7 +85,7 @@ TEST_F(StringTableTest, Basic) {
   Label l1(table.Add(s1));
   Label l2(table.Add(s2));
   Label l3(table.Add(s3));
-  string contents;
+  std::string contents;
   ASSERT_TRUE(table.GetContents(&contents));
   EXPECT_EQ(0, memcmp(kExpectedContents,
                       contents.c_str(),
@@ -97,16 +99,16 @@ TEST_F(StringTableTest, Basic) {
 }
 
 TEST_F(StringTableTest, Duplicates) {
-  const string s1("string 1");
-  const string s2("string 2");
-  const string s3("");
+  const std::string s1("string 1");
+  const std::string s2("string 2");
+  const std::string s3("");
   const char* kExpectedContents = "\0string 1\0string 2\0";
   Label l1(table.Add(s1));
   Label l2(table.Add(s2));
   // Adding strings twice should return the same Label.
   Label l3(table.Add(s3));
   Label l4(table.Add(s2));
-  string contents;
+  std::string contents;
   ASSERT_TRUE(table.GetContents(&contents));
   EXPECT_EQ(0, memcmp(kExpectedContents,
                       contents.c_str(),
@@ -122,13 +124,13 @@ TEST_F(SymbolTableTest, Simple32) {
   StringTable table(kLittleEndian);
   SymbolTable syms(kLittleEndian, 4, table);
 
-  const string kFuncName1 = "superfunc";
+  const std::string kFuncName1 = "superfunc";
   const uint32_t kFuncAddr1 = 0x10001000;
   const uint32_t kFuncSize1 = 0x10;
-  const string kFuncName2 = "awesomefunc";
+  const std::string kFuncName2 = "awesomefunc";
   const uint32_t kFuncAddr2 = 0x20002000;
   const uint32_t kFuncSize2 = 0x2f;
-  const string kFuncName3 = "megafunc";
+  const std::string kFuncName3 = "megafunc";
   const uint32_t kFuncAddr3 = 0x30003000;
   const uint32_t kFuncSize3 = 0x3c;
 
@@ -145,7 +147,7 @@ TEST_F(SymbolTableTest, Simple32) {
   const char kExpectedStringTable[] = "\0superfunc\0awesomefunc\0megafunc";
   const size_t kExpectedStringTableSize = sizeof(kExpectedStringTable);
   EXPECT_EQ(kExpectedStringTableSize, table.Size());
-  string table_contents;
+  std::string table_contents;
   table.GetContents(&table_contents);
   EXPECT_EQ(0, memcmp(kExpectedStringTable,
                       table_contents.c_str(),
@@ -177,7 +179,7 @@ TEST_F(SymbolTableTest, Simple32) {
   const size_t kExpectedSymbolSize = sizeof(kExpectedSymbolContents);
   EXPECT_EQ(kExpectedSymbolSize, syms.Size());
 
-  string symbol_contents;
+  std::string symbol_contents;
   syms.GetContents(&symbol_contents);
   EXPECT_EQ(0, memcmp(kExpectedSymbolContents,
                       symbol_contents.c_str(),
@@ -211,7 +213,7 @@ TYPED_TEST(BasicElf, EmptyLE) {
   elf.Finish();
   EXPECT_EQ(kExpectedSize, elf.Size());
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(elf.GetContents(&contents));
   ASSERT_EQ(kExpectedSize, contents.size());
   const Ehdr* header =
@@ -286,7 +288,7 @@ TYPED_TEST(BasicElf, BasicLE) {
   elf.Finish();
   EXPECT_EQ(kExpectedSize, elf.Size());
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(elf.GetContents(&contents));
   ASSERT_EQ(kExpectedSize, contents.size());
   const Ehdr* header =
@@ -374,7 +376,7 @@ class ElfNotesTest : public Test {};
 
 TEST_F(ElfNotesTest, Empty) {
   Notes notes(kLittleEndian);
-  string contents;
+  std::string contents;
   ASSERT_TRUE(notes.GetContents(&contents));
   EXPECT_EQ(0U, contents.size());
 }
@@ -403,7 +405,7 @@ TEST_F(ElfNotesTest, Notes) {
   const size_t kExpectedNotesSize = sizeof(kExpectedNotesContents);
   EXPECT_EQ(kExpectedNotesSize, notes.Size());
 
-  string notes_contents;
+  std::string notes_contents;
   ASSERT_TRUE(notes.GetContents(&notes_contents));
   EXPECT_EQ(0, memcmp(kExpectedNotesContents,
                       notes_contents.data(),

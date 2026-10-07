@@ -1,5 +1,4 @@
-// Copyright (c) 2020, Google Inc.
-// All rights reserved.
+// Copyright 2020 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,7 +28,11 @@
 
 // Original author: Sterling Augustine <saugustine@google.com>
 
-// dwarf2reader_lineinfo_unittest.cc: Unit tests for dwarf2reader::LineInfo
+// dwarf2reader_lineinfo_unittest.cc: Unit tests for google_breakpad::LineInfo
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -49,7 +52,7 @@ using testing::Sequence;
 using testing::Test;
 using testing::_;
 
-using namespace dwarf2reader;
+using namespace google_breakpad;
 
 namespace {
 
@@ -92,6 +95,30 @@ const uint8_t dwarf5_line_program[] = {
   // end
 };
 
+// Generated with Apple clang version 17.0.0 (clang-1700.0.13.3) by running:
+//
+// echo "int foo = 42;" > foo.c && \
+//   clang -gembed-source -gdwarf-5 -c -o foo.o foo.c && \
+//   otool -V -s __DWARF __debug_line foo.o && \
+//   otool -V -s __DWARF __debug_line_str foo.o && \
+//   otool -V -s __DWARF __debug_str foo.o
+const uint8_t dwarf5_line_program_embedded_source[] = {
+    0x46, 0x00, 0x00, 0x00, 0x05, 0x00, 0x08, 0x00, 0x3e, 0x00, 0x00,
+    0x00, 0x01, 0x01, 0x01, 0xfb, 0x0e, 0x0d, 0x00, 0x01, 0x01, 0x01,
+    0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x01, 0x1f,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x1f, 0x02, 0x0f, 0x05,
+    0x1e, 0x81, 0x40, 0x1f, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x26,
+    0x60, 0x9b, 0xb4, 0x87, 0x5d, 0xd0, 0xd6, 0x72, 0x75, 0x5a, 0x4a,
+    0x3c, 0x05, 0x48, 0x5b, 0x2e, 0x00, 0x00, 0x00};
+
+const uint8_t dwarf5_line_string_section_embedded_source[] = {
+    '/', 'a', '\0', 'f', 'o', 'o', '.', 'c', '\0', 'i',  'n', 't',
+    ' ', 'f', 'o',  'o', ' ', '=', '4', '2', ';',  '\n', '\0'};
+
+const uint8_t dwarf5_string_section_embedded_source[] = {
+    'a',  '\0', 'b', '\0', 'c',  '\0', 'd', '\0', 'e',
+    '\0', 'f',  'o', 'o',  '\0', 'i',  'n', 't',  '\0'};
+
 const uint8_t dwarf4_line_program[] = {
   0x37, 0x0, 0x0, 0x0,  // unit_length (end - begin)
   // begin
@@ -128,13 +155,16 @@ const uint8_t dwarf4_line_program[] = {
 
 class MockLineInfoHandler: public LineInfoHandler {
  public:
-  MOCK_METHOD(void, DefineDir, (const string&, uint32_t dir_num), (override));
-  MOCK_METHOD(void, DefineFile, (const string& name, int32_t file_num,
-                                 uint32_t dir_num, uint64_t mod_time,
-                                 uint64_t length), (override));
-  MOCK_METHOD(void, AddLine, (uint64_t address, uint64_t length,
-                              uint32_t file_num, uint32_t line_num,
-                              uint32_t column_num), (override));
+  MOCK_METHOD(void, DefineDir, (const std::string&, uint32_t dir_num),
+              (override));
+  MOCK_METHOD(void, DefineFile,
+              (const std::string& name, int32_t file_num, uint32_t dir_num,
+               uint64_t mod_time, uint64_t length),
+              (override));
+  MOCK_METHOD(void, AddLine,
+              (uint64_t address, uint64_t length, uint32_t file_num,
+               uint32_t line_num, uint32_t column_num),
+              (override));
 };
 
 const uint8_t string_section[] = {'x', '/', 'a', '\0'};
@@ -162,6 +192,22 @@ TEST_F(LineProgram, ReadLinesDwarf5) {
   EXPECT_EQ(line_reader.Start(), sizeof(dwarf5_line_program));
 }
 
+TEST_F(LineProgram, ReadLinesDwarf5EmbeddedSource) {
+  ByteReader byte_reader(ENDIANNESS_LITTLE);
+  // LineTables don't specify the offset size like Compilation Units do.
+  byte_reader.SetOffsetSize(4);
+  LineInfo line_reader(dwarf5_line_program_embedded_source,
+                       sizeof(dwarf5_line_program_embedded_source),
+                       &byte_reader, dwarf5_string_section_embedded_source,
+                       sizeof(dwarf5_string_section_embedded_source),
+                       dwarf5_line_string_section_embedded_source,
+                       sizeof(dwarf5_line_string_section_embedded_source),
+                       &handler_);
+  EXPECT_CALL(handler_, DefineDir("/a", 0)).Times(1);
+  EXPECT_CALL(handler_, DefineFile("foo.c", 0, 0, 0, 0)).Times(1);
+  EXPECT_EQ(line_reader.Start(), sizeof(dwarf5_line_program_embedded_source));
+}
+
 TEST_F(LineProgram, ReadLinesDwarf4) {
   ByteReader byte_reader(ENDIANNESS_LITTLE);
   // LineTables don't specify the offset size like Compilation Units do.
@@ -169,7 +215,7 @@ TEST_F(LineProgram, ReadLinesDwarf4) {
   // dwarf4 line info headers don't encode the address size.
   byte_reader.SetAddressSize(8);
   LineInfo line_reader(dwarf4_line_program,
-                       sizeof(dwarf5_line_program),
+                       sizeof(dwarf4_line_program),
                        &byte_reader,
                        // dwarf4 line tables can't access the string sections
                        // so pass values likely to make assertions fail if

@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -37,20 +36,27 @@
 //
 // Author: Siyang Xie (lambxsy@google.com)
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "google_breakpad/processor/fast_source_line_resolver.h"
-#include "processor/fast_source_line_resolver_types.h"
+
+#include <assert.h>
+#include <stdint.h>
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "common/scoped_ptr.h"
-#include "common/using_std_string.h"
+#include "processor/fast_source_line_resolver_types.h"
+#include "processor/logging.h"
 #include "processor/module_factory.h"
 #include "processor/simple_serializer-inl.h"
 
-using std::map;
-using std::make_pair;
+using std::deque;
+using std::unique_ptr;
 
 namespace google_breakpad {
 
@@ -58,7 +64,7 @@ class FastModuleFactory : public ModuleFactory {
  public:
   virtual ~FastModuleFactory() { }
   virtual FastSourceLineResolver::Module* CreateModule(
-      const string& name) const {
+      const std::string& name) const {
     return new FastSourceLineResolver::Module(name);
   }
 };
@@ -70,7 +76,9 @@ bool FastSourceLineResolver::ShouldDeleteMemoryBufferAfterLoadModule() {
   return false;
 }
 
-void FastSourceLineResolver::Module::LookupAddress(StackFrame* frame) const {
+void FastSourceLineResolver::Module::LookupAddress(
+    StackFrame* frame,
+    std::deque<std::unique_ptr<StackFrame>>* inlined_frames) const {
   MemAddr address = frame->instruction - frame->module->base_address();
 
   // First, look for a FUNC record that covers address. Use
@@ -79,9 +87,9 @@ void FastSourceLineResolver::Module::LookupAddress(StackFrame* frame) const {
   // extent of the PUBLIC symbol we find, below. This does mean we
   // need to check that address indeed falls within the function we
   // find; do the range comparison in an overflow-friendly way.
-  scoped_ptr<Function> func(new Function);
+  std::unique_ptr<Function> func(new Function);
   const Function* func_ptr = 0;
-  scoped_ptr<PublicSymbol> public_symbol(new PublicSymbol);
+  std::unique_ptr<PublicSymbol> public_symbol(new PublicSymbol);
   const PublicSymbol* public_symbol_ptr = 0;
   MemAddr function_base;
   MemAddr function_size;
@@ -90,15 +98,16 @@ void FastSourceLineResolver::Module::LookupAddress(StackFrame* frame) const {
   if (functions_.RetrieveNearestRange(address, func_ptr,
                                       &function_base, &function_size) &&
       address >= function_base && address - function_base < function_size) {
-    func.get()->CopyFrom(func_ptr);
+    func->CopyFrom(func_ptr);
     frame->function_name = func->name;
     frame->function_base = frame->module->base_address() + function_base;
+    frame->is_multiple = func->is_multiple;
 
-    scoped_ptr<Line> line(new Line);
+    std::unique_ptr<Line> line(new Line);
     const Line* line_ptr = 0;
     MemAddr line_base;
-    if (func->lines.RetrieveRange(address, line_ptr, &line_base, NULL)) {
-      line.get()->CopyFrom(line_ptr);
+    if (func->lines.RetrieveRange(address, line_ptr, &line_base, nullptr)) {
+      line->CopyFrom(line_ptr);
       FileMap::iterator it = files_.find(line->source_file_id);
       if (it != files_.end()) {
         frame->source_file_name =
@@ -107,12 +116,79 @@ void FastSourceLineResolver::Module::LookupAddress(StackFrame* frame) const {
       frame->source_line = line->line;
       frame->source_line_base = frame->module->base_address() + line_base;
     }
+    // Check if this is inlined function call.
+    if (inlined_frames) {
+      ConstructInlineFrames(frame, address, func->inlines, inlined_frames);
+    }
   } else if (public_symbols_.Retrieve(address,
                                       public_symbol_ptr, &public_address) &&
              (!func_ptr || public_address > function_base)) {
-    public_symbol.get()->CopyFrom(public_symbol_ptr);
+    public_symbol->CopyFrom(public_symbol_ptr);
     frame->function_name = public_symbol->name;
     frame->function_base = frame->module->base_address() + public_address;
+    frame->is_multiple = public_symbol->is_multiple;
+  }
+}
+
+void FastSourceLineResolver::Module::ConstructInlineFrames(
+    StackFrame* frame,
+    MemAddr address,
+    const StaticContainedRangeMap<MemAddr, char>& inline_map,
+    std::deque<std::unique_ptr<StackFrame>>* inlined_frames) const {
+  std::vector<const char*> inline_ptrs;
+  if (!inline_map.RetrieveRanges(address, inline_ptrs)) {
+    return;
+  }
+
+  for (const char* inline_ptr : inline_ptrs) {
+    std::unique_ptr<Inline> in(new Inline);
+    in->CopyFrom(inline_ptr);
+    unique_ptr<StackFrame> new_frame =
+        unique_ptr<StackFrame>(new StackFrame(*frame));
+    auto origin_iter = inline_origins_.find(in->origin_id);
+    if (origin_iter != inline_origins_.end()) {
+      std::unique_ptr<InlineOrigin> origin(new InlineOrigin);
+      origin->CopyFrom(origin_iter.GetValuePtr());
+      new_frame->function_name = origin->name;
+    } else {
+      new_frame->function_name = "<name omitted>";
+    }
+
+    // Store call site file and line in current frame, which will be updated
+    // later.
+    new_frame->source_line = in->call_site_line;
+    if (in->has_call_site_file_id) {
+      auto file_iter = files_.find(in->call_site_file_id);
+      if (file_iter != files_.end()) {
+        new_frame->source_file_name = file_iter.GetValuePtr();
+      }
+    }
+
+    // Use the starting address of the inlined range as inlined function base.
+    new_frame->function_base = new_frame->module->base_address();
+    for (const auto& range : in->inline_ranges) {
+      if (address >= range.first && address < range.first + range.second) {
+        new_frame->function_base += range.first;
+        break;
+      }
+    }
+    new_frame->trust = StackFrame::FRAME_TRUST_INLINE;
+
+    // The inlines vector has an order from innermost entry to outermost entry.
+    // By push_back, we will have inlined_frames with the same order.
+    inlined_frames->push_back(std::move(new_frame));
+  }
+
+  // Update the source file and source line for each inlined frame.
+  if (!inlined_frames->empty()) {
+    std::string parent_frame_source_file_name = frame->source_file_name;
+    int parent_frame_source_line = frame->source_line;
+    frame->source_file_name = inlined_frames->back()->source_file_name;
+    frame->source_line = inlined_frames->back()->source_line;
+    for (unique_ptr<StackFrame>& inlined_frame : *inlined_frames) {
+      std::swap(inlined_frame->source_file_name, parent_frame_source_file_name);
+      std::swap(inlined_frame->source_line, parent_frame_source_line);
+    }
   }
 }
 
@@ -137,7 +213,7 @@ WindowsFrameInfo FastSourceLineResolver::CopyWFI(const char* raw) {
   uint32_t max_stack_size = para_uint32[5];
   const char* boolean = reinterpret_cast<const char*>(para_uint32 + 6);
   bool allocates_base_pointer = (*boolean != 0);
-  string program_string = boolean + 1;
+  std::string program_string = boolean + 1;
 
   return WindowsFrameInfo(type,
                           prolog_size,
@@ -162,19 +238,32 @@ bool FastSourceLineResolver::Module::LoadMapFromMemory(
   const char* mem_buffer = memory_buffer;
   mem_buffer = SimpleSerializer<bool>::Read(mem_buffer, &is_corrupt_);
 
-  const uint32_t* map_sizes = reinterpret_cast<const uint32_t*>(mem_buffer);
+  const uint64_t* map_sizes = reinterpret_cast<const uint64_t*>(mem_buffer);
 
-  unsigned int header_size = kNumberMaps_ * sizeof(unsigned int);
+  unsigned int header_size = kNumberMaps_ * sizeof(uint64_t);
 
   // offsets[]: an array of offset addresses (with respect to mem_buffer),
   // for each "Static***Map" component of Module.
   // "Static***Map": static version of std::map or map wrapper, i.e., StaticMap,
   // StaticAddressMap, StaticContainedRangeMap, and StaticRangeMap.
-  unsigned int offsets[kNumberMaps_];
+  uint64_t offsets[kNumberMaps_];
   offsets[0] = header_size;
   for (int i = 1; i < kNumberMaps_; ++i) {
     offsets[i] = offsets[i - 1] + map_sizes[i - 1];
   }
+  size_t expected_size = sizeof(bool) + offsets[kNumberMaps_ - 1] +
+                         map_sizes[kNumberMaps_ - 1] + 1;
+  if (expected_size != memory_buffer_size &&
+      // Allow for having an extra null terminator.
+      expected_size != memory_buffer_size - 1) {
+    // This could either be a random corruption or the serialization format was
+    // changed without updating the version in kSerializedBreakpadFileExtension.
+    BPLOG(ERROR) << "Memory buffer is either corrupt or an unsupported version"
+                 << ", expected size: " << expected_size
+                 << ", actual size: " << memory_buffer_size;
+    return false;
+  }
+  BPLOG(INFO) << "Memory buffer size looks good, size: " << memory_buffer_size;
 
   // Use pointers to construct Static*Map data members in Module:
   int map_id = 0;
@@ -183,21 +272,22 @@ bool FastSourceLineResolver::Module::LoadMapFromMemory(
       StaticRangeMap<MemAddr, Function>(mem_buffer + offsets[map_id++]);
   public_symbols_ =
       StaticAddressMap<MemAddr, PublicSymbol>(mem_buffer + offsets[map_id++]);
-  for (int i = 0; i < WindowsFrameInfo::STACK_INFO_LAST; ++i)
+  for (int i = 0; i < WindowsFrameInfo::STACK_INFO_LAST; ++i) {
     windows_frame_info_[i] =
         StaticContainedRangeMap<MemAddr, char>(mem_buffer + offsets[map_id++]);
+  }
 
   cfi_initial_rules_ =
       StaticRangeMap<MemAddr, char>(mem_buffer + offsets[map_id++]);
   cfi_delta_rules_ = StaticMap<MemAddr, char>(mem_buffer + offsets[map_id++]);
-
+  inline_origins_ = StaticMap<int, char>(mem_buffer + offsets[map_id++]);
   return true;
 }
 
 WindowsFrameInfo* FastSourceLineResolver::Module::FindWindowsFrameInfo(
     const StackFrame* frame) const {
   MemAddr address = frame->instruction - frame->module->base_address();
-  scoped_ptr<WindowsFrameInfo> result(new WindowsFrameInfo());
+  std::unique_ptr<WindowsFrameInfo> result(new WindowsFrameInfo());
 
   // We only know about WindowsFrameInfo::STACK_INFO_FRAME_DATA and
   // WindowsFrameInfo::STACK_INFO_FPO. Prefer them in this order.
@@ -221,13 +311,13 @@ WindowsFrameInfo* FastSourceLineResolver::Module::FindWindowsFrameInfo(
   // below. However, this does mean we need to check that ADDRESS
   // falls within the retrieved function's range; do the range
   // comparison in an overflow-friendly way.
-  scoped_ptr<Function> function(new Function);
+  std::unique_ptr<Function> function(new Function);
   const Function* function_ptr = 0;
   MemAddr function_base, function_size;
   if (functions_.RetrieveNearestRange(address, function_ptr,
                                       &function_base, &function_size) &&
       address >= function_base && address - function_base < function_size) {
-    function.get()->CopyFrom(function_ptr);
+    function->CopyFrom(function_ptr);
     result->parameter_size = function->parameter_size;
     result->valid |= WindowsFrameInfo::VALID_PARAMETER_SIZE;
     return result.release();
@@ -235,23 +325,23 @@ WindowsFrameInfo* FastSourceLineResolver::Module::FindWindowsFrameInfo(
 
   // PUBLIC symbols might have a parameter size. Use the function we
   // found above to limit the range the public symbol covers.
-  scoped_ptr<PublicSymbol> public_symbol(new PublicSymbol);
+  std::unique_ptr<PublicSymbol> public_symbol(new PublicSymbol);
   const PublicSymbol* public_symbol_ptr = 0;
   MemAddr public_address;
   if (public_symbols_.Retrieve(address, public_symbol_ptr, &public_address) &&
       (!function_ptr || public_address > function_base)) {
-    public_symbol.get()->CopyFrom(public_symbol_ptr);
+    public_symbol->CopyFrom(public_symbol_ptr);
     result->parameter_size = public_symbol->parameter_size;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 CFIFrameInfo* FastSourceLineResolver::Module::FindCFIFrameInfo(
     const StackFrame* frame) const {
   MemAddr address = frame->instruction - frame->module->base_address();
   MemAddr initial_base, initial_size;
-  const char* initial_rules = NULL;
+  const char* initial_rules = nullptr;
 
   // Find the initial rule whose range covers this address. That
   // provides an initial set of register recovery rules. Then, walk
@@ -259,14 +349,14 @@ CFIFrameInfo* FastSourceLineResolver::Module::FindCFIFrameInfo(
   // instruction address, applying delta rules.
   if (!cfi_initial_rules_.RetrieveRange(address, initial_rules,
                                         &initial_base, &initial_size)) {
-    return NULL;
+    return nullptr;
   }
 
   // Create a frame info structure, and populate it with the rules from
   // the STACK CFI INIT record.
-  scoped_ptr<CFIFrameInfo> rules(new CFIFrameInfo());
+  std::unique_ptr<CFIFrameInfo> rules(new CFIFrameInfo());
   if (!ParseCFIRuleSet(initial_rules, rules.get()))
-    return NULL;
+    return nullptr;
 
   // Find the first delta rule that falls within the initial rule's range.
   StaticMap<MemAddr, char>::iterator delta =

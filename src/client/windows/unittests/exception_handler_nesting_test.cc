@@ -1,5 +1,4 @@
-// Copyright 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <windows.h>
 
@@ -133,7 +136,7 @@ void DoCrash(const char* message) {
     fprintf(stderr, "%s", message);
     fflush(stderr);
   }
-  int* i = NULL;
+  int* i = nullptr;
   (*i)++;
 
   ASSERT_TRUE(false);
@@ -153,23 +156,23 @@ void InstallExceptionHandlerAndCrash(bool install_filter,
         (filter_return_value ?
           &CrashHandlerFilter<true> :
           &CrashHandlerFilter<false>) :
-        NULL,
+        nullptr,
       install_callback ?
         (callback_return_value ?
           &MinidumpWrittenCallback<true> :
           &MinidumpWrittenCallback<false>) :
-        NULL,
-      NULL,  // callback_context
+        nullptr,
+      nullptr,  // callback_context
       google_breakpad::ExceptionHandler::HANDLER_EXCEPTION);
 
   // Disable GTest SEH handler
   testing::DisableExceptionHandlerInScope disable_exception_handler;
 
-  DoCrash(NULL);
+  DoCrash(nullptr);
 }
 
 TEST(AssertDeathSanity, Simple) {
-  ASSERT_DEATH(DoCrash(NULL), "");
+  ASSERT_DEATH(DoCrash(nullptr), "");
 }
 
 TEST(AssertDeathSanity, Regex) {
@@ -261,7 +264,7 @@ TEST(ExceptionHandlerNesting, Skip_From_Inner_Filter) {
       temp_path,
       &CrashHandlerFilter<true>,
       &MinidumpWrittenCallback<false>,
-      NULL,  // callback_context
+      nullptr,  // callback_context
       google_breakpad::ExceptionHandler::HANDLER_EXCEPTION);
 
   ASSERT_DEATH(
@@ -285,7 +288,7 @@ TEST(ExceptionHandlerNesting, Skip_From_Inner_Callback) {
       temp_path,
       &CrashHandlerFilter<true>,
       &MinidumpWrittenCallback<false>,
-      NULL,  // callback_context
+      nullptr,  // callback_context
       google_breakpad::ExceptionHandler::HANDLER_EXCEPTION);
 
   ASSERT_DEATH(
@@ -310,7 +313,7 @@ TEST(ExceptionHandlerNesting, Handled_By_Inner_Handler) {
       temp_path,
       &CrashHandlerFilter<true>,
       &MinidumpWrittenCallback<true>,
-      NULL,  // callback_context
+      nullptr,  // callback_context
       google_breakpad::ExceptionHandler::HANDLER_EXCEPTION);
 
   ASSERT_DEATH(

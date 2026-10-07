@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,7 +30,13 @@
 
 // synth_minidump.cc: Implementation of SynthMinidump.  See synth_minidump.h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "processor/synth_minidump.h"
+
+#include <assert.h>
 
 namespace google_breakpad {
 
@@ -106,11 +111,12 @@ const MDRawSystemInfo SystemInfo::windows_x86 = {
   }
 };
 
-const string SystemInfo::windows_x86_csd_version = "Service Pack 2";
+const std::string SystemInfo::windows_x86_csd_version = "Service Pack 2";
 
-String::String(const Dump& dump, const string& contents) : Section(dump) {
+String::String(const Dump& dump, const std::string& contents) : Section(dump) {
   D32(contents.size() * 2);
-  for (string::const_iterator i = contents.begin(); i != contents.end(); i++)
+  for (std::string::const_iterator i = contents.begin(); i != contents.end();
+       i++)
     D16(*i);
 }
 

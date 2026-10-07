@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,22 +30,27 @@
 //
 // Author: Siyang Xie (lambxsy@google.com)
 
-#include <climits>
-#include <cstdlib>
-#include <ctime>
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
+#include "processor/static_address_map-inl.h"
+
+#include <limits.h>
+#include <stdlib.h>
+#include <time.h>
+
 #include <string>
 #include <iostream>
 #include <sstream>
 
 #include "breakpad_googletest_includes.h"
-#include "common/using_std_string.h"
 #include "processor/address_map-inl.h"
-#include "processor/static_address_map-inl.h"
 #include "processor/simple_serializer-inl.h"
 #include "map_serializers-inl.h"
 
 typedef google_breakpad::StaticAddressMap<int, char> TestMap;
-typedef google_breakpad::AddressMap<int, string> AddrMap;
+typedef google_breakpad::AddressMap<int, std::string> AddrMap;
 
 class TestStaticAddressMap : public ::testing::Test {
  protected:
@@ -66,7 +70,7 @@ class TestStaticAddressMap : public ::testing::Test {
       testdata[2][i] = tempdata[i];
 
     // Test data set3:
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < testsize[3]; ++i)
       testdata[3][i] = rand();
 
@@ -78,7 +82,7 @@ class TestStaticAddressMap : public ::testing::Test {
         sstream << "test " << testdata[testcase][data_item];
         addr_map[testcase].Store(testdata[testcase][data_item], sstream.str());
       }
-      map_data[testcase] = serializer.Serialize(addr_map[testcase], NULL);
+      map_data[testcase] = serializer.Serialize(addr_map[testcase], nullptr);
       test_map[testcase] = TestMap(map_data[testcase]);
     }
   }
@@ -93,9 +97,9 @@ class TestStaticAddressMap : public ::testing::Test {
   void CompareRetrieveResult(int testcase, int target) {
     int address;
     int address_test;
-    string entry;
-    string entry_test;
-    const char* entry_cstring = NULL;
+    std::string entry;
+    std::string entry_test;
+    const char* entry_cstring = nullptr;
     bool found;
     bool found_test;
 
@@ -121,7 +125,7 @@ class TestStaticAddressMap : public ::testing::Test {
 
     srand(time(0));
     for (int data_item = 0; data_item < testsize[testcase]; ++data_item) {
-      // Retrive (aka, search) for target address and compare results from
+      // Retrieve (aka, search) for target address and compare results from
       // AddressMap and StaticAddressMap.
 
       // First, assign the search target to be one of original testdata that is
@@ -148,7 +152,7 @@ class TestStaticAddressMap : public ::testing::Test {
   AddrMap addr_map[kNumberTestCases];
   TestMap test_map[kNumberTestCases];
   char* map_data[kNumberTestCases];
-  google_breakpad::AddressMapSerializer<int, string> serializer;
+  google_breakpad::AddressMapSerializer<int, std::string> serializer;
 };
 
 const int TestStaticAddressMap::testsize[] = {0, 1, 6, 1000};

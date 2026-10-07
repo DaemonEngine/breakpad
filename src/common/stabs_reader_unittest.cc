@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,9 +30,16 @@
 
 // stabs_reader_unittest.cc: Unit tests for google_breakpad::StabsReader.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <stab.h>
+#ifdef __APPLE__
+#include <mach-o/nlist.h>
+#endif
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +54,6 @@
 #include "breakpad_googletest_includes.h"
 #include "common/stabs_reader.h"
 #include "common/test_assembler.h"
-#include "common/using_std_string.h"
 
 using ::testing::Eq;
 using ::testing::InSequence;
@@ -75,8 +80,8 @@ class StringAssembler: public Section {
   // Add the string S to this StringAssembler, and return the string's
   // offset within this compilation unit's strings. If S has been added
   // already, this returns the offset of its first instance.
-  size_t Add(const string& s) {
-    map<string, size_t>::iterator it = added_.find(s);
+  size_t Add(const std::string& s) {
+    map<std::string, size_t>::iterator it = added_.find(s);
     if (it != added_.end())
       return it->second;
     size_t offset = Size() - cu_start_;
@@ -119,7 +124,7 @@ class StringAssembler: public Section {
 
   // A map from the strings that have been added to this section to
   // their starting indices within their compilation unit.
-  map<string, size_t> added_;
+  map<std::string, size_t> added_;
 };
 
 // A StabsAssembler is a class for generating .stab sections to present as
@@ -132,7 +137,7 @@ class StabsAssembler: public Section {
         string_assembler_(string_assembler),
         value_size_(0),
         entry_count_(0),
-        cu_header_(NULL) { }
+        cu_header_(nullptr) { }
   ~StabsAssembler() { assert(!cu_header_); }
 
   // Accessor and setter for value_size_.
@@ -160,14 +165,14 @@ class StabsAssembler: public Section {
 
   // As above, but automatically add NAME to our StringAssembler.
   StabsAssembler& Stab(uint8_t type, uint8_t other, Label descriptor,
-                       Label value, const string& name) {
+                       Label value, const std::string& name) {
     return Stab(type, other, descriptor, value, string_assembler_->Add(name));
   }
 
   // Start a compilation unit named NAME, with an N_UNDF symbol to start
   // it, and its own portion of the string section. Return a reference to
   // this StabsAssembler.
-  StabsAssembler& StartCU(const string& name) {
+  StabsAssembler& StartCU(const std::string& name) {
     assert(!cu_header_);
     cu_header_ = new CUHeader;
     string_assembler_->StartCU();
@@ -185,7 +190,7 @@ class StabsAssembler: public Section {
     cu_header_->final_entry_count = entry_count_;
     cu_header_->final_string_size = string_assembler_->EndCU();
     delete cu_header_;
-    cu_header_ = NULL;
+    cu_header_ = nullptr;
     return *this;
   }
 
@@ -219,10 +224,10 @@ class MockStabsReaderHandler: public StabsHandler {
   MOCK_METHOD3(StartCompilationUnit,
                bool(const char*, uint64_t, const char*));
   MOCK_METHOD1(EndCompilationUnit, bool(uint64_t));
-  MOCK_METHOD2(StartFunction, bool(const string&, uint64_t));
+  MOCK_METHOD2(StartFunction, bool(const std::string&, uint64_t));
   MOCK_METHOD1(EndFunction, bool(uint64_t));
   MOCK_METHOD3(Line, bool(uint64_t, const char*, int));
-  MOCK_METHOD2(Extern, bool(const string&, uint64_t));
+  MOCK_METHOD2(Extern, bool(const std::string&, uint64_t));
   void Warning(const char* format, ...) { MockWarning(format); }
   MOCK_METHOD1(MockWarning, void(const char*));
 };
@@ -236,7 +241,7 @@ struct StabsFixture {
   // well, return the result of calling the reader's Process member
   // function. Otherwise, return false.
   bool ApplyHandlerToMockStabsData() {
-    string stabs_contents, stabstr_contents;
+    std::string stabs_contents, stabstr_contents;
     if (!stabs.GetContents(&stabs_contents) ||
         !strings.GetContents(&stabstr_contents))
       return false;
@@ -317,7 +322,7 @@ TEST_F(Stabs, MockStabsInput) {
     EXPECT_CALL(mock_handler, EndCompilationUnit(0xd04b7448U))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, StartCompilationUnit(StrEq("file3.c"),
-                                                   0x11759f10U, NULL))
+                                                   0x11759f10U, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, EndCompilationUnit(0x11cfe4b5U))
         .WillOnce(Return(true));
@@ -335,7 +340,7 @@ TEST_F(Stabs, AbruptCU) {
     InSequence s;
 
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("file2-1.c"), 0xbf10d5e4, NULL))
+                StartCompilationUnit(StrEq("file2-1.c"), 0xbf10d5e4, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, EndCompilationUnit(0))
         .WillOnce(Return(true));
@@ -355,7 +360,7 @@ TEST_F(Stabs, AbruptFunction) {
     InSequence s;
 
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("file3-1.c"), 0xb83ddf10U, NULL))
+                StartCompilationUnit(StrEq("file3-1.c"), 0xb83ddf10U, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, StartFunction(StrEq("fun3_1"), 0xbbd4a145U))
         .WillOnce(Return(true));
@@ -392,12 +397,12 @@ TEST_F(Stabs, NoCUEnd) {
     InSequence s;
 
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("file5-1.c"), 0x2f7493c9U, NULL))
+                StartCompilationUnit(StrEq("file5-1.c"), 0x2f7493c9U, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, EndCompilationUnit(0))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("file5-2.c"), 0xf9f1d50fU, NULL))
+                StartCompilationUnit(StrEq("file5-2.c"), 0xf9f1d50fU, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, EndCompilationUnit(0))
         .WillOnce(Return(true));
@@ -427,7 +432,7 @@ TEST_F(Stabs, Unitized) {
   {
     InSequence s;
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("antimony"), 0x7e259f1aU, NULL))
+                StartCompilationUnit(StrEq("antimony"), 0x7e259f1aU, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, StartFunction(Eq("arsenic"), 0x7fbcccaeU))
         .WillOnce(Return(true));
@@ -436,7 +441,7 @@ TEST_F(Stabs, Unitized) {
     EXPECT_CALL(mock_handler, EndCompilationUnit(0x80b0014cU))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler,
-                StartCompilationUnit(StrEq("aluminum"), 0x86756839U, NULL))
+                StartCompilationUnit(StrEq("aluminum"), 0x86756839U, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, StartFunction(Eq("selenium"), 0xa8e120b0U))
         .WillOnce(Return(true));
@@ -466,7 +471,7 @@ TEST_F(Stabs, NonUnitized) {
     InSequence s;
     EXPECT_CALL(mock_handler,
                 StartCompilationUnit(StrEq("Tanzania"),
-                                     0x11a97352, NULL))
+                                     0x11a97352, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler, EndCompilationUnit(0x21a97352))
         .WillOnce(Return(true));
@@ -494,7 +499,7 @@ TEST_F(Stabs, FunctionEnd) {
     InSequence s;
     EXPECT_CALL(mock_handler,
                 StartCompilationUnit(StrEq("compilation unit"),
-                                     0x52a830d644cd6942ULL, NULL))
+                                     0x52a830d644cd6942ULL, nullptr))
         .WillOnce(Return(true));
     EXPECT_CALL(mock_handler,
                 StartFunction(Eq("function 1"), 0xbb5ab70ecdd23bfeULL))
@@ -566,7 +571,7 @@ TEST_F(Stabs, OnePublicSymbol) {
   stabs.set_value_size(4);
 
   const uint32_t kExpectedAddress = 0x9000;
-  const string kExpectedFunctionName("public_function");
+  const std::string kExpectedFunctionName("public_function");
   stabs
     .Stab(N_SECT, 1, 0, kExpectedAddress, kExpectedFunctionName);
 
@@ -585,9 +590,9 @@ TEST_F(Stabs, TwoPublicSymbols) {
   stabs.set_value_size(4);
 
   const uint32_t kExpectedAddress1 = 0xB0B0B0B0;
-  const string kExpectedFunctionName1("public_function");
+  const std::string kExpectedFunctionName1("public_function");
   const uint32_t kExpectedAddress2 = 0xF0F0F0F0;
-  const string kExpectedFunctionName2("something else");
+  const std::string kExpectedFunctionName2("something else");
   stabs
     .Stab(N_SECT, 1, 0, kExpectedAddress1, kExpectedFunctionName1)
     .Stab(N_SECT, 1, 0, kExpectedAddress2, kExpectedFunctionName2);

@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,10 @@
 // dump_context.cc: A (mini/micro)dump context.
 //
 // See dump_context.h for documentation.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "google_breakpad/processor/dump_context.h"
 
@@ -70,7 +73,7 @@ uint32_t DumpContext::GetContextFlags() const {
 const MDRawContextX86* DumpContext::GetContextX86() const {
   if (GetContextCPU() != MD_CONTEXT_X86) {
     BPLOG(ERROR) << "DumpContext cannot get x86 context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.x86;
@@ -79,7 +82,7 @@ const MDRawContextX86* DumpContext::GetContextX86() const {
 const MDRawContextPPC* DumpContext::GetContextPPC() const {
   if (GetContextCPU() != MD_CONTEXT_PPC) {
     BPLOG(ERROR) << "DumpContext cannot get ppc context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.ppc;
@@ -88,7 +91,7 @@ const MDRawContextPPC* DumpContext::GetContextPPC() const {
 const MDRawContextPPC64* DumpContext::GetContextPPC64() const {
   if (GetContextCPU() != MD_CONTEXT_PPC64) {
     BPLOG(ERROR) << "DumpContext cannot get ppc64 context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.ppc64;
@@ -97,7 +100,7 @@ const MDRawContextPPC64* DumpContext::GetContextPPC64() const {
 const MDRawContextAMD64* DumpContext::GetContextAMD64() const {
   if (GetContextCPU() != MD_CONTEXT_AMD64) {
     BPLOG(ERROR) << "DumpContext cannot get amd64 context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.amd64;
@@ -106,7 +109,7 @@ const MDRawContextAMD64* DumpContext::GetContextAMD64() const {
 const MDRawContextSPARC* DumpContext::GetContextSPARC() const {
   if (GetContextCPU() != MD_CONTEXT_SPARC) {
     BPLOG(ERROR) << "DumpContext cannot get sparc context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.ctx_sparc;
@@ -115,7 +118,7 @@ const MDRawContextSPARC* DumpContext::GetContextSPARC() const {
 const MDRawContextARM* DumpContext::GetContextARM() const {
   if (GetContextCPU() != MD_CONTEXT_ARM) {
     BPLOG(ERROR) << "DumpContext cannot get arm context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.arm;
@@ -124,7 +127,7 @@ const MDRawContextARM* DumpContext::GetContextARM() const {
 const MDRawContextARM64* DumpContext::GetContextARM64() const {
   if (GetContextCPU() != MD_CONTEXT_ARM64) {
     BPLOG(ERROR) << "DumpContext cannot get arm64 context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.arm64;
@@ -134,10 +137,28 @@ const MDRawContextMIPS* DumpContext::GetContextMIPS() const {
   if ((GetContextCPU() != MD_CONTEXT_MIPS) &&
       (GetContextCPU() != MD_CONTEXT_MIPS64)) {
     BPLOG(ERROR) << "DumpContext cannot get MIPS context";
-    return NULL;
+    return nullptr;
   }
 
   return context_.ctx_mips;
+}
+
+const MDRawContextRISCV* DumpContext::GetContextRISCV() const {
+  if (GetContextCPU() != MD_CONTEXT_RISCV) {
+    BPLOG(ERROR) << "DumpContext cannot get RISCV context";
+    return nullptr;
+  }
+
+  return context_.riscv;
+}
+
+const MDRawContextRISCV64* DumpContext::GetContextRISCV64() const {
+  if (GetContextCPU() != MD_CONTEXT_RISCV64) {
+    BPLOG(ERROR) << "DumpContext cannot get RISCV64 context";
+    return nullptr;
+  }
+
+  return context_.riscv64;
 }
 
 bool DumpContext::GetInstructionPointer(uint64_t* ip) const {
@@ -175,6 +196,12 @@ bool DumpContext::GetInstructionPointer(uint64_t* ip) const {
   case MD_CONTEXT_MIPS:
   case MD_CONTEXT_MIPS64:
     *ip = GetContextMIPS()->epc;
+    break;
+  case MD_CONTEXT_RISCV:
+    *ip = GetContextRISCV()->pc;
+    break;
+  case MD_CONTEXT_RISCV64:
+    *ip = GetContextRISCV64()->pc;
     break;
   default:
     // This should never happen.
@@ -220,6 +247,12 @@ bool DumpContext::GetStackPointer(uint64_t* sp) const {
   case MD_CONTEXT_MIPS64:
     *sp = GetContextMIPS()->iregs[MD_CONTEXT_MIPS_REG_SP];
     break;
+  case MD_CONTEXT_RISCV:
+    *sp = GetContextRISCV()->sp;
+    break;
+  case MD_CONTEXT_RISCV64:
+    *sp = GetContextRISCV64()->sp;
+    break;
   default:
     // This should never happen.
     BPLOG(ERROR) << "Unknown CPU architecture in GetStackPointer";
@@ -264,6 +297,14 @@ void DumpContext::SetContextMIPS(MDRawContextMIPS* ctx_mips) {
   context_.ctx_mips = ctx_mips;
 }
 
+void DumpContext::SetContextRISCV(MDRawContextRISCV* riscv) {
+  context_.riscv = riscv;
+}
+
+void DumpContext::SetContextRISCV64(MDRawContextRISCV64* riscv64) {
+  context_.riscv64 = riscv64;
+}
+
 void DumpContext::FreeContext() {
   switch (GetContextCPU()) {
     case MD_CONTEXT_X86:
@@ -299,6 +340,14 @@ void DumpContext::FreeContext() {
       delete context_.ctx_mips;
       break;
 
+    case MD_CONTEXT_RISCV:
+      delete context_.riscv;
+      break;
+
+    case MD_CONTEXT_RISCV64:
+      delete context_.riscv64;
+      break;
+
     default:
       // There is no context record (valid_ is false) or there's a
       // context record for an unknown CPU (shouldn't happen, only known
@@ -307,7 +356,7 @@ void DumpContext::FreeContext() {
   }
 
   context_flags_ = 0;
-  context_.base = NULL;
+  context_.base = nullptr;
 }
 
 void DumpContext::Print() {
@@ -652,6 +701,174 @@ void DumpContext::Print() {
              context_mips->float_save.fpcsr);
       printf("  float_save.fir       = 0x%" PRIx32 "\n",
              context_mips->float_save.fir);
+      break;
+    }
+
+    case MD_CONTEXT_RISCV: {
+      const MDRawContextRISCV* context_riscv = GetContextRISCV();
+      printf("MDRawContextRISCV\n");
+      printf("  context_flags        = 0x%x\n",
+             context_riscv->context_flags);
+
+      printf("  pc            = 0x%" PRIx32 "\n",
+             context_riscv->pc);
+      printf("  ra            = 0x%" PRIx32 "\n",
+             context_riscv->ra);
+      printf("  sp            = 0x%" PRIx32 "\n",
+             context_riscv->sp);
+      printf("  gp            = 0x%" PRIx32 "\n",
+             context_riscv->gp);
+      printf("  tp            = 0x%" PRIx32 "\n",
+             context_riscv->tp);
+      printf("  t0            = 0x%" PRIx32 "\n",
+             context_riscv->t0);
+      printf("  t1            = 0x%" PRIx32 "\n",
+             context_riscv->t1);
+      printf("  t2            = 0x%" PRIx32 "\n",
+             context_riscv->t2);
+      printf("  s0            = 0x%" PRIx32 "\n",
+             context_riscv->s0);
+      printf("  s1            = 0x%" PRIx32 "\n",
+             context_riscv->s1);
+      printf("  a0            = 0x%" PRIx32 "\n",
+             context_riscv->a0);
+      printf("  a1            = 0x%" PRIx32 "\n",
+             context_riscv->a1);
+      printf("  a2            = 0x%" PRIx32 "\n",
+             context_riscv->a2);
+      printf("  a3            = 0x%" PRIx32 "\n",
+             context_riscv->a3);
+      printf("  a4            = 0x%" PRIx32 "\n",
+             context_riscv->a4);
+      printf("  a5            = 0x%" PRIx32 "\n",
+             context_riscv->a5);
+      printf("  a6            = 0x%" PRIx32 "\n",
+             context_riscv->a6);
+      printf("  a7            = 0x%" PRIx32 "\n",
+             context_riscv->a7);
+      printf("  s2            = 0x%" PRIx32 "\n",
+             context_riscv->s2);
+      printf("  s3            = 0x%" PRIx32 "\n",
+             context_riscv->s3);
+      printf("  s4            = 0x%" PRIx32 "\n",
+             context_riscv->s4);
+      printf("  s5            = 0x%" PRIx32 "\n",
+             context_riscv->s5);
+      printf("  s6            = 0x%" PRIx32 "\n",
+             context_riscv->s6);
+      printf("  s7            = 0x%" PRIx32 "\n",
+             context_riscv->s7);
+      printf("  s8            = 0x%" PRIx32 "\n",
+             context_riscv->s8);
+      printf("  s9            = 0x%" PRIx32 "\n",
+             context_riscv->s9);
+      printf("  s10           = 0x%" PRIx32 "\n",
+             context_riscv->s10);
+      printf("  s11           = 0x%" PRIx32 "\n",
+             context_riscv->s11);
+      printf("  t3            = 0x%" PRIx32 "\n",
+             context_riscv->t3);
+      printf("  t4            = 0x%" PRIx32 "\n",
+             context_riscv->t4);
+      printf("  t5            = 0x%" PRIx32 "\n",
+             context_riscv->t5);
+      printf("  t6            = 0x%" PRIx32 "\n",
+             context_riscv->t6);
+
+#if defined(__riscv)
+      for (unsigned int freg_index = 0; freg_index < MD_CONTEXT_RISCV_FPR_COUNT;
+           ++freg_index) {
+        // Breakpad only supports RISCV32 with 32 bit floating point.
+        uint32_t fp_value = context_riscv->fpregs[freg_index];
+        printf("  fpregs[%2d]            = 0x%" PRIx32 "\n", freg_index,
+               fp_value);
+      }
+      printf("  fcsr     = 0x%" PRIx32 "\n", context_riscv->fcsr);
+#endif
+      break;
+    }
+
+    case MD_CONTEXT_RISCV64: {
+      const MDRawContextRISCV64* context_riscv64 = GetContextRISCV64();
+      printf("MDRawContextRISCV64\n");
+      printf("  context_flags        = 0x%x\n",
+             context_riscv64->context_flags);
+
+      printf("  pc            = 0x%" PRIx64 "\n",
+             context_riscv64->pc);
+      printf("  ra            = 0x%" PRIx64 "\n",
+             context_riscv64->ra);
+      printf("  sp            = 0x%" PRIx64 "\n",
+             context_riscv64->sp);
+      printf("  gp            = 0x%" PRIx64 "\n",
+             context_riscv64->gp);
+      printf("  tp            = 0x%" PRIx64 "\n",
+             context_riscv64->tp);
+      printf("  t0            = 0x%" PRIx64 "\n",
+             context_riscv64->t0);
+      printf("  t1            = 0x%" PRIx64 "\n",
+             context_riscv64->t1);
+      printf("  t2            = 0x%" PRIx64 "\n",
+             context_riscv64->t2);
+      printf("  s0            = 0x%" PRIx64 "\n",
+             context_riscv64->s0);
+      printf("  s1            = 0x%" PRIx64 "\n",
+             context_riscv64->s1);
+      printf("  a0            = 0x%" PRIx64 "\n",
+             context_riscv64->a0);
+      printf("  a1            = 0x%" PRIx64 "\n",
+             context_riscv64->a1);
+      printf("  a2            = 0x%" PRIx64 "\n",
+             context_riscv64->a2);
+      printf("  a3            = 0x%" PRIx64 "\n",
+             context_riscv64->a3);
+      printf("  a4            = 0x%" PRIx64 "\n",
+             context_riscv64->a4);
+      printf("  a5            = 0x%" PRIx64 "\n",
+             context_riscv64->a5);
+      printf("  a6            = 0x%" PRIx64 "\n",
+             context_riscv64->a6);
+      printf("  a7            = 0x%" PRIx64 "\n",
+             context_riscv64->a7);
+      printf("  s2            = 0x%" PRIx64 "\n",
+             context_riscv64->s2);
+      printf("  s3            = 0x%" PRIx64 "\n",
+             context_riscv64->s3);
+      printf("  s4            = 0x%" PRIx64 "\n",
+             context_riscv64->s4);
+      printf("  s5            = 0x%" PRIx64 "\n",
+             context_riscv64->s5);
+      printf("  s6            = 0x%" PRIx64 "\n",
+             context_riscv64->s6);
+      printf("  s7            = 0x%" PRIx64 "\n",
+             context_riscv64->s7);
+      printf("  s8            = 0x%" PRIx64 "\n",
+             context_riscv64->s8);
+      printf("  s9            = 0x%" PRIx64 "\n",
+             context_riscv64->s9);
+      printf("  s10           = 0x%" PRIx64 "\n",
+             context_riscv64->s10);
+      printf("  s11           = 0x%" PRIx64 "\n",
+             context_riscv64->s11);
+      printf("  t3            = 0x%" PRIx64 "\n",
+             context_riscv64->t3);
+      printf("  t4            = 0x%" PRIx64 "\n",
+             context_riscv64->t4);
+      printf("  t5            = 0x%" PRIx64 "\n",
+             context_riscv64->t5);
+      printf("  t6            = 0x%" PRIx64 "\n",
+             context_riscv64->t6);
+
+#if defined(__riscv)
+      for (unsigned int freg_index = 0; freg_index < MD_CONTEXT_RISCV_FPR_COUNT;
+           ++freg_index) {
+        // Breakpad only supports RISCV64 with 64 bit floating point.
+        uint64_t fp_value = context_riscv64->fpregs[freg_index];
+        printf("  fpregs[%2d]            = 0x%" PRIx64 "\n", freg_index,
+               fp_value);
+      }
+      printf("  fcsr     = 0x%" PRIx32 "\n", context_riscv64->fcsr);
+#endif
       break;
     }
 

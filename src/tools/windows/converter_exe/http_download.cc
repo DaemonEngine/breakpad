@@ -1,4 +1,4 @@
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2019 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -25,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <assert.h>
 #include <stdio.h>
@@ -46,7 +50,7 @@ using std::vector;
 // goes out of scope.
 class AutoHttpHandle {
  public:
-  AutoHttpHandle() : handle_(NULL) {}
+  AutoHttpHandle() : handle_(nullptr) {}
   explicit AutoHttpHandle(HttpHandle handle) : handle_(handle) {}
   ~AutoHttpHandle() {
     if (handle_) {
@@ -114,7 +118,7 @@ static bool CheckParameters(const map<wstring, wstring>* parameters) {
 HttpClient* HTTPDownload::CreateHttpClient(const wchar_t* url) {
   const TCHAR* kHttpApiPolicyEnvironmentVariable = TEXT("USE_WINHTTP");
   TCHAR buffer[2] = {0};
-  HttpClient* http_client = NULL;
+  HttpClient* http_client = nullptr;
 
   if (::GetEnvironmentVariable(kHttpApiPolicyEnvironmentVariable,
                                buffer,
@@ -123,7 +127,7 @@ HttpClient* HTTPDownload::CreateHttpClient(const wchar_t* url) {
             "Environment variable [%ws] is set, use WinHttp\n",
             kHttpApiPolicyEnvironmentVariable);
     http_client = CreateWinHttpClient(url);
-    if (http_client == NULL) {
+    if (http_client == nullptr) {
       fprintf(stderr, "WinHttpClient not created, Is the protocol HTTPS? "
                       "Fall back to WinInet API.\n");
     }
@@ -133,7 +137,7 @@ HttpClient* HTTPDownload::CreateHttpClient(const wchar_t* url) {
             kHttpApiPolicyEnvironmentVariable);
   }
 
-  if (http_client == NULL) {
+  if (http_client == nullptr) {
     return CreateWinInetClient(url);
   }
 
@@ -186,10 +190,10 @@ bool HTTPDownload::Download(const wstring& url,
   }
 
   AutoHttpHandle internet;
-  if (!http_client->Open(NULL,  // user agent
+  if (!http_client->Open(nullptr,  // user agent
                          HttpClient::ACCESS_TYPE_PRECONFIG,
-                         NULL,  // proxy name
-                         NULL,  // proxy bypass
+                         nullptr,  // proxy name
+                         nullptr,  // proxy bypass
                          internet.get_handle_addr())) {
     fprintf(stderr,
             "HTTPDownload::Download: Open: error %lu for %ws\n",
@@ -234,8 +238,8 @@ bool HTTPDownload::Download(const wstring& url,
   if (!http_client->OpenRequest(connection.get(),
                                 L"GET",
                                 request_string.c_str(),
-                                NULL,    // version
-                                NULL,    // referer
+                                nullptr,    // version
+                                nullptr,    // referer
                                 secure,
                                 request.get_handle_addr())) {
     fprintf(stderr,
@@ -244,7 +248,7 @@ bool HTTPDownload::Download(const wstring& url,
     return false;
   }
 
-  if (!http_client->SendRequest(request.get(), NULL, 0)) {
+  if (!http_client->SendRequest(request.get(), nullptr, 0)) {
     fprintf(stderr,
             "HttpClient::SendRequest: error %lu for %ws\n",
             GetLastError(), url.c_str());

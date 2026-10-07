@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,7 +32,6 @@
 #include <assert.h>
 #include <string>
 
-#include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 #include "google_breakpad/processor/process_result.h"
 
@@ -70,7 +68,7 @@ class MinidumpProcessor {
   ~MinidumpProcessor();
 
   // Processes the minidump file and fills process_state with the result.
-  ProcessResult Process(const string& minidump_file,
+  ProcessResult Process(const std::string& minidump_file,
                         ProcessState* process_state);
 
   // Processes the minidump structure and fills process_state with the
@@ -102,8 +100,10 @@ class MinidumpProcessor {
   // exception, if this information is available.  This will be a code
   // address when the crash was caused by problems such as illegal
   // instructions or divisions by zero, or a data address when the crash
-  // was caused by a memory access violation.
-  static string GetCrashReason(Minidump* dump, uint64_t* address);
+  // was caused by a memory access violation. If enable_objdump is set, this
+  // may use disassembly to compute the faulting address.
+  static std::string GetCrashReason(Minidump* dump, uint64_t* address,
+                                    bool enable_objdump);
 
   // This function returns true if the passed-in error code is
   // something unrecoverable(i.e. retry should not happen).  For
@@ -123,9 +123,24 @@ class MinidumpProcessor {
   // Returns a textual representation of an assertion included
   // in the minidump.  Returns an empty string if this information
   // does not exist or cannot be determined.
-  static string GetAssertion(Minidump* dump);
+  static std::string GetAssertion(Minidump* dump);
 
+  // Sets the flag to enable/disable use of objdump during normal crash
+  // processing. This is independent from the flag for use of objdump during
+  // exploitability analysis.
   void set_enable_objdump(bool enabled) { enable_objdump_ = enabled; }
+
+  // Sets the flag to enable/disable use of objdump during exploitability
+  // analysis. This is independent from the flag for use of objdump during
+  // normal crash processing.
+  void set_enable_objdump_for_exploitability(bool enabled) {
+    enable_objdump_for_exploitability_ = enabled;
+  }
+
+  // Sets the maximum number of threads to process.
+  void set_max_thread_count(int max_thread_count) {
+    max_thread_count_ = max_thread_count;
+  }
 
  private:
   StackFrameSymbolizer* frame_symbolizer_;
@@ -137,9 +152,19 @@ class MinidumpProcessor {
   // memory corruption issue.
   bool enable_exploitability_;
 
-  // This flag permits the exploitability scanner to shell out to objdump
-  // for purposes of disassembly.
+  // This flag permits the processor to shell out to objdump for purposes of
+  // disassembly during normal crash processing, but not during exploitability
+  // analysis.
   bool enable_objdump_;
+
+  // This flag permits the exploitability scanner to shell out to objdump for
+  // purposes of disassembly. This results in significantly more overhead than
+  // the enable_objdump_ flag.
+  bool enable_objdump_for_exploitability_;
+
+  // The maximum number of threads to process. This can be exceeded if the
+  // requesting thread comes after the limit. Setting this to -1 means no limit.
+  int max_thread_count_;
 };
 
 }  // namespace google_breakpad

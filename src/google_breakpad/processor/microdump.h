@@ -1,5 +1,4 @@
-// Copyright (c) 2014 Google Inc.
-// All rights reserved.
+// Copyright 2014 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -39,11 +38,10 @@
 #ifndef GOOGLE_BREAKPAD_PROCESSOR_MICRODUMP_H__
 #define GOOGLE_BREAKPAD_PROCESSOR_MICRODUMP_H__
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "common/scoped_ptr.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/processor/dump_context.h"
 #include "google_breakpad/processor/memory_region.h"
 #include "google_breakpad/processor/system_info.h"
@@ -111,7 +109,7 @@ class MicrodumpMemoryRegion : public MemoryRegion {
 // the microdump's context, memory regions and modules.
 class Microdump {
  public:
-  explicit Microdump(const string& contents);
+  explicit Microdump(const std::string& contents);
   virtual ~Microdump() {}
 
   DumpContext* GetContext() { return context_.get(); }
@@ -119,14 +117,14 @@ class Microdump {
   MicrodumpModules* GetModules() { return modules_.get(); }
   SystemInfo* GetSystemInfo() { return system_info_.get(); }
 
-  string GetCrashReason() { return crash_reason_; }
+  std::string GetCrashReason() { return crash_reason_; }
   uint64_t GetCrashAddress() { return crash_address_; }
  private:
-  scoped_ptr<MicrodumpContext> context_;
-  scoped_ptr<MicrodumpMemoryRegion> stack_region_;
-  scoped_ptr<MicrodumpModules> modules_;
-  scoped_ptr<SystemInfo> system_info_;
-  string crash_reason_;
+  std::unique_ptr<MicrodumpContext> context_;
+  std::unique_ptr<MicrodumpMemoryRegion> stack_region_;
+  std::unique_ptr<MicrodumpModules> modules_;
+  std::unique_ptr<SystemInfo> system_info_;
+  std::string crash_reason_;
   uint64_t crash_address_;
 };
 

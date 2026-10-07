@@ -1,6 +1,6 @@
 // -*- mode: c++ -*-
 
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -12,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -49,10 +49,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef HAVE_MACH_O_NLIST_H
 #include <mach-o/nlist.h>
 #elif defined(HAVE_A_OUT_H)
@@ -63,7 +59,6 @@
 #include <vector>
 
 #include "common/byte_cursor.h"
-#include "common/using_std_string.h"
 
 namespace google_breakpad {
 
@@ -292,7 +287,7 @@ class StabsHandler {
   // StartFunction is the function name alone.
   //
   // In languages that use name mangling, like C++, NAME is mangled.
-  virtual bool StartFunction(const string& name, uint64_t address) {
+  virtual bool StartFunction(const std::string& name, uint64_t address) {
     return true;
   }
 
@@ -311,7 +306,7 @@ class StabsHandler {
 
   // Report that an exported function NAME is present at ADDRESS.
   // The size of the function is unknown.
-  virtual bool Extern(const string& name, uint64_t address) {
+  virtual bool Extern(const std::string& name, uint64_t address) {
     return true;
   }
 

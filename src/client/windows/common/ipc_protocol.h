@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2008 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -47,8 +46,8 @@ struct CustomInfoEntry {
 
   CustomInfoEntry() {
     // Putting name and value in initializer list makes VC++ show warning 4351.
-    set_name(NULL);
-    set_value(NULL);
+    set_name(nullptr);
+    set_value(nullptr);
   }
 
   CustomInfoEntry(const wchar_t* name_arg, const wchar_t* value_arg) {
@@ -106,12 +105,12 @@ struct ProtocolMessage {
         id(0),
         dump_type(MiniDumpNormal),
         thread_id(0),
-        exception_pointers(NULL),
-        assert_info(NULL),
+        exception_pointers(nullptr),
+        assert_info(nullptr),
         custom_client_info(),
-        dump_request_handle(NULL),
-        dump_generated_handle(NULL),
-        server_alive_handle(NULL) {
+        dump_request_handle(nullptr),
+        dump_generated_handle(nullptr),
+        server_alive_handle(nullptr) {
   }
 
   // Creates an instance with the given parameters.

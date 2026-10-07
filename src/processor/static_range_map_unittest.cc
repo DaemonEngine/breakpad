@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,12 @@
 // static_range_map_unittest.cc: Unit tests for StaticRangeMap.
 //
 // Author: Siyang Xie (lambxsy@google.com)
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
+#include <memory>
 
 #include "breakpad_googletest_includes.h"
 #include "common/scoped_ptr.h"
@@ -228,10 +233,10 @@ void TestStaticRangeMap::RetrieveTest(TestMap* range_map,
     }
 
     for (AddressType offset = low_offset; offset <= high_offset; ++offset) {
-      AddressType address =
-          offset +
-          (!side ? range_test->address :
-                   range_test->address + range_test->size - 1);
+      AddressType address = AddIgnoringOverflow(
+          offset, (!side ? range_test->address
+                         : AddIgnoringOverflow(range_test->address,
+                                               range_test->size - 1)));
 
       bool expected_result = false;  // This is correct for tests not stored.
       if (range_test->expect_storable) {
@@ -243,9 +248,9 @@ void TestStaticRangeMap::RetrieveTest(TestMap* range_map,
           expected_result = !side;   // should succeed low and fail high.
       }
 
-      const EntryType* id;
-      AddressType retrieved_base;
-      AddressType retrieved_size;
+      const EntryType* id = nullptr;
+      AddressType retrieved_base = 0;
+      AddressType retrieved_size = 0;
       bool retrieved = range_map->RetrieveRange(address, id,
                                                 &retrieved_base,
                                                 &retrieved_size);
@@ -273,8 +278,8 @@ void TestStaticRangeMap::RetrieveTest(TestMap* range_map,
       if (!side && offset < 0)
         expected_nearest = false;
 
-      AddressType nearest_base;
-      AddressType nearest_size;
+      AddressType nearest_base = 0;
+      AddressType nearest_size = 0;
       bool retrieved_nearest = range_map->RetrieveNearestRange(address,
                                                                id,
                                                                &nearest_base,
@@ -312,14 +317,14 @@ void TestStaticRangeMap::RetrieveTest(TestMap* range_map,
 void TestStaticRangeMap::RetrieveIndexTest(const TestMap* range_map, int set) {
   AddressType last_base = 0;
   const EntryType* last_entry = 0;
-  const EntryType* entry;
+  const EntryType* entry = nullptr;
   int object_count = range_map->GetCount();
   for (int object_index = 0; object_index < object_count; ++object_index) {
-    AddressType base;
+    AddressType base = 0;
     ASSERT_TRUE(range_map->RetrieveRangeAtIndex(object_index,
                                                 entry,
                                                 &base,
-                                                NULL))
+                                                nullptr))
         << "FAILED: RetrieveRangeAtIndex set " << set
         << " index " << object_index;
 
@@ -343,16 +348,16 @@ void TestStaticRangeMap::RetrieveIndexTest(const TestMap* range_map, int set) {
   // Make sure that RetrieveRangeAtIndex doesn't allow lookups at indices that
   // are too high.
   ASSERT_FALSE(range_map->RetrieveRangeAtIndex(
-      object_count, entry, NULL, NULL)) << "FAILED: RetrieveRangeAtIndex set "
-                                        << set << " index " << object_count
-                                        << " (too large)";
+      object_count, entry, nullptr, nullptr)) << "FAILED: RetrieveRangeAtIndex "
+                                              << "set " << set << " index "
+                                              << object_count << " (too large)";
 }
 
 // RunTests runs a series of test sets.
 void TestStaticRangeMap::RunTestCase(int test_case) {
   // Maintain the range map in a pointer so that deletion can be meaningfully
   // tested.
-  scoped_ptr<RMap> rmap(new RMap());
+  std::unique_ptr<RMap> rmap(new RMap());
 
   const RangeTest* range_tests = range_test_sets[test_case].range_tests;
   unsigned int range_test_count = range_test_sets[test_case].range_test_count;
@@ -370,8 +375,8 @@ void TestStaticRangeMap::RunTestCase(int test_case) {
       ++stored_count;
   }
 
-  scoped_array<char> memaddr(serializer_.Serialize(*rmap, NULL));
-  scoped_ptr<TestMap> static_range_map(new TestMap(memaddr.get()));
+  scoped_array<char> memaddr(serializer_.Serialize(*rmap, nullptr));
+  std::unique_ptr<TestMap> static_range_map(new TestMap(memaddr.get()));
 
   // The RangeMap's own count of objects should also match.
   EXPECT_EQ(static_range_map->GetCount(), stored_count);

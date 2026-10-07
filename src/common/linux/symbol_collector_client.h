@@ -1,5 +1,4 @@
-// Copyright (c) 2019, Google Inc.
-// All rights reserved.
+// Copyright 2019 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,14 +32,13 @@
 #include <string>
 
 #include "common/linux/libcurl_wrapper.h"
-#include "common/using_std_string.h"
 
 namespace google_breakpad {
 namespace sym_upload {
 
 struct UploadUrlResponse {
-  string upload_url;
-  string upload_key;
+  std::string upload_url;
+  std::string upload_key;
 };
 
 enum SymbolStatus {
@@ -59,27 +57,24 @@ enum CompleteUploadResult {
 // via libcurl.
 class SymbolCollectorClient {
  public:
-  static bool CreateUploadUrl(
-      LibcurlWrapper* libcurl_wrapper,
-      const string& api_url,
-      const string& api_key,
-      UploadUrlResponse* uploadUrlResponse);
+  static bool CreateUploadUrl(LibcurlWrapper* libcurl_wrapper,
+                              const std::string& api_url,
+                              const std::string& api_key,
+                              UploadUrlResponse* uploadUrlResponse);
 
-  static CompleteUploadResult CompleteUpload(
-      LibcurlWrapper* libcurl_wrapper,
-      const string& api_url,
-      const string& api_key,
-      const string& upload_key,
-      const string& debug_file,
-      const string& debug_id,
-      const string& type);
+  static CompleteUploadResult CompleteUpload(LibcurlWrapper* libcurl_wrapper,
+                                             const std::string& api_url,
+                                             const std::string& api_key,
+                                             const std::string& upload_key,
+                                             const std::string& debug_file,
+                                             const std::string& debug_id,
+                                             const std::string& type);
 
-  static SymbolStatus CheckSymbolStatus(
-      LibcurlWrapper* libcurl_wrapper,
-      const string& api_url,
-      const string& api_key,
-      const string& debug_file,
-      const string& debug_id);
+  static SymbolStatus CheckSymbolStatus(LibcurlWrapper* libcurl_wrapper,
+                                        const std::string& api_url,
+                                        const std::string& api_key,
+                                        const std::string& debug_file,
+                                        const std::string& debug_id);
 };
 
 }  // namespace sym_upload

@@ -1,5 +1,4 @@
-// Copyright (c) 2020, Google Inc.
-// All rights reserved.
+// Copyright 2020 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -97,10 +96,14 @@
   [getRequest release];
 
   if (error || responseCode != 200) {
-    fprintf(stdout, "Failed to check symbol status.\n");
-    fprintf(stdout, "Response code: %d\n", responseCode);
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+    fprintf(stderr, "Failed to check symbol status.\n");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
+    fprintf(stderr, "Response code: %d\n", responseCode);
+    if (data) {
+      fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
+    }
     return SymbolStatusUnknown;
   }
 
@@ -114,9 +117,13 @@
                            options:0
                              range:NSMakeRange(0, [result length])];
   if ([matches count] != 1) {
-    fprintf(stdout, "Failed to parse check symbol status response.");
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+    fprintf(stderr, "Failed to parse check symbol status response.");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
+    if (data) {
+      fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
+    }
     return SymbolStatusUnknown;
   }
 
@@ -144,37 +151,58 @@
   [postRequest release];
 
   if (error || responseCode != 200) {
-    fprintf(stdout, "Failed to create upload URL.\n");
-    fprintf(stdout, "Response code: %d\n", responseCode);
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+    fprintf(stderr, "Failed to get upload URL.\n");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
+    fprintf(stderr, "Response code: %d\n", responseCode);
+    if (data) {
+      fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
+    }
     return nil;
   }
 
   // Note camel-case rather than underscores.
+  error = nil;
   NSRegularExpression* uploadURLRegex = [NSRegularExpression
       regularExpressionWithPattern:@"\"uploadUrl\": \"([^\"]+)\""
                            options:0
                              error:&error];
-  NSRegularExpression* uploadKeyRegex = [NSRegularExpression
-      regularExpressionWithPattern:@"\"uploadKey\": \"([^\"]+)\""
-                           options:0
-                             error:&error];
-
   NSArray* uploadURLMatches =
       [uploadURLRegex matchesInString:result
                               options:0
                                 range:NSMakeRange(0, [result length])];
+  if ([uploadURLMatches count] != 1) {
+    fprintf(stderr, "Failed to parse create url response (uploadURL).");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
+    if (data) {
+      fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
+    }
+    return nil;
+  }
+
+  error = nil;
+  NSRegularExpression* uploadKeyRegex = [NSRegularExpression
+      regularExpressionWithPattern:@"\"uploadKey\": \"([^\"]+)\""
+                           options:0
+                             error:&error];
   NSArray* uploadKeyMatches =
       [uploadKeyRegex matchesInString:result
                               options:0
                                 range:NSMakeRange(0, [result length])];
-  if ([uploadURLMatches count] != 1 || [uploadKeyMatches count] != 1) {
-    fprintf(stdout, "Failed to parse create url response.");
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+  if ([uploadKeyMatches count] != 1) {
+    fprintf(stderr, "Failed to parse create url response (uploadKey).");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
+    if (data) {
+      fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
+    }
     return nil;
   }
+
   NSString* uploadURL =
       [result substringWithRange:[uploadURLMatches[0] rangeAtIndex:1]];
   NSString* uploadKey =
@@ -190,27 +218,33 @@
                                  withUploadKey:(NSString*)uploadKey
                                  withDebugFile:(NSString*)debugFile
                                    withDebugID:(NSString*)debugID
-                                      withType:(NSString*)type {
+                                      withType:(NSString*)type
+                               withProductName:(NSString*)productName {
   NSURL* URL = [NSURL
       URLWithString:[NSString
                         stringWithFormat:@"%@/v1/uploads/%@:complete?key=%@",
                                          APIURL, uploadKey, APIKey]];
 
-  NSDictionary* symbolIdDictionary =
-      [NSDictionary dictionaryWithObjectsAndKeys:debugFile, @"debug_file",
-                                                 debugID, @"debug_id", nil];
-  NSDictionary* jsonDictionary = [NSDictionary
-      dictionaryWithObjectsAndKeys:symbolIdDictionary, @"symbol_id", type,
-                                   @"symbol_upload_type", nil];
+  NSMutableDictionary* jsonDictionary = [@{
+    @"symbol_id" : @{@"debug_file" : debugFile, @"debug_id" : debugID},
+    @"symbol_upload_type" : type, @"use_async_processing" : @"true"
+  } mutableCopy];
+
+  if (productName != nil) {
+    jsonDictionary[@"metadata"] = @{@"product_name": productName};
+  }
+
   NSError* error = nil;
   NSData* jsonData =
       [NSJSONSerialization dataWithJSONObject:jsonDictionary
                                       options:NSJSONWritingPrettyPrinted
                                         error:&error];
   if (jsonData == nil) {
-    fprintf(stdout, "Error: %s\n", [[error localizedDescription] UTF8String]);
-    fprintf(stdout,
+    fprintf(stderr,
             "Failed to complete upload. Could not write JSON payload.\n");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
     return CompleteUploadResultError;
   }
 
@@ -221,10 +255,13 @@
   [postRequest setBody:body];
   [postRequest setContentType:@"application/json"];
 
+  error = nil;
   NSData* data = [postRequest send:&error];
-  if (data == nil) {
-    fprintf(stdout, "Error: %s\n", [[error localizedDescription] UTF8String]);
-    fprintf(stdout, "Failed to complete upload URL.\n");
+  if (data == nil || error) {
+    fprintf(stderr, "Failed to complete upload.\n");
+    if (error) {
+      fprintf(stderr, "Error: %s\n", [[error description] UTF8String]);
+    }
     return CompleteUploadResultError;
   }
 
@@ -233,10 +270,9 @@
   int responseCode = [[postRequest response] statusCode];
   [postRequest release];
   if (responseCode != 200) {
-    fprintf(stdout, "Failed to complete upload URL.\n");
-    fprintf(stdout, "Response code: %d\n", responseCode);
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+    fprintf(stderr, "Failed to complete upload.\n");
+    fprintf(stderr, "Response code: %d\n", responseCode);
+    fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
     return CompleteUploadResultError;
   }
 
@@ -252,9 +288,8 @@
                                      range:NSMakeRange(0, [result length])];
 
   if ([completeResultMatches count] != 1) {
-    fprintf(stdout, "Failed to parse complete upload response.");
-    fprintf(stdout, "Response:\n");
-    fprintf(stdout, "%s\n", [result UTF8String]);
+    fprintf(stderr, "Failed to parse complete upload response.");
+    fprintf(stderr, "Response:\n%s\n", [result UTF8String]);
     return CompleteUploadResultError;
   }
   NSString* completeResult =

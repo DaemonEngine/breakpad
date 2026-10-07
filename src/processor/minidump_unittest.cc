@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,10 @@
 // Unit test for Minidump.  Uses a pre-generated minidump and
 // verifies that certain streams are correct.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -38,7 +41,6 @@
 #include <vector>
 
 #include "breakpad_googletest_includes.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/common/minidump_format.h"
 #include "google_breakpad/processor/minidump.h"
 #include "processor/logging.h"
@@ -48,6 +50,7 @@ namespace {
 
 using google_breakpad::Minidump;
 using google_breakpad::MinidumpContext;
+using google_breakpad::MinidumpCrashpadInfo;
 using google_breakpad::MinidumpException;
 using google_breakpad::MinidumpMemoryInfo;
 using google_breakpad::MinidumpMemoryInfoList;
@@ -81,10 +84,10 @@ using ::testing::Return;
 class MinidumpTest : public ::testing::Test {
 public:
   void SetUp() {
-    minidump_file_ = string(getenv("srcdir") ? getenv("srcdir") : ".") +
+    minidump_file_ = std::string(getenv("srcdir") ? getenv("srcdir") : ".") +
       "/src/processor/testdata/minidump2.dmp";
   }
-  string minidump_file_;
+  std::string minidump_file_;
 };
 
 TEST_F(MinidumpTest, TestMinidumpFromFile) {
@@ -92,13 +95,13 @@ TEST_F(MinidumpTest, TestMinidumpFromFile) {
   ASSERT_EQ(minidump.path(), minidump_file_);
   ASSERT_TRUE(minidump.Read());
   const MDRawHeader* header = minidump.header();
-  ASSERT_NE(header, (MDRawHeader*)NULL);
+  ASSERT_NE(header, (MDRawHeader*)nullptr);
   ASSERT_EQ(header->signature, uint32_t(MD_HEADER_SIGNATURE));
 
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   const MinidumpModule* md_module = md_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_module != NULL);
+  ASSERT_TRUE(md_module != nullptr);
   ASSERT_EQ("c:\\test_app.exe", md_module->code_file());
   ASSERT_EQ("test_app.pdb", md_module->debug_file());
   ASSERT_EQ("45D35F6C2d000", md_module->code_identifier());
@@ -107,7 +110,7 @@ TEST_F(MinidumpTest, TestMinidumpFromFile) {
 
 TEST_F(MinidumpTest, TestMinidumpFromStream) {
   // read minidump contents into memory, construct a stringstream around them
-  ifstream file_stream(minidump_file_.c_str(), std::ios::in);
+  ifstream file_stream(minidump_file_.c_str(), std::ios::in | std::ios::binary);
   ASSERT_TRUE(file_stream.good());
   vector<char> bytes;
   file_stream.seekg(0, std::ios_base::end);
@@ -116,7 +119,7 @@ TEST_F(MinidumpTest, TestMinidumpFromStream) {
   file_stream.seekg(0, std::ios_base::beg);
   ASSERT_TRUE(file_stream.good());
   file_stream.read(&bytes[0], bytes.size());
-  string str(&bytes[0], bytes.size());
+  std::string str(&bytes[0], bytes.size());
   istringstream stream(str);
   ASSERT_TRUE(stream.good());
 
@@ -125,15 +128,51 @@ TEST_F(MinidumpTest, TestMinidumpFromStream) {
   ASSERT_EQ(minidump.path(), "");
   ASSERT_TRUE(minidump.Read());
   const MDRawHeader* header = minidump.header();
-  ASSERT_NE(header, (MDRawHeader*)NULL);
+  ASSERT_NE(header, (MDRawHeader*)nullptr);
   ASSERT_EQ(header->signature, uint32_t(MD_HEADER_SIGNATURE));
   //TODO: add more checks here
+}
+
+TEST_F(MinidumpTest, TestMinidumpWithCrashpadAnnotations) {
+  std::string crashpad_minidump_file =
+      std::string(getenv("srcdir") ? getenv("srcdir") : ".") +
+      "/src/processor/testdata/minidump_crashpad_annotation.dmp";
+
+  Minidump minidump(crashpad_minidump_file);
+  ASSERT_EQ(minidump.path(), crashpad_minidump_file);
+  ASSERT_TRUE(minidump.Read());
+
+  MinidumpCrashpadInfo* crashpad_info = minidump.GetCrashpadInfo();
+  ASSERT_TRUE(crashpad_info != nullptr);
+
+  const std::vector<std::vector<MinidumpCrashpadInfo::AnnotationObject>>*
+      annotation_objects_list =
+          crashpad_info->GetModuleCrashpadInfoAnnotationObjects();
+  ASSERT_EQ(2U, annotation_objects_list->size());
+
+  std::vector<MinidumpCrashpadInfo::AnnotationObject> annotation_objects =
+      annotation_objects_list->at(0);
+  ASSERT_EQ(5U, annotation_objects.size());
+
+  std::vector<std::string> annotation_names;
+  for (size_t i = 0; i < annotation_objects.size(); i++) {
+    MinidumpCrashpadInfo::AnnotationObject annotation_object =
+        annotation_objects.at(i);
+    annotation_names.push_back(annotation_object.name);
+    ASSERT_TRUE(annotation_object.type > 0);
+    ASSERT_TRUE(annotation_object.value.size() > 0);
+  }
+
+  std::vector<std::string> expected_strings{
+      "exceptionReason", "exceptionName", "firstexception_bt", "firstexception",
+      "CounterAnnotation"};
+  ASSERT_EQ(annotation_names, expected_strings);
 }
 
 TEST(Dump, ReadBackEmpty) {
   Dump dump(0);
   dump.Finish();
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream stream(contents);
   Minidump minidump(stream);
@@ -144,7 +183,7 @@ TEST(Dump, ReadBackEmpty) {
 TEST(Dump, ReadBackEmptyBigEndian) {
   Dump big_minidump(0, kBigEndian);
   big_minidump.Finish();
-  string contents;
+  std::string contents;
   ASSERT_TRUE(big_minidump.GetContents(&contents));
   istringstream stream(contents);
   Minidump minidump(stream);
@@ -159,7 +198,7 @@ TEST(Dump, OneStream) {
   dump.Add(&stream);
   dump.Finish();
   
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -167,7 +206,7 @@ TEST(Dump, OneStream) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(0);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ(0xfbb7fa2bU, dir->stream_type);
 
   uint32_t stream_length;
@@ -175,8 +214,8 @@ TEST(Dump, OneStream) {
   ASSERT_EQ(15U, stream_length);
   char stream_contents[15];
   ASSERT_TRUE(minidump.ReadBytes(stream_contents, sizeof(stream_contents)));
-  EXPECT_EQ(string("stream contents"),
-            string(stream_contents, sizeof(stream_contents)));
+  EXPECT_EQ(std::string("stream contents"),
+            std::string(stream_contents, sizeof(stream_contents)));
 
   EXPECT_FALSE(minidump.GetThreadList());
   EXPECT_FALSE(minidump.GetModuleList());
@@ -195,7 +234,7 @@ TEST(Dump, OneMemory) {
   dump.Add(&memory);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -203,11 +242,11 @@ TEST(Dump, OneMemory) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(0);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ((uint32_t) MD_MEMORY_LIST_STREAM, dir->stream_type);
 
   MinidumpMemoryList* memory_list = minidump.GetMemoryList();
-  ASSERT_TRUE(memory_list != NULL);
+  ASSERT_TRUE(memory_list != nullptr);
   ASSERT_EQ(1U, memory_list->region_count());
 
   MinidumpMemoryRegion* region1 = memory_list->GetMemoryRegionAtIndex(0);
@@ -248,7 +287,7 @@ TEST(Dump, OneThread) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -257,7 +296,7 @@ TEST(Dump, OneThread) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   MinidumpMemoryList* md_memory_list = minidump.GetMemoryList();
-  ASSERT_TRUE(md_memory_list != NULL);
+  ASSERT_TRUE(md_memory_list != nullptr);
   ASSERT_EQ(1U, md_memory_list->region_count());
 
   MinidumpMemoryRegion* md_region = md_memory_list->GetMemoryRegionAtIndex(0);
@@ -267,23 +306,23 @@ TEST(Dump, OneThread) {
   ASSERT_TRUE(memcmp("stack for thread", region_bytes, 16) == 0);
 
   MinidumpThreadList* thread_list = minidump.GetThreadList();
-  ASSERT_TRUE(thread_list != NULL);
+  ASSERT_TRUE(thread_list != nullptr);
   ASSERT_EQ(1U, thread_list->thread_count());
 
   MinidumpThread* md_thread = thread_list->GetThreadAtIndex(0);
-  ASSERT_TRUE(md_thread != NULL);
+  ASSERT_TRUE(md_thread != nullptr);
   uint32_t thread_id;
   ASSERT_TRUE(md_thread->GetThreadID(&thread_id));
   ASSERT_EQ(0xa898f11bU, thread_id);
   MinidumpMemoryRegion* md_stack = md_thread->GetMemory();
-  ASSERT_TRUE(md_stack != NULL);
+  ASSERT_TRUE(md_stack != nullptr);
   ASSERT_EQ(0x2326a0faU, md_stack->GetBase());
   ASSERT_EQ(16U, md_stack->GetSize());
   const uint8_t* md_stack_bytes = md_stack->GetMemory();
   ASSERT_TRUE(memcmp("stack for thread", md_stack_bytes, 16) == 0);
 
   MinidumpContext* md_context = md_thread->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_X86, md_context->GetContextCPU());
 
   uint64_t eip;
@@ -291,7 +330,7 @@ TEST(Dump, OneThread) {
   EXPECT_EQ(kExpectedEIP, eip);
 
   const MDRawContextX86* md_raw_context = md_context->GetContextX86();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL),
             (md_raw_context->context_flags
              & (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL)));
@@ -327,7 +366,7 @@ TEST(Dump, ThreadMissingMemory) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -337,21 +376,21 @@ TEST(Dump, ThreadMissingMemory) {
 
   // This should succeed even though the thread has no stack memory.
   MinidumpThreadList* thread_list = minidump.GetThreadList();
-  ASSERT_TRUE(thread_list != NULL);
+  ASSERT_TRUE(thread_list != nullptr);
   ASSERT_EQ(1U, thread_list->thread_count());
 
   MinidumpThread* md_thread = thread_list->GetThreadAtIndex(0);
-  ASSERT_TRUE(md_thread != NULL);
+  ASSERT_TRUE(md_thread != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_thread->GetThreadID(&thread_id));
   ASSERT_EQ(0xa898f11bU, thread_id);
 
   MinidumpContext* md_context = md_thread->GetContext();
-  ASSERT_NE(reinterpret_cast<MinidumpContext*>(NULL), md_context);
+  ASSERT_NE(static_cast<MinidumpContext*>(nullptr), md_context);
 
   MinidumpMemoryRegion* md_stack = md_thread->GetMemory();
-  ASSERT_EQ(reinterpret_cast<MinidumpMemoryRegion*>(NULL), md_stack);
+  ASSERT_EQ(static_cast<MinidumpMemoryRegion*>(nullptr), md_stack);
 }
 
 TEST(Dump, ThreadMissingContext) {
@@ -370,7 +409,7 @@ TEST(Dump, ThreadMissingContext) {
   dump.Add(&thread);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -380,20 +419,20 @@ TEST(Dump, ThreadMissingContext) {
 
   // This should succeed even though the thread has no stack memory.
   MinidumpThreadList* thread_list = minidump.GetThreadList();
-  ASSERT_TRUE(thread_list != NULL);
+  ASSERT_TRUE(thread_list != nullptr);
   ASSERT_EQ(1U, thread_list->thread_count());
 
   MinidumpThread* md_thread = thread_list->GetThreadAtIndex(0);
-  ASSERT_TRUE(md_thread != NULL);
+  ASSERT_TRUE(md_thread != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_thread->GetThreadID(&thread_id));
   ASSERT_EQ(0xa898f11bU, thread_id);
   MinidumpMemoryRegion* md_stack = md_thread->GetMemory();
-  ASSERT_NE(reinterpret_cast<MinidumpMemoryRegion*>(NULL), md_stack);
+  ASSERT_NE(static_cast<MinidumpMemoryRegion*>(nullptr), md_stack);
 
   MinidumpContext* md_context = md_thread->GetContext();
-  ASSERT_EQ(reinterpret_cast<MinidumpContext*>(NULL), md_context);
+  ASSERT_EQ(static_cast<MinidumpContext*>(nullptr), md_context);
 }
 
 TEST(Dump, OneUnloadedModule) {
@@ -417,7 +456,7 @@ TEST(Dump, OneUnloadedModule) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -425,17 +464,17 @@ TEST(Dump, OneUnloadedModule) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(1);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ((uint32_t) MD_UNLOADED_MODULE_LIST_STREAM, dir->stream_type);
 
   MinidumpUnloadedModuleList* md_unloaded_module_list =
       minidump.GetUnloadedModuleList();
-  ASSERT_TRUE(md_unloaded_module_list != NULL);
+  ASSERT_TRUE(md_unloaded_module_list != nullptr);
   ASSERT_EQ(1U, md_unloaded_module_list->module_count());
 
   const MinidumpUnloadedModule* md_unloaded_module =
       md_unloaded_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_unloaded_module != NULL);
+  ASSERT_TRUE(md_unloaded_module != nullptr);
   ASSERT_EQ(0xa90206ca83eb2852ULL, md_unloaded_module->base_address());
   ASSERT_EQ(0xada542bd, md_unloaded_module->size());
   ASSERT_EQ("unloaded module", md_unloaded_module->code_file());
@@ -446,7 +485,7 @@ TEST(Dump, OneUnloadedModule) {
 
   const MDRawUnloadedModule* md_raw_unloaded_module =
       md_unloaded_module->module();
-  ASSERT_TRUE(md_raw_unloaded_module != NULL);
+  ASSERT_TRUE(md_raw_unloaded_module != nullptr);
   ASSERT_EQ(0xb1054d2aU, md_raw_unloaded_module->time_date_stamp);
   ASSERT_EQ(0x34571371U, md_raw_unloaded_module->checksum);
 }
@@ -498,7 +537,7 @@ TEST(Dump, OneModule) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -506,15 +545,15 @@ TEST(Dump, OneModule) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(1);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ((uint32_t) MD_MODULE_LIST_STREAM, dir->stream_type);
 
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   ASSERT_EQ(1U, md_module_list->module_count());
 
   const MinidumpModule* md_module = md_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_module != NULL);
+  ASSERT_TRUE(md_module != nullptr);
   ASSERT_EQ(0xa90206ca83eb2852ULL, md_module->base_address());
   ASSERT_EQ(0xada542bd, md_module->size());
   ASSERT_EQ("single module", md_module->code_file());
@@ -524,7 +563,7 @@ TEST(Dump, OneModule) {
   ASSERT_EQ("ABCD1234F00DBEEF01020304050607081", md_module->debug_identifier());
 
   const MDRawModule* md_raw_module = md_module->module();
-  ASSERT_TRUE(md_raw_module != NULL);
+  ASSERT_TRUE(md_raw_module != nullptr);
   ASSERT_EQ(0xb1054d2aU, md_raw_module->time_date_stamp);
   ASSERT_EQ(0x34571371U, md_raw_module->checksum);
   ASSERT_TRUE(memcmp(&md_raw_module->version_info, &fixed_file_info,
@@ -581,18 +620,18 @@ TEST(Dump, OneModuleCVELF) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
   ASSERT_TRUE(minidump.Read());
 
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   ASSERT_EQ(1U, md_module_list->module_count());
 
   const MinidumpModule* md_module = md_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_module != NULL);
+  ASSERT_TRUE(md_module != nullptr);
   ASSERT_EQ(0xa90206ca83eb2852ULL, md_module->base_address());
   ASSERT_EQ(0xada542bd, md_module->size());
   ASSERT_EQ("elf module", md_module->code_file());
@@ -606,7 +645,7 @@ TEST(Dump, OneModuleCVELF) {
   ASSERT_EQ("B4CDA95F53101BDF86FAB733B4DF37380", md_module->debug_identifier());
 
   const MDRawModule* md_raw_module = md_module->module();
-  ASSERT_TRUE(md_raw_module != NULL);
+  ASSERT_TRUE(md_raw_module != nullptr);
   ASSERT_EQ(0xb1054d2aU, md_raw_module->time_date_stamp);
   ASSERT_EQ(0x34571371U, md_raw_module->checksum);
   ASSERT_TRUE(memcmp(&md_raw_module->version_info, &fixed_file_info,
@@ -662,7 +701,7 @@ TEST(Dump, CVELFShort) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -670,11 +709,11 @@ TEST(Dump, CVELFShort) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   ASSERT_EQ(1U, md_module_list->module_count());
 
   const MinidumpModule* md_module = md_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_module != NULL);
+  ASSERT_TRUE(md_module != nullptr);
   // just the build_id, directly
   ASSERT_EQ("5fa9cdb4", md_module->code_identifier());
   // build_id expanded to GUID length and treated as such, with zero
@@ -734,7 +773,7 @@ TEST(Dump, CVELFLong) {
   dump.Add(&csd_version);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -742,11 +781,11 @@ TEST(Dump, CVELFLong) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   ASSERT_EQ(1U, md_module_list->module_count());
 
   const MinidumpModule* md_module = md_module_list->GetModuleAtIndex(0);
-  ASSERT_TRUE(md_module != NULL);
+  ASSERT_TRUE(md_module != nullptr);
   // just the build_id, directly
   ASSERT_EQ(
       "5fa9cdb41053df1b86fab733b4df3738cea34a870102030405060708090a0b0c0d0e0f",
@@ -765,7 +804,7 @@ TEST(Dump, OneSystemInfo) {
   dump.Add(&csd_version);
   dump.Finish();
                          
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -773,11 +812,11 @@ TEST(Dump, OneSystemInfo) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(0);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ((uint32_t) MD_SYSTEM_INFO_STREAM, dir->stream_type);
 
   MinidumpSystemInfo* md_system_info = minidump.GetSystemInfo();
-  ASSERT_TRUE(md_system_info != NULL);
+  ASSERT_TRUE(md_system_info != nullptr);
   ASSERT_EQ("windows", md_system_info->GetOS());
   ASSERT_EQ("x86", md_system_info->GetCPU());
   ASSERT_EQ("Petulant Pierogi", *md_system_info->GetCSDVersion());
@@ -903,7 +942,7 @@ TEST(Dump, BigDump) {
 
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -912,7 +951,7 @@ TEST(Dump, BigDump) {
 
   // Check the threads.
   MinidumpThreadList* thread_list = minidump.GetThreadList();
-  ASSERT_TRUE(thread_list != NULL);
+  ASSERT_TRUE(thread_list != nullptr);
   ASSERT_EQ(5U, thread_list->thread_count());
   uint32_t thread_id;
   ASSERT_TRUE(thread_list->GetThreadAtIndex(0)->GetThreadID(&thread_id));
@@ -957,7 +996,7 @@ TEST(Dump, BigDump) {
 
   // Check the modules.
   MinidumpModuleList* md_module_list = minidump.GetModuleList();
-  ASSERT_TRUE(md_module_list != NULL);
+  ASSERT_TRUE(md_module_list != nullptr);
   ASSERT_EQ(3U, md_module_list->module_count());
   EXPECT_EQ(0xeb77da57b5d4cbdaULL,
             md_module_list->GetModuleAtIndex(0)->base_address());
@@ -969,7 +1008,7 @@ TEST(Dump, BigDump) {
   // Check unloaded modules
   MinidumpUnloadedModuleList* md_unloaded_module_list =
       minidump.GetUnloadedModuleList();
-  ASSERT_TRUE(md_unloaded_module_list != NULL);
+  ASSERT_TRUE(md_unloaded_module_list != nullptr);
   ASSERT_EQ(3U, md_unloaded_module_list->module_count());
   EXPECT_EQ(umodule1_base,
             md_unloaded_module_list->GetModuleAtIndex(0)->base_address());
@@ -986,7 +1025,7 @@ TEST(Dump, BigDump) {
   umodule = md_unloaded_module_list->GetModuleAtSequence(0);
   EXPECT_EQ(umodule1_base, umodule->base_address());
 
-  EXPECT_EQ(NULL, md_unloaded_module_list->GetMainModule());
+  EXPECT_EQ(nullptr, md_unloaded_module_list->GetMainModule());
 
 }
 
@@ -1017,7 +1056,7 @@ TEST(Dump, OneMemoryInfo) {
   dump.Add(&stream);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
   Minidump minidump(minidump_stream);
@@ -1025,11 +1064,11 @@ TEST(Dump, OneMemoryInfo) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   const MDRawDirectory* dir = minidump.GetDirectoryEntryAtIndex(0);
-  ASSERT_TRUE(dir != NULL);
+  ASSERT_TRUE(dir != nullptr);
   EXPECT_EQ((uint32_t) MD_MEMORY_INFO_LIST_STREAM, dir->stream_type);
 
   MinidumpMemoryInfoList* info_list = minidump.GetMemoryInfoList();
-  ASSERT_TRUE(info_list != NULL);
+  ASSERT_TRUE(info_list != nullptr);
   ASSERT_EQ(1U, info_list->info_count());
 
   const MinidumpMemoryInfo* info1 = info_list->GetMemoryInfoAtIndex(0);
@@ -1074,7 +1113,7 @@ TEST(Dump, OneExceptionX86) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1083,24 +1122,24 @@ TEST(Dump, OneExceptionX86) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_X86, md_context->GetContextCPU());
   const MDRawContextX86* md_raw_context = md_context->GetContextX86();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL),
             (md_raw_context->context_flags
              & (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL)));
@@ -1148,7 +1187,7 @@ TEST(Dump, OneExceptionX86XState) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1157,24 +1196,24 @@ TEST(Dump, OneExceptionX86XState) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_X86, md_context->GetContextCPU());
   const MDRawContextX86* md_raw_context = md_context->GetContextX86();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL),
             (md_raw_context->context_flags
              & (MD_CONTEXT_X86_INTEGER | MD_CONTEXT_X86_CONTROL)));
@@ -1233,7 +1272,7 @@ TEST(Dump, OneExceptionX86NoCPUFlags) {
 
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1242,25 +1281,25 @@ TEST(Dump, OneExceptionX86NoCPUFlags) {
   ASSERT_EQ(2U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
 
   ASSERT_EQ((uint32_t) MD_CONTEXT_X86, md_context->GetContextCPU());
   const MDRawContextX86* md_raw_context = md_context->GetContextX86();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
 
   // Even though the CPU flags were missing from the context_flags, the
   // GetContext call above is expected to load the missing CPU flags from the
@@ -1315,7 +1354,7 @@ TEST(Dump, OneExceptionX86NoCPUFlagsNoSystemInfo) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1324,14 +1363,14 @@ TEST(Dump, OneExceptionX86NoCPUFlagsNoSystemInfo) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
@@ -1341,7 +1380,7 @@ TEST(Dump, OneExceptionX86NoCPUFlagsNoSystemInfo) {
   // don't have CPU type information and at the same time the minidump lacks
   // system info stream so it is impossible to deduce the CPU type.
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_EQ(NULL, md_context);
+  ASSERT_EQ(nullptr, md_context);
 }
 
 TEST(Dump, OneExceptionARM) {
@@ -1378,7 +1417,7 @@ TEST(Dump, OneExceptionARM) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1387,24 +1426,24 @@ TEST(Dump, OneExceptionARM) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_ARM, md_context->GetContextCPU());
   const MDRawContextARM* md_raw_context = md_context->GetContextARM();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_ARM_INTEGER,
             (md_raw_context->context_flags
              & MD_CONTEXT_ARM_INTEGER));
@@ -1462,7 +1501,7 @@ TEST(Dump, OneExceptionARMOldFlags) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1471,24 +1510,24 @@ TEST(Dump, OneExceptionARMOldFlags) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9c9d9e9f9ULL,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_ARM, md_context->GetContextCPU());
   const MDRawContextARM* md_raw_context = md_context->GetContextARM();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_ARM_INTEGER,
             (md_raw_context->context_flags
              & MD_CONTEXT_ARM_INTEGER));
@@ -1561,7 +1600,7 @@ TEST(Dump, OneExceptionMIPS) {
   dump.Add(&exception);
   dump.Finish();
 
-  string contents;
+  std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
 
   istringstream minidump_stream(contents);
@@ -1570,24 +1609,24 @@ TEST(Dump, OneExceptionMIPS) {
   ASSERT_EQ(1U, minidump.GetDirectoryEntryCount());
 
   MinidumpException* md_exception = minidump.GetException();
-  ASSERT_TRUE(md_exception != NULL);
+  ASSERT_TRUE(md_exception != nullptr);
 
   uint32_t thread_id;
   ASSERT_TRUE(md_exception->GetThreadID(&thread_id));
   ASSERT_EQ(0x1234abcdU, thread_id);
 
   const MDRawExceptionStream* raw_exception = md_exception->exception();
-  ASSERT_TRUE(raw_exception != NULL);
+  ASSERT_TRUE(raw_exception != nullptr);
   EXPECT_EQ(0xdcba4321, raw_exception->exception_record.exception_code);
   EXPECT_EQ(0xf0e0d0c0, raw_exception->exception_record.exception_flags);
   EXPECT_EQ(0x0919a9b9U,
             raw_exception->exception_record.exception_address);
 
   MinidumpContext* md_context = md_exception->GetContext();
-  ASSERT_TRUE(md_context != NULL);
+  ASSERT_TRUE(md_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_MIPS, md_context->GetContextCPU());
   const MDRawContextMIPS* md_raw_context = md_context->GetContextMIPS();
-  ASSERT_TRUE(md_raw_context != NULL);
+  ASSERT_TRUE(md_raw_context != nullptr);
   ASSERT_EQ((uint32_t) MD_CONTEXT_MIPS_INTEGER,
             (md_raw_context->context_flags & MD_CONTEXT_MIPS_INTEGER));
   EXPECT_EQ(0x3ecba80dU, raw_context.iregs[0]);

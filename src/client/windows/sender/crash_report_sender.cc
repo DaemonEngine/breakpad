@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,6 +28,10 @@
 
 // Disable exception handler warnings.
 #pragma warning( disable : 4530 )
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <errno.h>
 
@@ -69,7 +72,7 @@ ReportResult CrashReportSender::SendCrashReport(
 
   int http_response = 0;
   bool result = HTTPUpload::SendMultipartPostRequest(
-    url, parameters, files, NULL, report_code,
+    url, parameters, files, nullptr, report_code,
     &http_response);
 
   if (result) {
@@ -132,7 +135,7 @@ int CrashReportSender::OpenCheckpointFile(const wchar_t* mode, FILE** fd) {
   return _wfopen_s(fd, checkpoint_file_.c_str(), mode);
 #else
   *fd = _wfopen(checkpoint_file_.c_str(), mode);
-  if (*fd == NULL) {
+  if (*fd == nullptr) {
     return errno;
   }
   return 0;

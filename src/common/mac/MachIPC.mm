@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,9 +29,10 @@
 //  MachIPC.mm
 //  Wrapper for mach IPC calls
 
-#import <stdio.h>
 #import "MachIPC.h"
+#import <stdio.h>
 #include "common/mac/bootstrap_compat.h"
+#include "common/memory_allocator.h"
 
 namespace google_breakpad {
 //==============================================================================
@@ -78,7 +78,7 @@ mach_msg_size_t MachMessage::CalculateSize() {
   size_t size = sizeof(mach_msg_header_t) + sizeof(mach_msg_body_t);
   
   // add space for MessageDataPacket
-  int32_t alignedDataLength = (GetDataLength() + 3) & ~0x3;
+  size_t alignedDataLength = PageAllocator::AlignUp(GetDataLength(), 4);
   size += 2*sizeof(int32_t) + alignedDataLength;
   
   // add space for descriptors

@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -54,9 +53,9 @@
 namespace {
 
 char* breakpad_mkdtemp(char* path) {
-  if (path == NULL) {
+  if (path == nullptr) {
     errno = EINVAL;
-    return NULL;
+    return nullptr;
   }
 
   // 'path' must be terminated with six 'X'
@@ -67,23 +66,23 @@ char* breakpad_mkdtemp(char* path) {
   if (static_cast<size_t>(path_end - path) < kSuffixLen ||
       memcmp(path_end - kSuffixLen, kSuffix, kSuffixLen) != 0) {
     errno = EINVAL;
-    return NULL;
+    return nullptr;
   }
 
   // If 'path' contains a directory separator, check that it exists to
   // avoid looping later.
   char* sep = strrchr(path, '/');
-  if (sep != NULL) {
+  if (sep != nullptr) {
     struct stat st;
     int ret;
     *sep = '\0';  // temporarily zero-terminate the dirname.
     ret = stat(path, &st);
     *sep = '/';   // restore full path.
     if (ret < 0)
-      return NULL;
+      return nullptr;
     if (!S_ISDIR(st.st_mode)) {
       errno = ENOTDIR;
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -98,11 +97,11 @@ char* breakpad_mkdtemp(char* path) {
       return path;  // Success
 
     if (errno != EEXIST)
-      return NULL;
+      return nullptr;
   }
 
   assert(errno == EEXIST);
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace

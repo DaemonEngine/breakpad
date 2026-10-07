@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -54,8 +53,8 @@ int pthread_barrier_init(pthread_barrier_t* barrier,
                          const void* /* barrier_attr */,
                          unsigned count) {
   barrier->count = count;
-  pthread_mutex_init(&barrier->mutex, NULL);
-  pthread_cond_init(&barrier->cond, NULL);
+  pthread_mutex_init(&barrier->mutex, nullptr);
+  pthread_cond_init(&barrier->cond, nullptr);
   return 0;
 }
 

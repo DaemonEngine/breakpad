@@ -1,4 +1,4 @@
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,15 +31,18 @@
 // dwarf2diehandler.cc: Implement the dwarf2reader::DieDispatcher class.
 // See dwarf2diehandler.h for details.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 
 #include <string>
 
 #include "common/dwarf/dwarf2diehandler.h"
-#include "common/using_std_string.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 
 DIEDispatcher::~DIEDispatcher() {
   while (!die_handlers_.empty()) {
@@ -60,7 +63,7 @@ bool DIEDispatcher::StartCompilationUnit(uint64_t offset, uint8_t address_size,
 
 bool DIEDispatcher::StartDIE(uint64_t offset, enum DwarfTag tag) {
   // The stack entry for the parent of this DIE, if there is one.
-  HandlerStack* parent = die_handlers_.empty() ? NULL : &die_handlers_.top();
+  HandlerStack* parent = die_handlers_.empty() ? nullptr : &die_handlers_.top();
 
   // Does this call indicate that we're done receiving the parent's
   // attributes' values?  If so, call its EndAttributes member function.
@@ -72,7 +75,7 @@ bool DIEDispatcher::StartDIE(uint64_t offset, enum DwarfTag tag) {
       parent->handler_->Finish();
       if (parent->handler_ != root_handler_)
         delete parent->handler_;
-      parent->handler_ = NULL;
+      parent->handler_ = nullptr;
       return false;
     }
   }
@@ -86,7 +89,7 @@ bool DIEDispatcher::StartDIE(uint64_t offset, enum DwarfTag tag) {
     else
       // No parent handler means we're not interested in any of our
       // children.
-      handler = NULL;
+      handler = nullptr;
   } else {
     // This is the root DIE.  For a non-root DIE, the parent's handler
     // decides whether to visit it, but the root DIE has no parent
@@ -95,7 +98,7 @@ bool DIEDispatcher::StartDIE(uint64_t offset, enum DwarfTag tag) {
     if (root_handler_->StartRootDIE(offset, tag))
       handler = root_handler_;
     else
-      handler = NULL;
+      handler = nullptr;
   }
 
   // Push a handler stack entry for this new handler. As an
@@ -110,7 +113,7 @@ bool DIEDispatcher::StartDIE(uint64_t offset, enum DwarfTag tag) {
     die_handlers_.push(entry);
   }
 
-  return handler != NULL;
+  return handler != nullptr;
 }
 
 void DIEDispatcher::EndDIE(uint64_t offset) {
@@ -179,7 +182,7 @@ void DIEDispatcher::ProcessAttributeBuffer(uint64_t offset,
 void DIEDispatcher::ProcessAttributeString(uint64_t offset,
                                            enum DwarfAttribute attr,
                                            enum DwarfForm form,
-                                           const string& data) {
+                                           const std::string& data) {
   HandlerStack& current = die_handlers_.top();
   // This had better be an attribute of the DIE we were meant to handle.
   assert(offset == current.offset_);
@@ -196,4 +199,4 @@ void DIEDispatcher::ProcessAttributeSignature(uint64_t offset,
   current.handler_->ProcessAttributeSignature(attr, form, signature);
 }
 
-} // namespace dwarf2reader
+} // namespace google_breakpad

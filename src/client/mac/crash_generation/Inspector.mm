@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,25 +28,22 @@
 //
 // Utility that can inspect another process and write a crash dump
 
-#include <cstdio>
-#include <iostream>
+#import "client/mac/crash_generation/Inspector.h"
+
+#import <Foundation/Foundation.h>
 #include <servers/bootstrap.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <iostream>
 #include <string>
 
-#import "client/mac/crash_generation/Inspector.h"
-
+#import "GTMDefines.h"
 #import "client/mac/Framework/Breakpad.h"
 #import "client/mac/handler/minidump_generator.h"
-
 #import "common/mac/MachIPC.h"
 #include "common/mac/bootstrap_compat.h"
 #include "common/mac/launch_reporter.h"
-
-#import "GTMDefines.h"
-
-#import <Foundation/Foundation.h>
 
 namespace google_breakpad {
 
@@ -359,4 +355,3 @@ kern_return_t Inspector::SendAcknowledgement() {
 }
 
 } // namespace google_breakpad
-

@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -35,6 +34,10 @@
 // rules apply as detailed at the top of minidump_writer.h: no libc calls and
 // use the alternative allocator.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "client/linux/minidump_writer/linux_dumper.h"
 
 #include <assert.h>
@@ -44,14 +47,21 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(__CHROMEOS__)
+#include <algorithm>
+#endif  // defined(__CHROMEOS__)
+
 #include "client/linux/minidump_writer/line_reader.h"
 #include "common/linux/elfutils.h"
 #include "common/linux/file_id.h"
 #include "common/linux/linux_libc_support.h"
 #include "common/linux/memory_mapped_file.h"
 #include "common/linux/safe_readlink.h"
+#include "common/memory_allocator.h"
 #include "google_breakpad/common/minidump_exception_linux.h"
 #include "third_party/lss/linux_syscall_support.h"
+
+using google_breakpad::elf::FileID;
 
 #if defined(__ANDROID__)
 
@@ -324,7 +334,7 @@ LinuxDumper::ElfFileIdentifierForMapping(const MappingInfo& mapping,
 
   // Special-case linux-gate because it's not a real file.
   if (my_strcmp(mapping.name, kLinuxGateLibraryName) == 0) {
-    void* linux_gate = NULL;
+    void* linux_gate = nullptr;
     if (pid_ == sys_getpid()) {
       linux_gate = reinterpret_cast<void*>(mapping.start_addr);
     } else {
@@ -341,7 +351,7 @@ LinuxDumper::ElfFileIdentifierForMapping(const MappingInfo& mapping,
     return false;
   bool filename_modified = HandleDeletedFileInMapping(filename);
 
-  MemoryMappedFile mapped_file(filename, mapping.offset);
+  MemoryMappedFile mapped_file(filename, 0);
   if (!mapped_file.data() || mapped_file.size() < SELFMAG)
     return false;
 
@@ -454,7 +464,7 @@ bool ElfFileSoName(const LinuxDumper& dumper,
   if (!dumper.GetMappingAbsolutePath(mapping, filename))
     return false;
 
-  MemoryMappedFile mapped_file(filename, mapping.offset);
+  MemoryMappedFile mapped_file(filename, 0);
   if (!mapped_file.data() || mapped_file.size() < SELFMAG) {
     // mmap failed
     return false;
@@ -483,7 +493,7 @@ void LinuxDumper::GetMappingEffectiveNameAndPath(const MappingInfo& mapping,
     //   file_path := /path/to/libname.so
     //   file_name := libname.so
     const char* basename = my_strrchr(file_path, '/');
-    basename = basename == NULL ? file_path : (basename + 1);
+    basename = basename == nullptr ? file_path : (basename + 1);
     my_strlcpy(file_name, basename, file_name_size);
     return;
   }
@@ -572,33 +582,47 @@ bool LinuxDumper::EnumerateMappings() {
       const char* i2 = my_read_hex_ptr(&end_addr, i1 + 1);
       if (*i2 == ' ') {
         bool exec = (*(i2 + 3) == 'x');
+        bool is_padding = (my_memcmp(i2, " ---p ", 6) == 0);
         const char* i3 = my_read_hex_ptr(&offset, i2 + 6 /* skip ' rwxp ' */);
         if (*i3 == ' ') {
-          const char* name = NULL;
+          const char* name = nullptr;
           // Only copy name if the name is a valid path name, or if
           // it's the VDSO image.
-          if (((name = my_strchr(line, '/')) == NULL) &&
+          if (((name = my_strchr(line, '/')) == nullptr) &&
               linux_gate_loc &&
               reinterpret_cast<void*>(start_addr) == linux_gate_loc) {
             name = kLinuxGateLibraryName;
             offset = 0;
           }
-          // Merge adjacent mappings into one module, assuming they're a single
-          // library mapped by the dynamic linker. Do this only if their name
-          // matches and either they have the same +x protection flag, or if the
-          // previous mapping is not executable and the new one is, to handle
-          // lld's output (see crbug.com/716484).
-          if (name && !mappings_.empty()) {
+
+          if (!mappings_.empty()) {
+            // Merge adjacent mappings into one module, assuming they're a
+            // single library mapped by the dynamic linker. Do this only if
+            // their name matches and either they have the same +x protection
+            // flag, or if the previous mapping is not executable and the new
+            // one is, to handle lld's output (see crbug.com/716484).
             MappingInfo* module = mappings_.back();
-            if ((start_addr == module->start_addr + module->size) &&
-                (my_strlen(name) == my_strlen(module->name)) &&
-                (my_strncmp(name, module->name, my_strlen(name)) == 0) &&
-                ((exec == module->exec) || (!module->exec && exec))) {
-              module->system_mapping_info.end_addr = end_addr;
-              module->size = end_addr - module->start_addr;
-              module->exec |= exec;
-              line_reader->PopLine(line_len);
-              continue;
+            if (name) {
+              if ((start_addr == module->start_addr + module->size) &&
+                  (my_strlen(name) == my_strlen(module->name)) &&
+                  (my_strncmp(name, module->name, my_strlen(name)) == 0) &&
+                  ((exec == module->exec) || (!module->exec && exec))) {
+                module->system_mapping_info.end_addr = end_addr;
+                module->size = end_addr - module->start_addr;
+                module->exec |= exec;
+                line_reader->PopLine(line_len);
+                continue;
+              }
+            } else if (is_padding) {
+              // Extend the previous mapping if the current mapping is a padding
+              // segment.
+              if ((start_addr == module->start_addr + module->size) &&
+                  module->name[0] != '\0') {
+                module->system_mapping_info.end_addr = end_addr;
+                module->size = end_addr - module->start_addr;
+                line_reader->PopLine(line_len);
+                continue;
+              }
             }
           }
           MappingInfo* const module = new(allocator_) MappingInfo;
@@ -610,7 +634,7 @@ bool LinuxDumper::EnumerateMappings() {
           module->size = end_addr - start_addr;
           module->offset = offset;
           module->exec = exec;
-          if (name != NULL) {
+          if (name != nullptr) {
             const unsigned l = my_strlen(name);
             if (l < sizeof(module->name))
               my_memcpy(module->name, name, l);
@@ -835,8 +859,7 @@ void LinuxDumper::SanitizeStackCopy(uint8_t* stack_copy, size_t stack_len,
   }
 
   // Zero memory that is below the current stack pointer.
-  const uintptr_t offset =
-      (sp_offset + sizeof(uintptr_t) - 1) & ~(sizeof(uintptr_t) - 1);
+  const uintptr_t offset = PageAllocator::AlignUp(sp_offset, sizeof(uintptr_t));
   if (offset) {
     my_memset(stack_copy, 0, offset);
   }
@@ -886,8 +909,7 @@ bool LinuxDumper::StackHasPointerToMapping(const uint8_t* stack_copy,
   // aligned word in the target process.
   const uintptr_t low_addr = mapping.system_mapping_info.start_addr;
   const uintptr_t high_addr = mapping.system_mapping_info.end_addr;
-  const uintptr_t offset =
-      (sp_offset + sizeof(uintptr_t) - 1) & ~(sizeof(uintptr_t) - 1);
+  const uintptr_t offset = PageAllocator::AlignUp(sp_offset, sizeof(uintptr_t));
 
   for (const uint8_t* sp = stack_copy + offset;
        sp <= stack_copy + stack_len - sizeof(uintptr_t);
@@ -910,7 +932,7 @@ const MappingInfo* LinuxDumper::FindMapping(const void* address) const {
       return mappings_[i];
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // Find the mapping which the given memory address falls in. Uses the
@@ -923,7 +945,7 @@ const MappingInfo* LinuxDumper::FindMappingNoBias(uintptr_t address) const {
       return mappings_[i];
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 bool LinuxDumper::HandleDeletedFileInMapping(char* path) const {

@@ -1,4 +1,4 @@
-# Copyright 2010 Google Inc. All rights reserved.
+# Copyright 2010 Google LLC
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 # copyright notice, this list of conditions and the following disclaimer
 # in the documentation and/or other materials provided with the
 # distribution.
-#     * Neither the name of Google Inc. nor the names of its
+#     * Neither the name of Google LLC nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -32,53 +32,20 @@
 # you can still use the hooks mechanism for generating project files by calling
 # 'gclient runhooks' rather than 'gclient sync'.
 
+# We expect all git dependencies specified in this file to be in sync with git
+# submodules (gitlinks).
+git_dependencies = "SYNC"
+
 deps = {
   # Testing libraries and utilities.
+  # NB: Submodules do not support git tags, so we have to use the commit that
+  # matches the tag we want to track.
   "src/src/testing":
     "https://github.com/google/googletest.git" +
-      "@5ec7f0c4a113e2f18ac2c6cc7df51ad6afc24081",
-
-  # Protobuf.
-  "src/src/third_party/protobuf/protobuf":
-    "https://github.com/google/protobuf.git" +
-      "@cb6dd4ef5f82e41e06179dcd57d3b1d9246ad6ac",
-
-  # GYP project generator.
-  "src/src/tools/gyp":
-    "https://chromium.googlesource.com/external/gyp/" +
-      "@324dd166b7c0b39d513026fa52d6280ac6d56770",
+      "@6910c9d9165801d8827d628cb72eb7ea9dd538c5",
 
   # Linux syscall support.
   "src/src/third_party/lss":
     "https://chromium.googlesource.com/linux-syscall-support/" +
-      "@fd00dbbd0c06a309c657d89e9430143b179ff6db",
-}
-
-hooks = [
-  {
-    # Keep the manifest up to date.
-    "action": ["python", "src/src/tools/python/deps-to-manifest.py",
-               "src/DEPS", "src/default.xml"],
-  },
-]
-
-hooks_os = {
-  'win': [
-    {
-      # TODO(chrisha): Fix the GYP files so that they work without
-      # --no-circular-check.
-      "pattern": ".",
-      "action": ["python",
-                 "src/src/tools/gyp/gyp_main.py",
-                 "--no-circular-check",
-                 "src/src/client/windows/breakpad_client.gyp"],
-    },
-    {
-      # XXX: this and above should all be wired into build/all.gyp ?
-      "action": ["python",
-                 "src/src/tools/gyp/gyp_main.py",
-                 "--no-circular-check",
-                 "src/src/tools/windows/tools_windows.gyp"],
-    },
-  ],
+      "@29164a80da4d41134950d76d55199ea33fbb9613",
 }

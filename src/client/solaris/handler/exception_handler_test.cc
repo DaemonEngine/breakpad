@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,15 +28,19 @@
 
 // Author: Alfred Peng
 
-#include <pthread.h>
-#include <unistd.h>
-
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "client/solaris/handler/exception_handler.h"
+
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "client/solaris/handler/solaris_lwp.h"
 
 using namespace google_breakpad;
@@ -66,18 +69,18 @@ static void* thread_crash(void*) {
   sleep(3);
   a = foo(a);
   printf("%x\n", a);
-  return NULL;
+  return nullptr;
 }
 
 static void* thread_main(void*) {
   while (!should_exit)
     sleep(1);
-  return NULL;
+  return nullptr;
 }
 
 static void CreateCrashThread() {
   pthread_t h;
-  pthread_create(&h, NULL, thread_crash, NULL);
+  pthread_create(&h, nullptr, thread_crash, nullptr);
   pthread_detach(h);
 }
 
@@ -85,7 +88,7 @@ static void CreateCrashThread() {
 static void CreateThread(int num) {
   pthread_t h;
   for (int i = 0; i < num; ++i) {
-    pthread_create(&h, NULL, thread_main, NULL);
+    pthread_create(&h, nullptr, thread_main, nullptr);
     pthread_detach(h);
   }
 }
@@ -106,7 +109,7 @@ static bool MinidumpCallback(const char* dump_path,
 
 int main(int argc, char* argv[]) {
   int handler_index = 1;
-  ExceptionHandler handler_ignore(".", NULL, MinidumpCallback,
+  ExceptionHandler handler_ignore(".", nullptr, MinidumpCallback,
                                   (void*)handler_index, true);
   CreateCrashThread();
   CreateThread(10);

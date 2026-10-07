@@ -1,5 +1,4 @@
-// Copyright (c) 2011, Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -47,7 +46,7 @@ namespace google_breakpad {
 // in a crashed environment.
 class MemoryRange {
  public:
-  MemoryRange() : data_(NULL), length_(0) {}
+  MemoryRange() : data_(nullptr), length_(0) {}
 
   MemoryRange(const void* data, size_t length) {
     Set(data, length);
@@ -61,7 +60,7 @@ class MemoryRange {
 
   // Resets to an empty range.
   void Reset() {
-    data_ = NULL;
+    data_ = nullptr;
     length_ = 0;
   }
 
@@ -88,7 +87,7 @@ class MemoryRange {
   // |sub_offset| bytes of this memory range, or NULL if the subrange
   // is out of bounds.
   const void* GetData(size_t sub_offset, size_t sub_length) const {
-    return Covers(sub_offset, sub_length) ? (data_ + sub_offset) : NULL;
+    return Covers(sub_offset, sub_length) ? (data_ + sub_offset) : nullptr;
   }
 
   // Same as the two-argument version of GetData() but uses sizeof(DataType)

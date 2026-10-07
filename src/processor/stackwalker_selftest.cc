@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -49,6 +48,10 @@
 //
 // Author: Mark Mentovai
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 
 #include "processor/logging.h"
@@ -66,7 +69,6 @@
 
 #include <stdio.h>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/common/breakpad_types.h"
 #include "google_breakpad/common/minidump_format.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
@@ -80,7 +82,6 @@ using google_breakpad::BasicSourceLineResolver;
 using google_breakpad::CallStack;
 using google_breakpad::CodeModule;
 using google_breakpad::MemoryRegion;
-using google_breakpad::scoped_ptr;
 using google_breakpad::StackFrame;
 using google_breakpad::StackFramePPC;
 using google_breakpad::StackFrameX86;
@@ -324,23 +325,23 @@ static unsigned int CountCallerFrames() {
   context.ebp = GetEBP();
   context.esp = GetESP();
 
-  StackwalkerX86 stackwalker = StackwalkerX86(NULL, &context, &memory, NULL,
-                                              NULL, &resolver);
+  StackwalkerX86 stackwalker = StackwalkerX86(nullptr, &context, &memory,
+                                              nullptr, nullptr, &resolver);
 #elif defined(__ppc__)
   MDRawContextPPC context = MDRawContextPPC();
   context.srr0 = GetPC();
   context.gpr[1] = GetSP();
 
-  StackwalkerPPC stackwalker = StackwalkerPPC(NULL, &context, &memory, NULL,
-                                              NULL, &resolver);
+  StackwalkerPPC stackwalker = StackwalkerPPC(nullptr, &context, &memory,
+                                              nullptr, nullptr, &resolver);
 #elif defined(__sparc__)
   MDRawContextSPARC context = MDRawContextSPARC();
   context.pc = GetPC();
   context.g_r[14] = GetSP();
   context.g_r[30] = GetFP();
 
-  StackwalkerSPARC stackwalker = StackwalkerSPARC(NULL, &context, &memory,
-                                                  NULL, NULL, &resolver);
+  StackwalkerSPARC stackwalker = StackwalkerSPARC(nullptr, &context, &memory,
+                                                  nullptr, nullptr, &resolver);
 #endif  // __i386__ || __ppc__ || __sparc__
 
   CallStack stack;

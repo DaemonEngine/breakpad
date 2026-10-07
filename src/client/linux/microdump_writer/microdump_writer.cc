@@ -1,5 +1,4 @@
-// Copyright (c) 2014, Google Inc.
-// All rights reserved.
+// Copyright 2014 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,7 +29,13 @@
 // This translation unit generates microdumps into the console (logcat on
 // Android). See crbug.com/410294 for more info and design docs.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "client/linux/microdump_writer/microdump_writer.h"
+
+#include <assert.h>
 
 #include <limits>
 
@@ -49,13 +54,14 @@
 namespace {
 
 using google_breakpad::auto_wasteful_vector;
+using google_breakpad::elf::kDefaultBuildIdSize;
 using google_breakpad::ExceptionHandler;
-using google_breakpad::kDefaultBuildIdSize;
 using google_breakpad::LinuxDumper;
 using google_breakpad::LinuxPtraceDumper;
 using google_breakpad::MappingInfo;
 using google_breakpad::MappingList;
 using google_breakpad::MicrodumpExtraInfo;
+using google_breakpad::PageAllocator;
 using google_breakpad::RawContextCPU;
 using google_breakpad::ThreadInfo;
 using google_breakpad::UContextReader;
@@ -137,9 +143,9 @@ class MicrodumpWriter {
                   bool sanitize_stack,
                   const MicrodumpExtraInfo& microdump_extra_info,
                   LinuxDumper* dumper)
-      : ucontext_(context ? &context->context : NULL),
-#if !defined(__ARM_EABI__) && !defined(__mips__)
-        float_state_(context ? &context->float_state : NULL),
+      : ucontext_(context ? &context->context : nullptr),
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
+        float_state_(context ? &context->float_state : nullptr),
 #endif
         dumper_(dumper),
         mapping_list_(mappings),
@@ -148,8 +154,8 @@ class MicrodumpWriter {
         address_within_principal_mapping_(address_within_principal_mapping),
         sanitize_stack_(sanitize_stack),
         microdump_extra_info_(microdump_extra_info),
-        log_line_(NULL),
-        stack_copy_(NULL),
+        log_line_(nullptr),
+        stack_copy_(nullptr),
         stack_len_(0),
         stack_lower_bound_(0),
         stack_pointer_(0) {
@@ -336,9 +342,17 @@ class MicrodumpWriter {
     const char kArch[] = "mips64";
 # else
 #  error "This mips ABI is currently not supported (n32)"
-#endif
+# endif
+#elif defined(__riscv)
+# if __riscv_xlen == 32
+    const char kArch[] = "riscv32";
+# elif __riscv_xlen == 64
+    const char kArch[] = "riscv64";
+# else
+#  error "Unexpected __riscv_xlen"
+# endif
 #else
-#error "This code has not been ported to your platform yet"
+# error "This code has not been ported to your platform yet"
 #endif
 
     LogAppend("O ");
@@ -409,7 +423,7 @@ class MicrodumpWriter {
   void DumpCPUState() {
     RawContextCPU cpu;
     my_memset(&cpu, 0, sizeof(RawContextCPU));
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
     UContextReader::FillCPUContext(&cpu, ucontext_, float_state_);
 #else
     UContextReader::FillCPUContext(&cpu, ucontext_);
@@ -592,7 +606,7 @@ class MicrodumpWriter {
         continue;
       }
 
-      DumpModule(mapping, true, i, NULL);
+      DumpModule(mapping, true, i, nullptr);
     }
     // Next write all the mappings provided by the caller
     for (MappingList::const_iterator iter = mapping_list_.begin();
@@ -602,10 +616,13 @@ class MicrodumpWriter {
     }
   }
 
-  void* Alloc(unsigned bytes) { return dumper_->allocator()->Alloc(bytes); }
+  void* Alloc(unsigned bytes,
+              unsigned alignment = PageAllocator::kDefaultAllocAlignment) {
+    return dumper_->allocator()->Alloc(bytes, alignment);
+  }
 
   const ucontext_t* const ucontext_;
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if GOOGLE_BREAKPAD_CRASH_CONTEXT_HAS_FLOAT_STATE
   const google_breakpad::fpstate_t* const float_state_;
 #endif
   LinuxDumper* dumper_;
@@ -643,7 +660,7 @@ bool WriteMicrodump(pid_t crashing_process,
                     bool sanitize_stack,
                     const MicrodumpExtraInfo& microdump_extra_info) {
   LinuxPtraceDumper dumper(crashing_process);
-  const ExceptionHandler::CrashContext* context = NULL;
+  const ExceptionHandler::CrashContext* context = nullptr;
   if (blob) {
     if (blob_size != sizeof(ExceptionHandler::CrashContext))
       return false;

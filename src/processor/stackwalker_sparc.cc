@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,6 +32,10 @@
 //
 // Author: Michael Shang
 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
@@ -56,7 +59,7 @@ StackwalkerSPARC::StackwalkerSPARC(const SystemInfo* system_info,
 StackFrame* StackwalkerSPARC::GetContextFrame() {
   if (!context_) {
     BPLOG(ERROR) << "Can't get context frame without context";
-    return NULL;
+    return nullptr;
   }
 
   StackFrameSPARC* frame = new StackFrameSPARC();
@@ -76,7 +79,7 @@ StackFrame* StackwalkerSPARC::GetCallerFrame(const CallStack* stack,
                                              bool stack_scan_allowed) {
   if (!memory_ || !stack) {
     BPLOG(ERROR) << "Can't get caller frame without memory or stack";
-    return NULL;
+    return nullptr;
   }
 
   StackFrameSPARC* last_frame = static_cast<StackFrameSPARC*>(
@@ -96,27 +99,26 @@ StackFrame* StackwalkerSPARC::GetCallerFrame(const CallStack* stack,
   // end of the stack.
   uint64_t stack_pointer = last_frame->context.g_r[30];
   if (stack_pointer <= last_frame->context.g_r[14]) {
-    return NULL;
+    return nullptr;
   }
 
   uint32_t instruction;
   if (!memory_->GetMemoryAtAddress(stack_pointer + 60,
                      &instruction) || instruction <= 1) {
-    return NULL;
+    return nullptr;
   }
 
   uint32_t stack_base;
   if (!memory_->GetMemoryAtAddress(stack_pointer + 56,
                      &stack_base) || stack_base <= 1) {
-    return NULL;
+    return nullptr;
   }
 
   // Should we terminate the stack walk? (end-of-stack or broken invariant)
-  if (TerminateWalk(instruction,
-                    stack_pointer,
-                    last_frame->context.g_r[14],
-                    stack->frames()->size() == 1)) {
-    return NULL;
+  if (TerminateWalk(instruction, stack_pointer, last_frame->context.g_r[14],
+                    /*is_context_frame=*/last_frame->trust ==
+                        StackFrame::FRAME_TRUST_CONTEXT)) {
+    return nullptr;
   }
 
   StackFrameSPARC* frame = new StackFrameSPARC();

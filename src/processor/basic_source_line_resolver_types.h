@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -40,7 +39,6 @@
 #include <map>
 #include <string>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
 #include "processor/source_line_resolver_base_types.h"
 
@@ -57,25 +55,31 @@ namespace google_breakpad {
 
 struct
 BasicSourceLineResolver::Function : public SourceLineResolverBase::Function {
-  Function(const string& function_name,
-           MemAddr function_address,
-           MemAddr code_size,
-           int set_parameter_size,
-           bool is_mutiple) : Base(function_name,
-                                   function_address,
-                                   code_size,
-                                   set_parameter_size,
-                                   is_mutiple),
-                              lines() { }
-  RangeMap< MemAddr, linked_ptr<Line> > lines;
+  Function(const std::string& function_name, MemAddr function_address,
+           MemAddr code_size, int set_parameter_size, bool is_mutiple)
+      : Base(function_name, function_address, code_size, set_parameter_size,
+             is_mutiple),
+        inlines(true),
+        last_added_inline_nest_level(0) {}
+
+  // Append inline into corresponding RangeMap.
+  // This function assumes it's called in the order of reading INLINE records.
+  bool AppendInline(linked_ptr<Inline> in);
+
+  ContainedRangeMap<MemAddr, linked_ptr<Inline>> inlines;
+  RangeMap<MemAddr, linked_ptr<Line>> lines;
+
  private:
   typedef SourceLineResolverBase::Function Base;
+
+  // The last added inline_nest_level from INLINE record.
+  int last_added_inline_nest_level;
 };
 
 
 class BasicSourceLineResolver::Module : public SourceLineResolverBase::Module {
  public:
-  explicit Module(const string& name) : name_(name), is_corrupt_(false) { }
+  explicit Module(const std::string& name) : name_(name), is_corrupt_(false) {}
   virtual ~Module() { }
 
   // Loads a map from the given buffer in char* type.
@@ -92,7 +96,19 @@ class BasicSourceLineResolver::Module : public SourceLineResolverBase::Module {
 
   // Looks up the given relative address, and fills the StackFrame struct
   // with the result.
-  virtual void LookupAddress(StackFrame* frame) const;
+  virtual void LookupAddress(
+      StackFrame* frame,
+      std::deque<std::unique_ptr<StackFrame>>* inlined_frame) const;
+
+  // Construct inlined frames for |frame| and store them in |inline_frames|.
+  // |frame|'s source line and source file name may be updated if an inlined
+  // frame is found inside |frame|. As a result, the innermost inlined frame
+  // will be the first one in |inline_frames|.
+  virtual void ConstructInlineFrames(
+      StackFrame* frame,
+      MemAddr address,
+      const ContainedRangeMap<uint64_t, linked_ptr<Inline>>& inline_map,
+      std::deque<std::unique_ptr<StackFrame>>* inline_frames) const;
 
   // If Windows stack walking information is available covering ADDRESS,
   // return a WindowsFrameInfo structure describing it. If the information
@@ -113,17 +129,21 @@ class BasicSourceLineResolver::Module : public SourceLineResolverBase::Module {
   friend class ModuleComparer;
   friend class ModuleSerializer;
 
-  typedef std::map<int, string> FileMap;
+  typedef std::map<int, std::string> FileMap;
 
   // Logs parse errors.  |*num_errors| is increased every time LogParseError is
   // called.
-  static void LogParseError(
-      const string& message,
-      int line_number,
-      int* num_errors);
+  static void LogParseError(const std::string& message, int line_number,
+                            int* num_errors);
 
   // Parses a file declaration
   bool ParseFile(char* file_line);
+
+  // Parses an inline origin declaration.
+  bool ParseInlineOrigin(char* inline_origin_line);
+
+  // Parses an inline declaration.
+  linked_ptr<Inline> ParseInline(char* inline_line);
 
   // Parses a function declaration, returning a new Function object.
   Function* ParseFunction(char* function_line);
@@ -142,8 +162,9 @@ class BasicSourceLineResolver::Module : public SourceLineResolverBase::Module {
   // Parses a STACK CFI record, storing it in cfi_frame_info_.
   bool ParseCFIFrameInfo(char* stack_info_line);
 
-  string name_;
+  std::string name_;
   FileMap files_;
+  std::map<int, linked_ptr<InlineOrigin>> inline_origins_;
   RangeMap< MemAddr, linked_ptr<Function> > functions_;
   AddressMap< MemAddr, linked_ptr<PublicSymbol> > public_symbols_;
   bool is_corrupt_;
@@ -164,14 +185,14 @@ class BasicSourceLineResolver::Module : public SourceLineResolverBase::Module {
   // STACK CFI INIT records: for each range, an initial set of register
   // recovery rules. The RangeMap's itself gives the starting and ending
   // addresses.
-  RangeMap<MemAddr, string> cfi_initial_rules_;
+  RangeMap<MemAddr, std::string> cfi_initial_rules_;
 
   // STACK CFI records: at a given address, the changes to the register
   // recovery rules that take effect at that address. The map key is the
   // starting address; the ending address is the key of the next entry in
   // this map, or the end of the range as given by the cfi_initial_rules_
   // entry (which FindCFIFrameInfo looks up first).
-  std::map<MemAddr, string> cfi_delta_rules_;
+  std::map<MemAddr, std::string> cfi_delta_rules_;
 };
 
 }  // namespace google_breakpad

@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,11 +32,16 @@
 //
 // Author: Mark Mentovai
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "google_breakpad/processor/stackwalker.h"
 
 #include <assert.h>
 
-#include "common/scoped_ptr.h"
+#include <memory>
+
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_module.h"
 #include "google_breakpad/processor/code_modules.h"
@@ -55,6 +59,8 @@
 #include "processor/stackwalker_arm.h"
 #include "processor/stackwalker_arm64.h"
 #include "processor/stackwalker_mips.h"
+#include "processor/stackwalker_riscv.h"
+#include "processor/stackwalker_riscv64.h"
 
 namespace google_breakpad {
 
@@ -77,7 +83,7 @@ Stackwalker::Stackwalker(const SystemInfo* system_info,
     : system_info_(system_info),
       memory_(memory),
       modules_(modules),
-      unloaded_modules_(NULL),
+      unloaded_modules_(nullptr),
       frame_symbolizer_(frame_symbolizer) {
   assert(frame_symbolizer_);
 }
@@ -131,18 +137,19 @@ bool Stackwalker::Walk(
   uint32_t scanned_frames = 0;
 
   // Take ownership of the pointer returned by GetContextFrame.
-  scoped_ptr<StackFrame> frame(GetContextFrame());
+  std::unique_ptr<StackFrame> frame(GetContextFrame());
 
   while (frame.get()) {
     // frame already contains a good frame with properly set instruction and
     // frame_pointer fields.  The frame structure comes from either the
     // context frame (above) or a caller frame (below).
 
+    std::deque<std::unique_ptr<StackFrame>> inlined_frames;
     // Resolve the module information, if a module map was provided.
     StackFrameSymbolizer::SymbolizerResult symbolizer_result =
         frame_symbolizer_->FillSourceLineInfo(modules_, unloaded_modules_,
                                               system_info_,
-                                              frame.get());
+                                              frame.get(), &inlined_frames);
     switch (symbolizer_result) {
       case StackFrameSymbolizer::kInterrupt:
         BPLOG(INFO) << "Stack walk is interrupted.";
@@ -157,6 +164,8 @@ bool Stackwalker::Walk(
                                      modules_with_corrupt_symbols);
         break;
       case StackFrameSymbolizer::kNoError:
+        break;
+      case StackFrameSymbolizer::kNonRetriableError:
         break;
       default:
         assert(false);
@@ -173,7 +182,12 @@ bool Stackwalker::Walk(
       default:
         break;
     }
-
+    // Add all nested inlined frames belonging to this frame from the innermost
+    // frame to the outermost frame.
+    while (!inlined_frames.empty()) {
+      stack->frames_.push_back(inlined_frames.front().release());
+      inlined_frames.pop_front();
+    }
     // Add the frame to the call stack.  Relinquish the ownership claim
     // over the frame, because the stack now owns it.
     stack->frames_.push_back(frame.release());
@@ -203,10 +217,10 @@ Stackwalker* Stackwalker::StackwalkerForCPU(
     StackFrameSymbolizer* frame_symbolizer) {
   if (!context) {
     BPLOG(ERROR) << "Can't choose a stackwalker implementation without context";
-    return NULL;
+    return nullptr;
   }
 
-  Stackwalker* cpu_stackwalker = NULL;
+  Stackwalker* cpu_stackwalker = nullptr;
 
   uint32_t cpu = context->GetContextCPU();
   switch (cpu) {
@@ -265,6 +279,20 @@ Stackwalker* Stackwalker::StackwalkerForCPU(
                                              memory, modules,
                                              frame_symbolizer);
       break;
+
+    case MD_CONTEXT_RISCV:
+      cpu_stackwalker = new StackwalkerRISCV(system_info,
+                                             context->GetContextRISCV(),
+                                             memory, modules,
+                                             frame_symbolizer);
+      break;
+
+    case MD_CONTEXT_RISCV64:
+      cpu_stackwalker = new StackwalkerRISCV64(system_info,
+                                               context->GetContextRISCV64(),
+                                               memory, modules,
+                                               frame_symbolizer);
+      break;
   }
 
   BPLOG_IF(ERROR, !cpu_stackwalker) << "Unknown CPU type " << HexString(cpu) <<
@@ -307,7 +335,7 @@ bool Stackwalker::InstructionAddressSeemsValid(uint64_t address) const {
   frame.instruction = address;
   StackFrameSymbolizer::SymbolizerResult symbolizer_result =
       frame_symbolizer_->FillSourceLineInfo(modules_, unloaded_modules_,
-                                            system_info_, &frame);
+                                            system_info_, &frame, nullptr);
 
   if (!frame.module) {
     // not inside any loaded module

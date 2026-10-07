@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2012 Google Inc.
-# All rights reserved.
+#!/usr/bin/env python3
+# Copyright 2012 Google LLC
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -12,7 +11,7 @@
 # copyright notice, this list of conditions and the following disclaimer
 # in the documentation and/or other materials provided with the
 # distribution.
-#     * Neither the name of Google Inc. nor the names of its
+#     * Neither the name of Google LLC nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -30,10 +29,9 @@
 
 """Unit tests for filter_syms.py"""
 
-import cStringIO
+import io
 import ntpath
 import os
-import StringIO
 import sys
 import unittest
 
@@ -45,8 +43,8 @@ import filter_syms
 
 class FilterSysmsTest(unittest.TestCase):
   def assertParsed(self, input_data, ignored_prefixes, expected):
-    input_io = cStringIO.StringIO(input_data)
-    output_io = cStringIO.StringIO()
+    input_io = io.StringIO(input_data)
+    output_io = io.StringIO()
     parser = filter_syms.SymbolFileParser(input_io, output_io,
                                           ignored_prefixes, ntpath)
     parser.Process()

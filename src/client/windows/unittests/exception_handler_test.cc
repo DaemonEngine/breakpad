@@ -1,5 +1,4 @@
-// Copyright 2009, Google Inc.
-// All rights reserved.
+// Copyright 2009 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,8 +26,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "client/windows/unittests/exception_handler_test.h"
 
+#include <assert.h>
 #include <windows.h>
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -127,7 +131,7 @@ void ExceptionHandlerTest::SetUp() {
     assert(false);
   }
   StringCchPrintfW(temp_path_, MAX_PATH, L"%s%s", temp_path, test_name_wide);
-  CreateDirectory(temp_path_, NULL);
+  CreateDirectory(temp_path_, nullptr);
 }
 
 void ExceptionHandlerTest::TearDown() {
@@ -176,9 +180,9 @@ bool ExceptionHandlerTest::DumpCallback(const wchar_t* dump_path,
 void ExceptionHandlerTest::DoCrashInvalidParameter() {
   google_breakpad::ExceptionHandler* exc =
       new google_breakpad::ExceptionHandler(
-          temp_path_, NULL, NULL, NULL,
+          temp_path_, nullptr, nullptr, nullptr,
           google_breakpad::ExceptionHandler::HANDLER_INVALID_PARAMETER,
-          kFullDumpType, kPipeName, NULL);
+          kFullDumpType, kPipeName, nullptr);
 
 #ifdef _MSC_VER
   // Disable the message box for assertions
@@ -189,7 +193,7 @@ void ExceptionHandlerTest::DoCrashInvalidParameter() {
   // if it's not true we'll still get an error rather than the crash
   // being expected.
   ASSERT_TRUE(exc->IsOutOfProcess());
-  printf(NULL);
+  printf(nullptr);
 }
 
 struct PureVirtualCall;
@@ -216,9 +220,9 @@ PureVirtualCallBase:: ~PureVirtualCallBase()
 void ExceptionHandlerTest::DoCrashPureVirtualCall() {
   google_breakpad::ExceptionHandler* exc =
       new google_breakpad::ExceptionHandler(
-          temp_path_, NULL, NULL, NULL,
+          temp_path_, nullptr, nullptr, nullptr,
           google_breakpad::ExceptionHandler::HANDLER_PURECALL,
-          kFullDumpType, kPipeName, NULL);
+          kFullDumpType, kPipeName, nullptr);
 
 #ifdef _MSC_VER
   // Disable the message box for assertions
@@ -248,8 +252,8 @@ TEST_F(ExceptionHandlerTest, InvalidParameterMiniDumpTest) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
   wstring dump_path(temp_path_);
   google_breakpad::CrashGenerationServer server(
-      kPipeName, NULL, NULL, NULL, ClientDumpCallback, NULL, NULL, NULL, NULL,
-      NULL, true, &dump_path);
+      kPipeName, nullptr, nullptr, nullptr, ClientDumpCallback, nullptr,
+      nullptr, nullptr, nullptr, nullptr, true, &dump_path);
 
   ASSERT_TRUE(dump_file.empty() && full_dump_file.empty());
 
@@ -320,8 +324,8 @@ TEST_F(ExceptionHandlerTest, PureVirtualCallMiniDumpTest) {
   ASSERT_TRUE(DoesPathExist(temp_path_));
   wstring dump_path(temp_path_);
   google_breakpad::CrashGenerationServer server(
-      kPipeName, NULL, NULL, NULL, ClientDumpCallback, NULL, NULL, NULL, NULL,
-      NULL, true, &dump_path);
+      kPipeName, nullptr, nullptr, nullptr, ClientDumpCallback, nullptr,
+      nullptr, nullptr, nullptr, nullptr, true, &dump_path);
 
   ASSERT_TRUE(dump_file.empty() && full_dump_file.empty());
 
@@ -389,9 +393,9 @@ TEST_F(ExceptionHandlerTest, PureVirtualCallMiniDumpTest) {
 // some expected structures.
 TEST_F(ExceptionHandlerTest, WriteMinidumpTest) {
   ExceptionHandler handler(temp_path_,
-                           NULL,
+                           nullptr,
                            DumpCallback,
-                           NULL,
+                           nullptr,
                            ExceptionHandler::HANDLER_ALL);
 
   // Disable GTest SEH handler
@@ -427,9 +431,9 @@ TEST_F(ExceptionHandlerTest, AdditionalMemory) {
   }
 
   ExceptionHandler handler(temp_path_,
-                           NULL,
+                           nullptr,
                            DumpCallback,
-                           NULL,
+                           nullptr,
                            ExceptionHandler::HANDLER_ALL);
 
   // Disable GTest SEH handler
@@ -481,9 +485,9 @@ TEST_F(ExceptionHandlerTest, AdditionalMemoryRemove) {
   }
 
   ExceptionHandler handler(temp_path_,
-                           NULL,
+                           nullptr,
                            DumpCallback,
-                           NULL,
+                           nullptr,
                            ExceptionHandler::HANDLER_ALL);
 
   // Disable GTest SEH handler

@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,9 +30,15 @@
 // we call the libc functions directly we risk crashing in the dynamic linker
 // as it tries to resolve uncached PLT entries.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/linux/linux_libc_support.h"
 
 #include <stddef.h>
+
+#include <limits>
 
 extern "C" {
 
@@ -75,20 +80,24 @@ int my_strncmp(const char* a, const char* b, size_t len) {
 //   result: (output) the resulting non-negative integer
 //   s: a NUL terminated string
 // Return true iff successful.
-bool my_strtoui(int* result, const char* s) {
-  if (*s == 0)
+bool my_strtoi_nonneg(int* result, const char* s) {
+  if (*s == 0) {
     return false;
+  }
   int r = 0;
   for (;; s++) {
-    if (*s == 0)
+    if (*s == 0) {
       break;
-    const int old_r = r;
-    r *= 10;
-    if (*s < '0' || *s > '9')
+    }
+    if (*s < '0' || *s > '9') {
       return false;
-    r += *s - '0';
-    if (r < old_r)
+    }
+    if (r > std::numeric_limits<int>::max() / 10 ||
+        (r == std::numeric_limits<int>::max() / 10 &&
+         *s - '0' > std::numeric_limits<int>::max() % 10)) {
       return false;
+    }
+    r = r * 10 + (*s - '0');
   }
 
   *result = r;
@@ -129,7 +138,7 @@ const char* my_strchr(const char* haystack, char needle) {
 }
 
 const char* my_strrchr(const char* haystack, char needle) {
-  const char* ret = NULL;
+  const char* ret = nullptr;
   while (*haystack) {
     if (*haystack == needle)
       ret = haystack;
@@ -145,7 +154,7 @@ void* my_memchr(const void* src, int needle, size_t src_len) {
     if (*p == needle)
       return (void*)p;
   }
-  return NULL;
+  return nullptr;
 }
 
 // Read a hex value

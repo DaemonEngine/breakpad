@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -66,7 +65,7 @@ class StdMapSerializer {
   // Returns a pointer to the serialized data.  If size != NULL, *size is set
   // to the size of serialized data, i.e., SizeOf(m).
   // Caller has the ownership of memory allocated as "new char[]".
-  char* Serialize(const std::map<Key, Value>& m, unsigned int* size) const;
+  char* Serialize(const std::map<Key, Value>& m, uint64_t* size) const;
 
  private:
   SimpleSerializer<Key> key_serializer_;
@@ -94,7 +93,7 @@ class AddressMapSerializer {
   // Returns a pointer to the serialized data.  If size != NULL, *size is set
   // to the size of serialized data, i.e., SizeOf(m).
   // Caller has the ownership of memory allocated as "new char[]".
-  char* Serialize(const AddressMap<Addr, Entry>& m, unsigned int* size) const {
+  char* Serialize(const AddressMap<Addr, Entry>& m, uint64_t* size) const {
     return std_map_serializer_.Serialize(m.map_, size);
   }
 
@@ -121,7 +120,7 @@ class RangeMapSerializer {
   // Returns a pointer to the serialized data.  If size != NULL, *size is set
   // to the size of serialized data, i.e., SizeOf(m).
   // Caller has the ownership of memory allocated as "new char[]".
-  char* Serialize(const RangeMap<Address, Entry>& m, unsigned int* size) const;
+  char* Serialize(const RangeMap<Address, Entry>& m, uint64_t* size) const;
 
  private:
   // Convenient type name for Range.
@@ -152,7 +151,7 @@ class ContainedRangeMapSerializer {
   // to the size of serialized data, i.e., SizeOf(m).
   // Caller has the ownership of memory allocated as "new char[]".
   char* Serialize(const ContainedRangeMap<AddrType, EntryType>* m,
-                  unsigned int* size) const;
+                  uint64_t* size) const;
 
  private:
   // Convenient type name for the underlying map type.

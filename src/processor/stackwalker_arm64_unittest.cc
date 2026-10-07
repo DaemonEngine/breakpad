@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,13 +30,16 @@
 
 // stackwalker_arm64_unittest.cc: Unit tests for StackwalkerARM64 class.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <string.h>
 #include <string>
 #include <vector>
 
 #include "breakpad_googletest_includes.h"
 #include "common/test_assembler.h"
-#include "common/using_std_string.h"
 #include "google_breakpad/common/minidump_format.h"
 #include "google_breakpad/processor/basic_source_line_resolver.h"
 #include "google_breakpad/processor/call_stack.h"
@@ -105,7 +107,7 @@ class StackwalkerARM64Fixture {
 
   // Set the Breakpad symbol information that supplier should return for
   // MODULE to INFO.
-  void SetModuleSymbols(MockCodeModule* module, const string& info) {
+  void SetModuleSymbols(MockCodeModule* module, const std::string& info) {
     size_t buffer_size;
     char *buffer = supplier.CopySymbolDataAndOwnTheCopy(info, &buffer_size);
     EXPECT_CALL(supplier, GetCStringSymbolData(module, &system_info, _, _, _))
@@ -117,7 +119,7 @@ class StackwalkerARM64Fixture {
   // Populate stack_region with the contents of stack_section. Use
   // stack_section.start() as the region's starting address.
   void RegionFromSection() {
-    string contents;
+    std::string contents;
     ASSERT_TRUE(stack_section.GetContents(&contents));
     stack_region.Init(stack_section.start().Value(), contents);
   }
@@ -147,7 +149,7 @@ class SanityCheck: public StackwalkerARM64Fixture, public Test { };
 TEST_F(SanityCheck, NoResolver) {
   // Since the context's frame pointer is garbage, the stack walk will end after
   // the first frame.
-  StackFrameSymbolizer frame_symbolizer(NULL, NULL);
+  StackFrameSymbolizer frame_symbolizer(nullptr, nullptr);
   StackwalkerARM64 walker(&system_info, &raw_context, &stack_region, &modules,
                           &frame_symbolizer);
   // This should succeed even without a resolver or supplier.
@@ -171,7 +173,7 @@ class GetContextFrame: public StackwalkerARM64Fixture, public Test { };
 // without stack memory present.
 TEST_F(GetContextFrame, NoStackMemory) {
   StackFrameSymbolizer frame_symbolizer(&supplier, &resolver);
-  StackwalkerARM64 walker(&system_info, &raw_context, NULL, &modules,
+  StackwalkerARM64 walker(&system_info, &raw_context, nullptr, &modules,
                           &frame_symbolizer);
   vector<const CodeModule*> modules_without_symbols;
   vector<const CodeModule*> modules_with_corrupt_symbols;

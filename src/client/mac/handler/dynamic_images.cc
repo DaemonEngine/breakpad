@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "client/mac/handler/dynamic_images.h"
 
@@ -48,6 +51,7 @@ extern "C" { // needed to compile on Leopard
 #include <vector>
 
 #include "breakpad_nlist_64.h"
+#include "common/memory_allocator.h"
 
 #if !TARGET_OS_IPHONE
 #include <CoreServices/CoreServices.h>
@@ -189,7 +193,7 @@ kern_return_t ReadTaskMemory(task_port_t target_task,
   mach_vm_address_t page_address = address & (-systemPageSize);
 
   mach_vm_address_t last_page_address =
-      (address + length + (systemPageSize - 1)) & (-systemPageSize);
+      PageAllocator::AlignUp(address + length, systemPageSize);
 
   mach_vm_size_t page_size = last_page_address - page_address;
   uint8_t* local_start;
@@ -529,7 +533,7 @@ DynamicImage* DynamicImages::GetExecutableImage() {
     return GetImage(executable_index);
   }
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================

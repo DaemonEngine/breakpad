@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2008 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,6 +28,10 @@
 
 // crash_generation_app.cpp : Defines the entry point for the application.
 //
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "client/windows/tests/crash_generation_app/crash_generation_app.h"
 
@@ -63,7 +66,7 @@ const DWORD kEditBoxStyles = WS_CHILD |
 const size_t kMaximumLineLength = 256;
 
 // CS to access edit control in a thread safe way.
-static CRITICAL_SECTION* cs_edit = NULL;
+static CRITICAL_SECTION* cs_edit = nullptr;
 
 // Edit control.
 static HWND client_status_edit_box;
@@ -83,8 +86,8 @@ static CustomInfoEntry kCustomInfoEntries[] = {
     CustomInfoEntry(L"ver", L"1.0"),
 };
 
-static ExceptionHandler* handler = NULL;
-static CrashGenerationServer* crash_server = NULL;
+static ExceptionHandler* handler = nullptr;
+static CrashGenerationServer* crash_server = nullptr;
 
 // Registers the window class.
 //
@@ -103,7 +106,7 @@ ATOM MyRegisterClass(HINSTANCE instance) {
   wcex.hInstance = instance;
   wcex.hIcon = LoadIcon(instance,
                         MAKEINTRESOURCE(IDI_CRASHGENERATIONAPP));
-  wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
   wcex.lpszMenuName = MAKEINTRESOURCE(IDC_CRASHGENERATIONAPP);
   wcex.lpszClassName = window_class;
@@ -125,10 +128,10 @@ BOOL InitInstance(HINSTANCE instance, int command_show) {
                           0,
                           CW_USEDEFAULT,
                           0,
-                          NULL,
-                          NULL,
+                          nullptr,
+                          nullptr,
                           instance,
-                          NULL);
+                          nullptr);
 
   if (!wnd) {
     return FALSE;
@@ -289,33 +292,33 @@ void CrashServerStart() {
   std::wstring dump_path = L"C:\\Dumps\\";
 
   if (_wmkdir(dump_path.c_str()) && (errno != EEXIST)) {
-    MessageBoxW(NULL, L"Unable to create dump directory", L"Dumper", MB_OK);
+    MessageBoxW(nullptr, L"Unable to create dump directory", L"Dumper", MB_OK);
     return;
   }
 
   crash_server = new CrashGenerationServer(kPipeName,
-                                           NULL,
+                                           nullptr,
                                            ShowClientConnected,
-                                           NULL,
+                                           nullptr,
                                            ShowClientCrashed,
-                                           NULL,
+                                           nullptr,
                                            ShowClientExited,
-                                           NULL,
-                                           NULL,
-                                           NULL,
+                                           nullptr,
+                                           nullptr,
+                                           nullptr,
                                            true,
                                            &dump_path);
 
   if (!crash_server->Start()) {
-    MessageBoxW(NULL, L"Unable to start server", L"Dumper", MB_OK);
+    MessageBoxW(nullptr, L"Unable to start server", L"Dumper", MB_OK);
     delete crash_server;
-    crash_server = NULL;
+    crash_server = nullptr;
   }
 }
 
 void CrashServerStop() {
   delete crash_server;
-  crash_server = NULL;
+  crash_server = nullptr;
 }
 
 void DerefZeroCrash() {
@@ -324,7 +327,7 @@ void DerefZeroCrash() {
 }
 
 void InvalidParamCrash() {
-  printf(NULL);
+  printf(nullptr);
 }
 
 void PureCallCrash() {
@@ -333,7 +336,7 @@ void PureCallCrash() {
 
 void RequestDump() {
   if (!handler->WriteMinidump()) {
-    MessageBoxW(NULL, L"Dump request failed", L"Dumper", MB_OK);
+    MessageBoxW(nullptr, L"Dump request failed", L"Dumper", MB_OK);
   }
   kCustomInfoEntries[1].set_value(L"1.1");
 }
@@ -408,16 +411,16 @@ LRESULT CALLBACK WndProc(HWND wnd,
       break;
     case WM_CREATE:
       client_status_edit_box = CreateWindow(TEXT("EDIT"),
-                                            NULL,
+                                            nullptr,
                                             kEditBoxStyles,
                                             0,
                                             0,
                                             0,
                                             0,
                                             wnd,
-                                            NULL,
+                                            nullptr,
                                             instance,
-                                            NULL);
+                                            nullptr);
       break;
     case WM_SIZE:
       // Make the edit control the size of the window's client area.
@@ -490,9 +493,9 @@ int APIENTRY _tWinMain(HINSTANCE instance,
   _CrtSetReportMode(_CRT_ASSERT, 0);
 #endif
   handler = new ExceptionHandler(L"C:\\dumps\\",
-                                 NULL,
+                                 nullptr,
                                  google_breakpad::ShowDumpResults,
-                                 NULL,
+                                 nullptr,
                                  ExceptionHandler::HANDLER_ALL,
                                  MiniDumpNormal,
                                  kPipeName,
@@ -517,7 +520,7 @@ int APIENTRY _tWinMain(HINSTANCE instance,
 
   // Main message loop.
   MSG msg;
-  while (GetMessage(&msg, NULL, 0, 0)) {
+  while (GetMessage(&msg, nullptr, 0, 0)) {
     if (!TranslateAccelerator(msg.hwnd, accel_table, &msg)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);

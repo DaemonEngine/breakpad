@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2008 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,6 +26,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "client/windows/crash_generation/minidump_generator.h"
 
 #include <assert.h>
@@ -35,6 +38,7 @@
 #include <algorithm>
 #include <iterator>
 #include <list>
+#include <type_traits>
 #include <vector>
 
 #include "client/windows/common/auto_critical_section.h"
@@ -101,9 +105,9 @@ class HandleTraceData {
 };
 
 HandleTraceData::HandleTraceData()
-    : verifier_module_(NULL),
-      enumerate_resource_(NULL),
-      handle_(NULL) {
+    : verifier_module_(nullptr),
+      enumerate_resource_(nullptr),
+      handle_(0) {
 }
 
 HandleTraceData::~HandleTraceData() {
@@ -153,37 +157,33 @@ bool HandleTraceData::CollectHandleData(
   }
 
   // Now that |handle_| is initialized, purge all irrelevant operations.
-  std::list<AVRF_HANDLE_OPERATION>::iterator i = operations_.begin();
-  std::list<AVRF_HANDLE_OPERATION>::iterator i_end = operations_.end();
-  while (i != i_end) {
-    if (i->Handle == handle_) {
-      ++i;
-    } else {
-      i = operations_.erase(i);
-    }
-  }
+  std::erase_if(operations_, [this](const AVRF_HANDLE_OPERATION& operation) {
+    return operation.Handle != handle_;
+  });
 
   // Convert the list of recorded operations to a minidump stream.
-  stream_.resize(sizeof(MINIDUMP_HANDLE_OPERATION_LIST) +
-      sizeof(AVRF_HANDLE_OPERATION) * operations_.size());
+  static_assert(std::is_trivially_copyable_v<MINIDUMP_HANDLE_OPERATION_LIST>);
+  static_assert(std::is_trivially_copyable_v<AVRF_HANDLE_OPERATION>);
 
-  MINIDUMP_HANDLE_OPERATION_LIST* stream_data =
-      reinterpret_cast<MINIDUMP_HANDLE_OPERATION_LIST*>(
-          &stream_.front());
-  stream_data->SizeOfHeader = sizeof(MINIDUMP_HANDLE_OPERATION_LIST);
-  stream_data->SizeOfEntry = sizeof(AVRF_HANDLE_OPERATION);
-  stream_data->NumberOfEntries = static_cast<ULONG32>(operations_.size());
-  stream_data->Reserved = 0;
-  std::copy(operations_.begin(),
-            operations_.end(),
-#if defined(_MSC_VER) && !defined(_LIBCPP_STD_VER)
-            stdext::checked_array_iterator<AVRF_HANDLE_OPERATION*>(
-                reinterpret_cast<AVRF_HANDLE_OPERATION*>(stream_data + 1),
-                operations_.size())
-#else
-            reinterpret_cast<AVRF_HANDLE_OPERATION*>(stream_data + 1)
-#endif
-            );
+  const MINIDUMP_HANDLE_OPERATION_LIST header{
+      .SizeOfHeader = sizeof(MINIDUMP_HANDLE_OPERATION_LIST),
+      .SizeOfEntry = sizeof(AVRF_HANDLE_OPERATION),
+      .NumberOfEntries = static_cast<ULONG32>(operations_.size()),
+      .Reserved = 0,
+  };
+
+  stream_.clear();
+  stream_.reserve(sizeof(header) +
+                  sizeof(AVRF_HANDLE_OPERATION) * operations_.size());
+
+  auto header_raw = reinterpret_cast<const char*>(&header);
+  stream_.insert(stream_.end(), header_raw, header_raw + sizeof(header));
+  for (const auto& operation : operations_) {
+    auto operation_raw = reinterpret_cast<const char*>(&operation);
+    stream_.insert(stream_.end(),
+                   operation_raw,
+                   operation_raw + sizeof(operation));
+  }
 
   return true;
 }
@@ -208,7 +208,7 @@ bool HandleTraceData::ReadExceptionCode(
                          exception_pointers,
                          &pointers,
                          sizeof(pointers),
-                         NULL)) {
+                         nullptr)) {
     return false;
   }
 
@@ -216,7 +216,7 @@ bool HandleTraceData::ReadExceptionCode(
                          pointers.ExceptionRecord,
                          exception_code,
                          sizeof(*exception_code),
-                         NULL)) {
+                         nullptr)) {
     return false;
   }
 
@@ -258,10 +258,10 @@ MinidumpGenerator::MinidumpGenerator(
     MDRawAssertionInfo* assert_info,
     const MINIDUMP_TYPE dump_type,
     const bool is_client_pointers)
-    : dbghelp_module_(NULL),
-      write_dump_(NULL),
-      rpcrt4_module_(NULL),
-      create_uuid_(NULL),
+    : dbghelp_module_(nullptr),
+      write_dump_(nullptr),
+      rpcrt4_module_(nullptr),
+      create_uuid_(nullptr),
       process_handle_(process_handle),
       process_id_(process_id),
       thread_id_(thread_id),
@@ -276,8 +276,8 @@ MinidumpGenerator::MinidumpGenerator(
       full_dump_file_(INVALID_HANDLE_VALUE),
       dump_file_is_internal_(false),
       full_dump_file_is_internal_(false),
-      additional_streams_(NULL),
-      callback_info_(NULL) {
+      additional_streams_(nullptr),
+      callback_info_(nullptr) {
   uuid_ = {0};
   InitializeCriticalSection(&module_load_sync_);
   InitializeCriticalSection(&get_proc_address_sync_);
@@ -316,7 +316,7 @@ bool MinidumpGenerator::WriteMinidump() {
     return false;
   }
 
-  MINIDUMP_EXCEPTION_INFORMATION* dump_exception_pointers = NULL;
+  MINIDUMP_EXCEPTION_INFORMATION* dump_exception_pointers = nullptr;
   MINIDUMP_EXCEPTION_INFORMATION dump_exception_info;
 
   // Setup the exception information object only if it's a dump
@@ -432,9 +432,9 @@ bool MinidumpGenerator::WriteMinidump() {
         full_dump_file_,
         static_cast<MINIDUMP_TYPE>((dump_type_ & (~MiniDumpNormal))
                                     | MiniDumpWithHandleData),
-        exception_pointers_ ? &dump_exception_info : NULL,
+        dump_exception_pointers,
         &user_streams,
-        NULL) != FALSE;
+        nullptr) != FALSE;
   }
 
   // Add handle operations trace stream to the minidump if it was collected.
@@ -449,7 +449,7 @@ bool MinidumpGenerator::WriteMinidump() {
       dump_file_,
       static_cast<MINIDUMP_TYPE>((dump_type_ & (~MiniDumpWithFullMemory))
                                   | MiniDumpNormal),
-      exception_pointers_ ? &dump_exception_info : NULL,
+      dump_exception_pointers,
       &user_streams,
       callback_info_) != FALSE;
 
@@ -471,10 +471,10 @@ bool MinidumpGenerator::GenerateDumpFile(wstring* dump_path) {
   dump_file_ = CreateFile(dump_file_path.c_str(),
                           GENERIC_WRITE,
                           0,
-                          NULL,
+                          nullptr,
                           CREATE_NEW,
                           FILE_ATTRIBUTE_NORMAL,
-                          NULL);
+                          nullptr);
   if (dump_file_ == INVALID_HANDLE_VALUE) {
     return false;
   }
@@ -506,10 +506,10 @@ bool MinidumpGenerator::GenerateFullDumpFile(wstring* full_dump_path) {
   full_dump_file_ = CreateFile(full_dump_file_path.c_str(),
                                GENERIC_WRITE,
                                0,
-                               NULL,
+                               nullptr,
                                CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL,
-                               NULL);
+                               nullptr);
   if (full_dump_file_ == INVALID_HANDLE_VALUE) {
     return false;
   }

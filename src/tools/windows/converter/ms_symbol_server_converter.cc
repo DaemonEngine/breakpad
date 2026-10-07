@@ -1,5 +1,4 @@
-// Copyright (c) 2007, Google Inc.
-// All rights reserved.
+// Copyright 2007 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -34,14 +33,19 @@
 //
 // Author: Mark Mentovai
 
-#include <windows.h>
-#include <dbghelp.h>
-#include <pathcch.h>
-
-#include <cassert>
-#include <cstdio>
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "tools/windows/converter/ms_symbol_server_converter.h"
+
+#include <windows.h>
+
+#include <assert.h>
+#include <dbghelp.h>
+#include <pathcch.h>
+#include <stdio.h>
+
 #include "common/windows/pdb_source_line_writer.h"
 #include "common/windows/pe_source_line_writer.h"
 #include "common/windows/string_utils-inl.h"
@@ -128,11 +132,15 @@ bool GUIDOrSignatureIdentifier::InitializeFromString(
 #undef SSCANF
 
 MSSymbolServerConverter::MSSymbolServerConverter(
-    const string& local_cache, const vector<string>& symbol_servers)
+    const string& local_cache,
+    const vector<string>& symbol_servers,
+    bool trace_symsrv)
     : symbol_path_(),
       fail_dns_(false),
       fail_timeout_(false),
-      fail_not_found_(false) {
+      fail_http_https_redir_(false),
+      fail_not_found_(false),
+      trace_symsrv_(trace_symsrv) {
   // Setting local_cache can be done without verifying that it exists because
   // SymSrv will create it if it is missing - any creation failures will occur
   // at that time, so there's nothing to check here, making it safe to
@@ -325,7 +333,7 @@ MSSymbolServerConverter::LocateFile(const string& debug_or_code_file,
   // Do the lookup.
   char path[MAX_PATH];
   if (!SymFindFileInPath(
-          process, NULL,
+          process, nullptr,
           const_cast<char*>(debug_or_code_file.c_str()),
           const_cast<void*>(identifier.guid_or_signature_pointer()),
           identifier.age(), 0,
@@ -340,6 +348,10 @@ MSSymbolServerConverter::LocateFile(const string& debug_or_code_file,
       // These errors are possibly transient.
       if (fail_dns_ || fail_timeout_) {
         return LOCATE_RETRY;
+      }
+
+      if (fail_http_https_redir_) {
+        return LOCATE_HTTP_HTTPS_REDIR;
       }
 
       // This is an authoritiative file-not-found message.
@@ -425,6 +437,10 @@ BOOL CALLBACK MSSymbolServerConverter::SymCallback(HANDLE process,
       // message does not use the entire string but is appended to the URL
       // that SymSrv attempted to retrieve.
       string desc(cba_event->desc);
+      if (self->trace_symsrv_) {
+        fprintf(stderr, "LocateFile: SymCallback: action desc '%s'\n",
+                desc.c_str());
+      }
 
       // desc_action maps strings (in desc) to boolean pointers that are to
       // be set to true if the string matches.
@@ -434,29 +450,32 @@ BOOL CALLBACK MSSymbolServerConverter::SymCallback(HANDLE process,
       };
 
       static const desc_action desc_actions[] = {
-        // When a DNS error occurs, it could be indiciative of network
-        // problems.
-        { "SYMSRV:  The server name or address could not be resolved\n",
-          &self->fail_dns_ },
+          // When a DNS error occurs, it could be indiciative of network
+          // problems.
+          {"SYMSRV:  The server name or address could not be resolved\n",
+           &self->fail_dns_},
 
-        // This message is produced if no connection is opened.
-        { "SYMSRV:  A connection with the server could not be established\n",
-          &self->fail_timeout_ },
+          // This message is produced if no connection is opened.
+          {"SYMSRV:  A connection with the server could not be established\n",
+           &self->fail_timeout_},
 
-        // This message is produced if a connection is established but the
-        // server fails to respond to the HTTP request.
-        { "SYMSRV:  The operation timed out\n",
-          &self->fail_timeout_ },
+          // This message is produced if a connection is established but the
+          // server fails to respond to the HTTP request.
+          {"SYMSRV:  The operation timed out\n", &self->fail_timeout_},
 
-        // This message is produced when the requested file is not found,
-        // even if one or more of the above messages are also produced.
-        // It's trapped to distinguish between not-found and unknown-failure
-        // conditions.  Note that this message will not be produced if a
-        // connection is established and the server begins to respond to the
-        // HTTP request but does not finish transmitting the file.
-        { " not found\n",
-          &self->fail_not_found_ }
-      };
+          // This message is produced if the server is redirecting us from http
+          // to https. When this happens SymSrv will fail and we need to use
+          // the https URL in our call-- we've made a mistake.
+          {"ERROR_INTERNET_HTTP_TO_HTTPS_ON_REDIR\n",
+           &self->fail_http_https_redir_},
+
+          // This message is produced when the requested file is not found,
+          // even if one or more of the above messages are also produced.
+          // It's trapped to distinguish between not-found and unknown-failure
+          // conditions.  Note that this message will not be produced if a
+          // connection is established and the server begins to respond to the
+          // HTTP request but does not finish transmitting the file.
+          {" not found\n", &self->fail_not_found_}};
 
       for (int desc_action_index = 0;
            desc_action_index <
@@ -580,7 +599,7 @@ MSSymbolServerConverter::LocateAndConvertSymbolFile(
 
   *converted_symbol_file = pdb_file.substr(0, pdb_file.length() - 4) + ".sym";
 
-  FILE* converted_output = NULL;
+  FILE* converted_output = nullptr;
 #if _MSC_VER >= 1400  // MSVC 2005/8
   errno_t err;
   if ((err = fopen_s(&converted_output, converted_symbol_file->c_str(), "w"))
@@ -676,7 +695,7 @@ MSSymbolServerConverter::LocateAndConvertPEFile(
 
   *converted_symbol_file = pe_file.substr(0, pe_file.length() - 4) + ".sym";
 
-  FILE* converted_output = NULL;
+  FILE* converted_output = nullptr;
 #if _MSC_VER >= 1400  // MSVC 2005/8
   errno_t err;
   if ((err = fopen_s(&converted_output, converted_symbol_file->c_str(), "w"))

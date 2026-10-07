@@ -1,7 +1,6 @@
 // -*- mode: C++ -*-
 
-// Copyright (c) 2012 Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -35,10 +34,12 @@
 #ifndef GOOGLE_BREAKPAD_PROCESSOR_STACK_FRAME_SYMBOLIZER_H__
 #define GOOGLE_BREAKPAD_PROCESSOR_STACK_FRAME_SYMBOLIZER_H__
 
+#include <deque>
+#include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
-#include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 #include "google_breakpad/processor/code_module.h"
 
@@ -57,8 +58,8 @@ class StackFrameSymbolizer {
     // Symbol data was found and successfully loaded in resolver.
     // This does NOT guarantee source line info is found within symbol file.
     kNoError,
-    // This indicates non-critical error, such as, no code module found for
-    // frame's instruction, no symbol file, or resolver failed to load symbol.
+    // This indicates a symbol file is missing. Retrying may help if the file
+    // becomes available later.
     kError,
     // This indicates error for which stack walk should be interrupted
     // and retried in future.
@@ -66,6 +67,9 @@ class StackFrameSymbolizer {
     // Symbol data was found and loaded in resolver however some corruptions
     // were detected.
     kWarningCorruptSymbols,
+    // Other non-retriable errors, like missing debug_file or debug_id, or
+    // instruction outside of module range.
+    kNonRetriableError,
   };
 
   StackFrameSymbolizer(SymbolSupplier* supplier,
@@ -79,7 +83,8 @@ class StackFrameSymbolizer {
       const CodeModules* modules,
       const CodeModules* unloaded_modules,
       const SystemInfo* system_info,
-      StackFrame* stack_frame);
+      StackFrame* stack_frame,
+      std::deque<std::unique_ptr<StackFrame>>* inlined_frames);
 
   virtual WindowsFrameInfo* FindWindowsFrameInfo(const StackFrame* frame);
 
@@ -102,7 +107,7 @@ class StackFrameSymbolizer {
   SourceLineResolverInterface* resolver_;
   // A list of modules known to have symbols missing. This helps avoid
   // repeated lookups for the missing symbols within one minidump.
-  std::set<string> no_symbol_modules_;
+  std::set<std::string> no_symbol_modules_;
 };
 
 }  // namespace google_breakpad

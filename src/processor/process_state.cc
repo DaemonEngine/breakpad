@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,6 +32,10 @@
 //
 // Author: Mark Mentovai
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "google_breakpad/processor/process_state.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/code_modules.h"
@@ -51,21 +54,22 @@ void ProcessState::Clear() {
   crash_address_ = 0;
   assertion_.clear();
   requesting_thread_ = -1;
-  for (vector<CallStack*>::const_iterator iterator = threads_.begin();
-       iterator != threads_.end();
-       ++iterator) {
+  original_thread_count_ = 0;
+  for (std::vector<CallStack*>::const_iterator iterator = threads_.begin();
+       iterator != threads_.end(); ++iterator) {
     delete *iterator;
   }
   threads_.clear();
   system_info_.Clear();
+  thread_names_.clear();
   // modules_without_symbols_ and modules_with_corrupt_symbols_ DO NOT own
   // the underlying CodeModule pointers.  Just clear the vectors.
   modules_without_symbols_.clear();
   modules_with_corrupt_symbols_.clear();
   delete modules_;
-  modules_ = NULL;
+  modules_ = nullptr;
   delete unloaded_modules_;
-  unloaded_modules_ = NULL;
+  unloaded_modules_ = nullptr;
 }
 
 }  // namespace google_breakpad

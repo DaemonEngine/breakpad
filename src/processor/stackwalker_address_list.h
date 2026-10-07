@@ -1,5 +1,4 @@
-// Copyright (c) 2013 Google Inc.
-// All rights reserved.
+// Copyright 2013 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -37,7 +36,6 @@
 #ifndef PROCESSOR_STACKWALKER_ADDRESS_LIST_H_
 #define PROCESSOR_STACKWALKER_ADDRESS_LIST_H_
 
-#include "common/basictypes.h"
 #include "google_breakpad/common/breakpad_types.h"
 #include "google_breakpad/processor/stackwalker.h"
 
@@ -54,6 +52,8 @@ class StackwalkerAddressList : public Stackwalker {
                          size_t frame_count,
                          const CodeModules* modules,
                          StackFrameSymbolizer* frame_symbolizer);
+  StackwalkerAddressList(const StackwalkerAddressList&) = delete;
+  void operator=(const StackwalkerAddressList&) = delete;
 
  private:
   // Implementation of Stackwalker.
@@ -63,8 +63,7 @@ class StackwalkerAddressList : public Stackwalker {
 
   const uint64_t* frames_;
   size_t frame_count_;
-
-  DISALLOW_COPY_AND_ASSIGN(StackwalkerAddressList);
+  size_t next_frame_index_;
 };
 
 }  // namespace google_breakpad

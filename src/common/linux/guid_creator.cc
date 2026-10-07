@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -28,7 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include <config.h>  // Must come first
 #endif
 
 #include "common/linux/eintr_wrapper.h"
@@ -122,7 +121,7 @@ class GUIDGenerator {
     // time(NULL) is a very poor seed, so lacking anything better mix an
     // address into it. We drop the four rightmost bits as they're likely to
     // be 0 on almost all architectures.
-    srand(time(NULL) | ((uintptr_t)&once_control >> 4));
+    srand(time(nullptr) | ((uintptr_t)&once_control >> 4));
   }
 
   static pthread_once_t once_control;

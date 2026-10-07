@@ -1,7 +1,6 @@
 // -*- mode: C++ -*-
 
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -60,7 +59,6 @@
 #include <vector>
 #include <string>
 
-#include "common/using_std_string.h"
 #include "google_breakpad/common/breakpad_types.h"
 
 namespace google_breakpad {
@@ -135,7 +133,7 @@ class Label {
 
   // Return true if this label's value is known. If VALUE_P is given,
   // set *VALUE_P to the known value if returning true.
-  bool IsKnownConstant(uint64_t* value_p = NULL) const;
+  bool IsKnownConstant(uint64_t* value_p = nullptr) const;
 
   // Return true if the offset from LABEL to this label is known. If
   // OFFSET_P is given, set *OFFSET_P to the offset when returning true.
@@ -155,7 +153,8 @@ class Label {
   //   l-m                              // -10
   //   m-l                              // 10
   //   m.Value()                        // error: m's value is not known
-  bool IsKnownOffsetFrom(const Label& label, uint64_t* offset_p = NULL) const;
+  bool IsKnownOffsetFrom(const Label& label,
+                         uint64_t* offset_p = nullptr) const;
 
  private:
   // A label's value, or if that is not yet known, how the value is
@@ -292,7 +291,7 @@ class Section {
     contents_.append(reinterpret_cast<const char*>(data), size);
     return *this;
   };
-  Section& Append(const string& data) {
+  Section& Append(const std::string& data) {
     contents_.append(data);
     return *this;
   };
@@ -321,7 +320,7 @@ class Section {
 
   // Append the contents of DATA as a series of bytes terminated by
   // a NULL character.
-  Section& AppendCString(const string& data) {
+  Section& AppendCString(const std::string& data) {
     Append(data);
     contents_ += '\0';
     return *this;
@@ -329,7 +328,7 @@ class Section {
 
   // Append at most SIZE bytes from DATA; if DATA is less than SIZE bytes
   // long, pad with '\0' characters.
-  Section& AppendCString(const string& data, size_t size) {
+  Section& AppendCString(const std::string& data, size_t size) {
     contents_.append(data, 0, size);
     if (data.size() < size)
       Append(size - data.size(), 0);
@@ -442,7 +441,7 @@ class Section {
   // section, set CONTENTS to the contents of this section, as a
   // string, and clear this section. Return true on success, or false
   // if there were still undefined labels.
-  bool GetContents(string* contents);
+  bool GetContents(std::string* contents);
 
  private:
   // Used internally. A reference to a label's value.
@@ -469,8 +468,8 @@ class Section {
   Endianness endianness_;
 
   // The contents of the section.
-  string contents_;
-  
+  std::string contents_;
+
   // References to labels within those contents.
   vector<Reference> references_;
 

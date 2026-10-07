@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -42,7 +41,7 @@ bool DumpCallback(const google_breakpad::MinidumpDescriptor& descriptor,
 }
 
 void Crash() {
-  volatile int* a = reinterpret_cast<volatile int*>(NULL);
+  volatile int* a = static_cast<volatile int*>(nullptr);
   *a = 1;
 }
 
@@ -50,8 +49,8 @@ void Crash() {
 
 int main(int argc, char* argv[]) {
   google_breakpad::MinidumpDescriptor descriptor(".");
-  google_breakpad::ExceptionHandler eh(descriptor, NULL, DumpCallback,
-                                       NULL, true, -1);
+  google_breakpad::ExceptionHandler eh(descriptor, nullptr, DumpCallback,
+                                       nullptr, true, -1);
   Crash();
   return 0;
 }

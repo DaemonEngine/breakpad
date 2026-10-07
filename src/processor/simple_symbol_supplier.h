@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -80,7 +79,6 @@
 #include <string>
 #include <vector>
 
-#include "common/using_std_string.h"
 #include "google_breakpad/processor/symbol_supplier.h"
 
 namespace google_breakpad {
@@ -94,11 +92,12 @@ class SimpleSymbolSupplier : public SymbolSupplier {
  public:
   // Creates a new SimpleSymbolSupplier, using path as the root path where
   // symbols are stored.
-  explicit SimpleSymbolSupplier(const string& path) : paths_(1, path) {}
+  explicit SimpleSymbolSupplier(const std::string& path) : paths_(1, path) {}
 
   // Creates a new SimpleSymbolSupplier, using paths as a list of root
   // paths where symbols may be stored.
-  explicit SimpleSymbolSupplier(const vector<string>& paths) : paths_(paths) {}
+  explicit SimpleSymbolSupplier(const vector<std::string>& paths)
+      : paths_(paths) {}
 
   virtual ~SimpleSymbolSupplier() {}
 
@@ -106,18 +105,18 @@ class SimpleSymbolSupplier : public SymbolSupplier {
   // description above.
   virtual SymbolResult GetSymbolFile(const CodeModule* module,
                                      const SystemInfo* system_info,
-                                     string* symbol_file);
+                                     std::string* symbol_file);
 
   virtual SymbolResult GetSymbolFile(const CodeModule* module,
                                      const SystemInfo* system_info,
-                                     string* symbol_file,
-                                     string* symbol_data);
+                                     std::string* symbol_file,
+                                     std::string* symbol_data);
 
   // Allocates data buffer on heap and writes symbol data into buffer.
   // Symbol supplier ALWAYS takes ownership of the data buffer.
   virtual SymbolResult GetCStringSymbolData(const CodeModule* module,
                                             const SystemInfo* system_info,
-                                            string* symbol_file,
+                                            std::string* symbol_file,
                                             char** symbol_data,
                                             size_t* symbol_data_size);
 
@@ -127,12 +126,12 @@ class SimpleSymbolSupplier : public SymbolSupplier {
  protected:
   SymbolResult GetSymbolFileAtPathFromRoot(const CodeModule* module,
                                            const SystemInfo* system_info,
-                                           const string& root_path,
-                                           string* symbol_file);
+                                           const std::string& root_path,
+                                           std::string* symbol_file);
 
  private:
-  map<string, char*> memory_buffers_;
-  vector<string> paths_;
+  map<std::string, char*> memory_buffers_;
+  vector<std::string> paths_;
 };
 
 }  // namespace google_breakpad

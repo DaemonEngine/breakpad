@@ -1,5 +1,4 @@
-// Copyright (c) 2009, Google Inc.
-// All rights reserved.
+// Copyright 2009 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,6 +26,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "breakpad_googletest_includes.h"
 #include "common/linux/linux_libc_support.h"
 
@@ -35,7 +38,7 @@ typedef testing::Test LinuxLibcSupportTest;
 }
 
 TEST(LinuxLibcSupportTest, strlen) {
-  static const char* test_data[] = { "", "a", "aa", "aaa", "aabc", NULL };
+  static const char* test_data[] = { "", "a", "aa", "aaa", "aabc", nullptr };
   for (unsigned i = 0; ; ++i) {
     if (!test_data[i])
       break;
@@ -53,7 +56,7 @@ TEST(LinuxLibcSupportTest, strcmp) {
     "ab", "aa",
     "abc", "ab",
     "abc", "abc",
-    NULL,
+    nullptr,
   };
 
   for (unsigned i = 0; ; ++i) {
@@ -71,22 +74,29 @@ TEST(LinuxLibcSupportTest, strcmp) {
 TEST(LinuxLibcSupportTest, strtoui) {
   int result;
 
-  ASSERT_FALSE(my_strtoui(&result, ""));
-  ASSERT_FALSE(my_strtoui(&result, "-1"));
-  ASSERT_FALSE(my_strtoui(&result, "-"));
-  ASSERT_FALSE(my_strtoui(&result, "a"));
-  ASSERT_FALSE(my_strtoui(&result, "23472893472938472987987398472398"));
+  ASSERT_FALSE(my_strtoi_nonneg(&result, ""));
+  ASSERT_FALSE(my_strtoi_nonneg(&result, "-1"));
+  ASSERT_FALSE(my_strtoi_nonneg(&result, "-"));
+  ASSERT_FALSE(my_strtoi_nonneg(&result, "a"));
+  ASSERT_FALSE(my_strtoi_nonneg(&result, "23472893472938472987987398472398"));
 
-  ASSERT_TRUE(my_strtoui(&result, "0"));
+  // Try with max int + 1.
+  ASSERT_FALSE(my_strtoi_nonneg(&result, "2147483648"));
+
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "0"));
   ASSERT_EQ(result, 0);
-  ASSERT_TRUE(my_strtoui(&result, "1"));
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "1"));
   ASSERT_EQ(result, 1);
-  ASSERT_TRUE(my_strtoui(&result, "12"));
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "12"));
   ASSERT_EQ(result, 12);
-  ASSERT_TRUE(my_strtoui(&result, "123"));
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "123"));
   ASSERT_EQ(result, 123);
-  ASSERT_TRUE(my_strtoui(&result, "0123"));
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "0123"));
   ASSERT_EQ(result, 123);
+
+  // Try with max int.
+  ASSERT_TRUE(my_strtoi_nonneg(&result, "2147483647"));
+  ASSERT_EQ(result, 2147483647);
 }
 
 TEST(LinuxLibcSupportTest, uint_len) {
@@ -127,9 +137,9 @@ TEST(LinuxLibcSupportTest, uitos) {
 }
 
 TEST(LinuxLibcSupportTest, strchr) {
-  ASSERT_EQ(NULL, my_strchr("abc", 'd'));
-  ASSERT_EQ(NULL, my_strchr("", 'd'));
-  ASSERT_EQ(NULL, my_strchr("efghi", 'd'));
+  ASSERT_EQ(nullptr, my_strchr("abc", 'd'));
+  ASSERT_EQ(nullptr, my_strchr("", 'd'));
+  ASSERT_EQ(nullptr, my_strchr("efghi", 'd'));
 
   ASSERT_TRUE(my_strchr("a", 'a'));
   ASSERT_TRUE(my_strchr("abc", 'a'));
@@ -141,9 +151,9 @@ TEST(LinuxLibcSupportTest, strchr) {
 }
 
 TEST(LinuxLibcSupportTest, strrchr) {
-  ASSERT_EQ(NULL, my_strrchr("abc", 'd'));
-  ASSERT_EQ(NULL, my_strrchr("", 'd'));
-  ASSERT_EQ(NULL, my_strrchr("efghi", 'd'));
+  ASSERT_EQ(nullptr, my_strrchr("abc", 'd'));
+  ASSERT_EQ(nullptr, my_strrchr("", 'd'));
+  ASSERT_EQ(nullptr, my_strrchr("efghi", 'd'));
 
   ASSERT_TRUE(my_strrchr("a", 'a'));
   ASSERT_TRUE(my_strrchr("abc", 'a'));
@@ -155,9 +165,9 @@ TEST(LinuxLibcSupportTest, strrchr) {
 }
 
 TEST(LinuxLibcSupportTest, memchr) {
-  ASSERT_EQ(NULL, my_memchr("abc", 'd', 3));
-  ASSERT_EQ(NULL, my_memchr("abcd", 'd', 3));
-  ASSERT_EQ(NULL, my_memchr("a", 'a', 0));
+  ASSERT_EQ(nullptr, my_memchr("abc", 'd', 3));
+  ASSERT_EQ(nullptr, my_memchr("abcd", 'd', 3));
+  ASSERT_EQ(nullptr, my_memchr("a", 'a', 0));
 
   static const char abc3[] = "abcabcabc";
   ASSERT_EQ(abc3, my_memchr(abc3, 'a', 3));

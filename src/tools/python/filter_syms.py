@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2012 Google Inc.
-# All rights reserved.
+#!/usr/bin/env python3
+# Copyright 2012 Google LLC
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -12,7 +11,7 @@
 # copyright notice, this list of conditions and the following disclaimer
 # in the documentation and/or other materials provided with the
 # distribution.
-#     * Neither the name of Google Inc. nor the names of its
+#     * Neither the name of Google LLC nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -39,7 +38,6 @@ DWARF files and normalize and de-duplicate the FILE records found within,
 updating any references to the FILE records in the other record types.
 """
 
-import macpath
 import ntpath
 import optparse
 import os
@@ -133,8 +131,8 @@ class SymbolFileParser(object):
     Returns:
         The actual path to use when writing the FILE record.
     """
-    return path[len(filter(path.startswith,
-                           self.ignored_prefixes + [''])[0]):]
+    return path[len(next(filter(path.startswith,
+                                self.ignored_prefixes + ['']))):]
 
   def _ParseFileRecord(self, file_record):
     """Parses and corrects a FILE record."""
@@ -194,7 +192,7 @@ def main():
     symbol_parser = SymbolFileParser(sys.stdin, sys.stdout, options.prefixes,
                                      path_handler)
     symbol_parser.Process()
-  except BreakpadParseError, e:
+  except BreakpadParseError as e:
     print >> sys.stderr, 'Got an error while processing symbol file'
     print >> sys.stderr, str(e)
     return 1

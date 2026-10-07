@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,10 @@
 // address_map_unittest.cc: Unit tests for AddressMap.
 //
 // Author: Mark Mentovai
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <limits.h>
 #include <stdio.h>
@@ -108,7 +111,7 @@ static bool DoAddressMapTest() {
   ASSERT_EQ(entry->id(), 1);
   ASSERT_EQ(address, 10);
   ASSERT_TRUE(test_map.Retrieve(11, &entry, &address));
-  ASSERT_TRUE(test_map.Retrieve(11, &entry, NULL));     // NULL ok here
+  ASSERT_TRUE(test_map.Retrieve(11, &entry, nullptr));     // nullptr ok here
 
   // Add some more elements.
   ASSERT_TRUE(test_map.Store(5,

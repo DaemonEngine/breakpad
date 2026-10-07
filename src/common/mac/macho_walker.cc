@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,28 +32,32 @@
 //
 // Author: Dan Waylonis
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 #include <fcntl.h>
-#include <mach-o/arch.h>
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "common/mac/arch_utilities.h"
 #include "common/mac/byteswap.h"
-#include "common/mac/macho_walker.h"
 #include "common/mac/macho_utilities.h"
+#include "common/mac/macho_walker.h"
 
 namespace MacFileUtilities {
 
 MachoWalker::MachoWalker(const char* path, LoadCommandCallback callback,
                          void* context)
     : file_(-1),
-      memory_(NULL),
+      memory_(nullptr),
       memory_size_(0),
       callback_(callback),
       callback_context_(context),
-      current_header_(NULL),
+      current_header_(nullptr),
       current_header_size_(0),
       current_header_offset_(0) {
   file_ = open(path, O_RDONLY);
@@ -67,7 +70,7 @@ MachoWalker::MachoWalker(void* memory, size_t size,
       memory_size_(size),
       callback_(callback),
       callback_context_(context),
-      current_header_(NULL),
+      current_header_(nullptr),
       current_header_size_(0),
       current_header_offset_(0) {
 }
@@ -82,9 +85,8 @@ bool MachoWalker::WalkHeader(cpu_type_t cpu_type, cpu_subtype_t cpu_subtype) {
   cpu_subtype_t valid_cpu_subtype = cpu_subtype;
   // if |cpu_type| is 0, use the native cpu type.
   if (cpu_type == 0) {
-    const NXArchInfo* arch = NXGetLocalArchInfo();
-    assert(arch);
-    valid_cpu_type = arch->cputype;
+    ArchInfo arch = GetLocalArchInfo();
+    valid_cpu_type = arch.cputype;
     valid_cpu_subtype = CPU_SUBTYPE_MULTIPLE;
   }
   off_t offset;
@@ -219,7 +221,7 @@ bool MachoWalker::WalkHeaderAtOffset(off_t offset) {
   current_header_offset_ = offset;
   offset += current_header_size_;
   bool result = WalkHeaderCore(offset, header.ncmds, swap);
-  current_header_ = NULL;
+  current_header_ = nullptr;
   current_header_size_ = 0;
   current_header_offset_ = 0;
   return result;
@@ -239,7 +241,7 @@ bool MachoWalker::WalkHeader64AtOffset(off_t offset) {
   current_header_offset_ = offset;
   offset += current_header_size_;
   bool result = WalkHeaderCore(offset, header.ncmds, swap);
-  current_header_ = NULL;
+  current_header_ = nullptr;
   current_header_size_ = 0;
   current_header_offset_ = 0;
   return result;

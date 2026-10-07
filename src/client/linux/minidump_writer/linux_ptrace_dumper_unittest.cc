@@ -1,5 +1,4 @@
-// Copyright (c) 2009, Google Inc.
-// All rights reserved.
+// Copyright 2009 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,6 +31,10 @@
 //
 // This file was renamed from linux_dumper_unittest.cc and modified due
 // to LinuxDumper being splitted into two classes.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -56,13 +59,14 @@
 #include "common/linux/ignore_ret.h"
 #include "common/linux/safe_readlink.h"
 #include "common/memory_allocator.h"
-#include "common/using_std_string.h"
 
 #ifndef PR_SET_PTRACER
 #define PR_SET_PTRACER 0x59616d61
 #endif
 
 using namespace google_breakpad;
+using google_breakpad::elf::FileID;
+using google_breakpad::elf::kDefaultBuildIdSize;
 
 namespace {
 
@@ -78,7 +82,7 @@ pid_t SetupChildProcess(int number_of_threads) {
     // In child process.
     close(fds[0]);
 
-    string helper_path(GetHelperBinary());
+    std::string helper_path(GetHelperBinary());
     if (helper_path.empty()) {
       fprintf(stderr, "Couldn't find helper binary\n");
       _exit(1);
@@ -91,7 +95,7 @@ pid_t SetupChildProcess(int number_of_threads) {
           "linux_dumper_unittest_helper",
           pipe_fd_string,
           kNumberOfThreadsArgument,
-          NULL);
+          nullptr);
     // Kill if we get here.
     printf("Errno from exec: %d", errno);
     std::string err_str = "Exec of  " + helper_path + " failed";
@@ -192,7 +196,7 @@ TEST_F(LinuxPtraceDumperChildTest, FindMappings) {
 
   ASSERT_TRUE(dumper.FindMapping(reinterpret_cast<void*>(getpid)));
   ASSERT_TRUE(dumper.FindMapping(reinterpret_cast<void*>(printf)));
-  ASSERT_FALSE(dumper.FindMapping(NULL));
+  ASSERT_FALSE(dumper.FindMapping(nullptr));
 }
 
 TEST_F(LinuxPtraceDumperChildTest, ThreadList) {
@@ -215,7 +219,7 @@ TEST_F(LinuxPtraceDumperChildTest, ThreadList) {
 class StackHelper {
  public:
   StackHelper()
-    : fd_(-1), mapping_(NULL), size_(0) {}
+    : fd_(-1), mapping_(nullptr), size_(0) {}
   ~StackHelper() {
     if (size_)
       munmap(mapping_, size_);
@@ -241,7 +245,7 @@ class LinuxPtraceDumperMappingsTest : public LinuxPtraceDumperChildTest {
  protected:
   virtual void SetUp();
 
-  string helper_path_;
+  std::string helper_path_;
   size_t page_size_;
   StackHelper helper_;
 };
@@ -261,7 +265,7 @@ void LinuxPtraceDumperMappingsTest::SetUp() {
   ASSERT_NE(-1, fd) << "Failed to open file: " << helper_path_
                     << ", Error: " << strerror(errno);
   char* mapping =
-    reinterpret_cast<char*>(mmap(NULL,
+    reinterpret_cast<char*>(mmap(nullptr,
                                  kMappingSize,
                                  PROT_READ,
                                  MAP_SHARED,
@@ -318,10 +322,10 @@ TEST_F(LinuxPtraceDumperChildTest, BuildProcPath) {
   EXPECT_TRUE(dumper.BuildProcPath(maps_path, pid, "maps"));
   EXPECT_STREQ(maps_path_expected, maps_path);
 
-  EXPECT_FALSE(dumper.BuildProcPath(NULL, pid, "maps"));
+  EXPECT_FALSE(dumper.BuildProcPath(nullptr, pid, "maps"));
   EXPECT_FALSE(dumper.BuildProcPath(maps_path, 0, "maps"));
   EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, ""));
-  EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, NULL));
+  EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, nullptr));
 
   char long_node[NAME_MAX];
   size_t long_node_len = NAME_MAX - strlen("/proc/123") - 1;
@@ -415,9 +419,9 @@ TEST_F(LinuxPtraceDumperChildTest, FileIDsMatch) {
   FileID fileid(exe_name);
   EXPECT_TRUE(fileid.ElfFileIdentifier(identifier2));
 
-  string identifier_string1 =
+  std::string identifier_string1 =
       FileID::ConvertIdentifierToUUIDString(identifier1);
-  string identifier_string2 =
+  std::string identifier_string2 =
       FileID::ConvertIdentifierToUUIDString(identifier2);
   EXPECT_EQ(identifier_string1, identifier_string2);
 }
@@ -462,6 +466,9 @@ TEST(LinuxPtraceDumperTest, VerifyStackReadWithMultipleThreads) {
 #elif defined(__mips__)
     pid_t* process_tid_location =
         reinterpret_cast<pid_t*>(one_thread.mcontext.gregs[1]);
+#elif defined(__riscv)
+    pid_t* process_tid_location =
+        reinterpret_cast<pid_t*>(one_thread.mcontext.__gregs[4]);
 #else
 #error This test has not been ported to this platform.
 #endif
@@ -559,6 +566,8 @@ TEST_F(LinuxPtraceDumperTest, SanitizeStackCopy) {
   uintptr_t heap_addr = thread_info.regs.rcx;
 #elif defined(__mips__)
   uintptr_t heap_addr = thread_info.mcontext.gregs[1];
+#elif defined(__riscv)
+  uintptr_t heap_addr = thread_info.mcontext.__gregs[4];
 #else
 #error This test has not been ported to this platform.
 #endif

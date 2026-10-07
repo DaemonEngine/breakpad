@@ -1,5 +1,4 @@
-// Copyright (c) 2011, Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -37,7 +36,7 @@
 
 namespace google_breakpad {
 
-// This function wraps sys_readlink() and performs the same functionalty,
+// This function wraps sys_readlink() and performs the same functionality,
 // but guarantees |buffer| is NULL-terminated if sys_readlink() returns
 // no error. It takes the same arguments as sys_readlink(), but unlike
 // sys_readlink(), it returns true on success.

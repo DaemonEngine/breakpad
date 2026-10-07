@@ -1,4 +1,4 @@
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,17 +31,22 @@
 // This file implements the google_breakpad::StabsReader class.
 // See stabs_reader.h.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "compat/linux.h"
 
 #include "common/stabs_reader.h"
 
 #include <assert.h>
 #include <stab.h>
+#ifdef __APPLE__
+#include <mach-o/nlist.h>
+#endif
 #include <string.h>
 
 #include <string>
-
-#include "common/using_std_string.h"
 
 using std::vector;
 
@@ -78,7 +83,7 @@ StabsReader::StabsReader(const uint8_t* stab,    size_t stab_size,
       handler_(handler),
       string_offset_(0),
       next_cu_string_offset_(0),
-      current_source_file_(NULL) { }
+      current_source_file_(nullptr) { }
 
 const char* StabsReader::SymbolString() {
   ptrdiff_t offset = string_offset_ + iterator_->name_offset;
@@ -136,7 +141,7 @@ bool StabsReader::ProcessCompilationUnit() {
   // There may be an N_SO entry whose name ends with a slash,
   // indicating the directory in which the compilation occurred.
   // The build directory defaults to NULL.
-  const char* build_directory = NULL;
+  const char* build_directory = nullptr;
   {
     const char* name = SymbolString();
     if (name[0] && name[strlen(name) - 1] == '/') {
@@ -231,7 +236,7 @@ bool StabsReader::ProcessFunction() {
   const char* name_end = strchr(stab_string, ':');
   if (! name_end)
     name_end = stab_string + strlen(stab_string);
-  string name(stab_string, name_end - stab_string);
+  std::string name(stab_string, name_end - stab_string);
   if (! handler_->StartFunction(name, function_address))
     return false;
   ++iterator_;

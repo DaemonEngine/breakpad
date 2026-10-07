@@ -1,7 +1,6 @@
 // -*- mode: c++ -*-
 
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -44,8 +43,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-
-#include "common/using_std_string.h"
 
 namespace google_breakpad {
 
@@ -167,7 +164,7 @@ class ByteCursor {
   // byte buffer does not contain a terminating zero, clear this cursor's
   // complete_ flag, and set STR to the empty string. Return a reference to
   // this cursor.
-  ByteCursor& CString(string* str) {
+  ByteCursor& CString(std::string* str) {
     const uint8_t* end
       = static_cast<const uint8_t*>(memchr(here_, '\0', Available()));
     if (end) {
@@ -194,7 +191,7 @@ class ByteCursor {
   //   
   // - Otherwise, set *STR to a copy of those LIMIT bytes, and advance the
   //   cursor by LIMIT bytes.
-  ByteCursor& CString(string* str, size_t limit) {
+  ByteCursor& CString(std::string* str, size_t limit) {
     if (CheckAvailable(limit)) {
       const uint8_t* end
         = static_cast<const uint8_t*>(memchr(here_, '\0', limit));
@@ -219,7 +216,7 @@ class ByteCursor {
       *pointer = here_;
       here_ += size;
     } else {
-      *pointer = NULL;
+      *pointer = nullptr;
     }
     return *this;
   }

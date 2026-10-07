@@ -1,5 +1,4 @@
-// Copyright (c) 2011, Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,6 +28,10 @@
 
 // crash_generator.cc: Implement google_breakpad::CrashGenerator.
 // See crash_generator.h for details.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "common/linux/tests/crash_generator.h"
 
@@ -50,7 +53,6 @@
 #include "common/linux/eintr_wrapper.h"
 #include "common/tests/auto_tempdir.h"
 #include "common/tests/file_utils.h"
-#include "common/using_std_string.h"
 
 namespace {
 
@@ -98,7 +100,7 @@ void* thread_function(void* data) {
 namespace google_breakpad {
 
 CrashGenerator::CrashGenerator()
-    : shared_memory_(NULL),
+    : shared_memory_(nullptr),
       shared_memory_size_(0) {
 }
 
@@ -113,11 +115,11 @@ bool CrashGenerator::HasDefaultCorePattern() const {
          buffer_size == 5 && memcmp(buffer, "core", 4) == 0;
 }
 
-string CrashGenerator::GetCoreFilePath() const {
+std::string CrashGenerator::GetCoreFilePath() const {
   return temp_dir_.path() + "/core";
 }
 
-string CrashGenerator::GetDirectoryOfProcFilesCopy() const {
+std::string CrashGenerator::GetDirectoryOfProcFilesCopy() const {
   return temp_dir_.path() + "/proc";
 }
 
@@ -151,7 +153,7 @@ bool CrashGenerator::UnmapSharedMemory() {
     return true;
 
   if (munmap(shared_memory_, shared_memory_size_) == 0) {
-    shared_memory_ = NULL;
+    shared_memory_ = nullptr;
     shared_memory_size_ = 0;
     return true;
   }
@@ -167,6 +169,15 @@ bool CrashGenerator::SetCoreFileSizeLimit(rlim_t limit) const {
     return false;
   }
   return true;
+}
+
+bool CrashGenerator::HasResourceLimitsAmenableToCrashCollection() const {
+  struct rlimit limits;
+  if (getrlimit(RLIMIT_CORE, &limits) == -1) {
+    perror("CrashGenerator: Failed to get core file size limit");
+    return false;
+  }
+  return limits.rlim_max >= kCoreSizeLimit;
 }
 
 bool CrashGenerator::CreateChildCrash(
@@ -197,7 +208,7 @@ bool CrashGenerator::CreateChildCrash(
     }
     if (SetCoreFileSizeLimit(kCoreSizeLimit)) {
       CreateThreadsInChildProcess(num_threads);
-      string proc_dir = GetDirectoryOfProcFilesCopy();
+      std::string proc_dir = GetDirectoryOfProcFilesCopy();
       if (mkdir(proc_dir.c_str(), 0755) == -1) {
         perror("CrashGenerator: Failed to create proc directory");
         exit(1);
@@ -300,7 +311,7 @@ void CrashGenerator::CreateThreadsInChildProcess(unsigned num_threads) {
   }
 
   pthread_barrier_t thread_barrier;
-  if (pthread_barrier_init(&thread_barrier, NULL, num_threads) != 0) {
+  if (pthread_barrier_init(&thread_barrier, nullptr, num_threads) != 0) {
     fprintf(stderr, "CrashGenerator: Failed to initialize thread barrier\n");
     exit(1);
   }

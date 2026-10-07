@@ -1,5 +1,4 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2008 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,13 +26,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "client/windows/crash_generation/crash_generation_server.h"
-#include <windows.h>
-#include <cassert>
-#include <list>
-#include "client/windows/common/auto_critical_section.h"
-#include "common/scoped_ptr.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
+#include "client/windows/crash_generation/crash_generation_server.h"
+
+#include <windows.h>
+
+#include <assert.h>
+
+#include <list>
+#include <memory>
+
+#include "client/windows/common/auto_critical_section.h"
 #include "client/windows/crash_generation/client_info.h"
 
 namespace google_breakpad {
@@ -80,9 +86,9 @@ static bool IsClientRequestValid(const ProtocolMessage& msg) {
   return msg.tag == MESSAGE_TAG_UPLOAD_REQUEST ||
          (msg.tag == MESSAGE_TAG_REGISTRATION_REQUEST &&
           msg.id != 0 &&
-          msg.thread_id != NULL &&
-          msg.exception_pointers != NULL &&
-          msg.assert_info != NULL);
+          msg.thread_id != nullptr &&
+          msg.exception_pointers != nullptr &&
+          msg.assert_info != nullptr);
 }
 
 #ifndef NDEBUG
@@ -109,9 +115,9 @@ CrashGenerationServer::CrashGenerationServer(
     const std::wstring* dump_path)
     : pipe_name_(pipe_name),
       pipe_sec_attrs_(pipe_sec_attrs),
-      pipe_(NULL),
-      pipe_wait_handle_(NULL),
-      server_alive_handle_(NULL),
+      pipe_(nullptr),
+      pipe_wait_handle_(nullptr),
+      server_alive_handle_(nullptr),
       connect_callback_(connect_callback),
       connect_context_(connect_context),
       dump_callback_(dump_callback),
@@ -126,7 +132,7 @@ CrashGenerationServer::CrashGenerationServer(
       server_state_(IPC_SERVER_STATE_UNINITIALIZED),
       shutting_down_(false),
       overlapped_(),
-      client_info_(NULL) {
+      client_info_(nullptr) {
   InitializeCriticalSection(&sync_);
 }
 
@@ -215,16 +221,16 @@ bool CrashGenerationServer::Start() {
 
   server_state_ = IPC_SERVER_STATE_INITIAL;
 
-  server_alive_handle_ = CreateMutex(NULL, TRUE, NULL);
+  server_alive_handle_ = CreateMutex(nullptr, TRUE, nullptr);
   if (!server_alive_handle_) {
     return false;
   }
 
   // Event to signal the client connection and pipe reads and writes.
-  overlapped_.hEvent = CreateEvent(NULL,   // Security descriptor.
-                                   TRUE,   // Manual reset.
-                                   FALSE,  // Initially nonsignaled.
-                                   NULL);  // Name.
+  overlapped_.hEvent = CreateEvent(nullptr,   // Security descriptor.
+                                   TRUE,      // Manual reset.
+                                   FALSE,     // Initially nonsignaled.
+                                   nullptr);  // Name.
   if (!overlapped_.hEvent) {
     return false;
   }
@@ -278,17 +284,17 @@ void CrashGenerationServer::HandleErrorState() {
 
   if (pipe_wait_handle_) {
     UnregisterWait(pipe_wait_handle_);
-    pipe_wait_handle_ = NULL;
+    pipe_wait_handle_ = nullptr;
   }
 
   if (pipe_) {
     CloseHandle(pipe_);
-    pipe_ = NULL;
+    pipe_ = nullptr;
   }
 
   if (overlapped_.hEvent) {
     CloseHandle(overlapped_.hEvent);
-    overlapped_.hEvent = NULL;
+    overlapped_.hEvent = nullptr;
   }
 }
 
@@ -361,7 +367,7 @@ void CrashGenerationServer::HandleConnectedState() {
   assert(server_state_ == IPC_SERVER_STATE_CONNECTED);
 
   DWORD bytes_count = 0;
-  memset(&msg_, 0, sizeof(msg_));
+  memset(static_cast<void*>(&msg_), 0, sizeof(msg_));
   bool success = ReadFile(pipe_,
                           &msg_,
                           sizeof(msg_),
@@ -423,7 +429,7 @@ void CrashGenerationServer::HandleReadDoneState() {
     return;
   }
 
-  scoped_ptr<ClientInfo> client_info(
+  std::unique_ptr<ClientInfo> client_info(
       new ClientInfo(this,
                      msg_.id,
                      msg_.dump_type,
@@ -557,13 +563,13 @@ void CrashGenerationServer::HandleDisconnectingState() {
   assert(server_state_ == IPC_SERVER_STATE_DISCONNECTING);
 
   // Done serving the client.
-  client_info_ = NULL;
+  client_info_ = nullptr;
 
-  overlapped_.Internal = NULL;
-  overlapped_.InternalHigh = NULL;
+  overlapped_.Internal = 0;
+  overlapped_.InternalHigh = 0;
   overlapped_.Offset = 0;
   overlapped_.OffsetHigh = 0;
-  overlapped_.Pointer = NULL;
+  overlapped_.Pointer = nullptr;
 
   if (!ResetEvent(overlapped_.hEvent)) {
     EnterErrorState();
@@ -615,34 +621,34 @@ bool CrashGenerationServer::PrepareReply(const ClientInfo& client_info,
   if (reply->dump_request_handle) {
     DuplicateHandle(client_info.process_handle(),  // hSourceProcessHandle
                     reply->dump_request_handle,    // hSourceHandle
-                    NULL,                          // hTargetProcessHandle
+                    nullptr,                       // hTargetProcessHandle
                     0,                             // lpTargetHandle
                     0,                             // dwDesiredAccess
                     FALSE,                         // bInheritHandle
                     DUPLICATE_CLOSE_SOURCE);       // dwOptions
-    reply->dump_request_handle = NULL;
+    reply->dump_request_handle = nullptr;
   }
 
   if (reply->dump_generated_handle) {
     DuplicateHandle(client_info.process_handle(),  // hSourceProcessHandle
                     reply->dump_generated_handle,  // hSourceHandle
-                    NULL,                          // hTargetProcessHandle
+                    nullptr,                       // hTargetProcessHandle
                     0,                             // lpTargetHandle
                     0,                             // dwDesiredAccess
                     FALSE,                         // bInheritHandle
                     DUPLICATE_CLOSE_SOURCE);       // dwOptions
-    reply->dump_generated_handle = NULL;
+    reply->dump_generated_handle = nullptr;
   }
 
   if (reply->server_alive_handle) {
     DuplicateHandle(client_info.process_handle(),  // hSourceProcessHandle
                     reply->server_alive_handle,    // hSourceHandle
-                    NULL,                          // hTargetProcessHandle
+                    nullptr,                       // hTargetProcessHandle
                     0,                             // lpTargetHandle
                     0,                             // dwDesiredAccess
                     FALSE,                         // bInheritHandle
                     DUPLICATE_CLOSE_SOURCE);       // dwOptions
-    reply->server_alive_handle = NULL;
+    reply->server_alive_handle = nullptr;
   }
 
   return false;
@@ -770,7 +776,7 @@ void CrashGenerationServer::HandleConnectionRequest() {
 }
 
 bool CrashGenerationServer::AddClient(ClientInfo* client_info) {
-  HANDLE request_wait_handle = NULL;
+  HANDLE request_wait_handle = nullptr;
   if (!RegisterWaitForSingleObject(&request_wait_handle,
                                    client_info->dump_requested_handle(),
                                    OnDumpRequest,
@@ -783,7 +789,7 @@ bool CrashGenerationServer::AddClient(ClientInfo* client_info) {
   client_info->set_dump_request_wait_handle(request_wait_handle);
 
   // OnClientEnd will be called when the client process terminates.
-  HANDLE process_wait_handle = NULL;
+  HANDLE process_wait_handle = nullptr;
   if (!RegisterWaitForSingleObject(&process_wait_handle,
                                    client_info->process_handle(),
                                    OnClientEnd,
@@ -889,7 +895,7 @@ void CrashGenerationServer::HandleDumpRequest(const ClientInfo& client_info) {
   }
 
   if (dump_callback_ && execute_callback) {
-    std::wstring* ptr_dump_path = (dump_path == L"") ? NULL : &dump_path;
+    std::wstring* ptr_dump_path = (dump_path == L"") ? nullptr : &dump_path;
     dump_callback_(dump_context_, &client_info, ptr_dump_path);
   }
 
@@ -903,7 +909,7 @@ bool CrashGenerationServer::GenerateDump(const ClientInfo& client,
 
   // We have to get the address of EXCEPTION_INFORMATION from
   // the client process address space.
-  EXCEPTION_POINTERS* client_ex_info = NULL;
+  EXCEPTION_POINTERS* client_ex_info = nullptr;
   if (!client.GetClientExceptionInfo(&client_ex_info)) {
     return false;
   }

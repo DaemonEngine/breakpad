@@ -1,4 +1,4 @@
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2019 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,9 +26,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "tools/windows/converter_exe/escaping.h"
 
 #include <assert.h>
+
+#include <memory>
+
+#include "common/scoped_ptr.h"
 
 #define kApb kAsciiPropertyBits
 
@@ -56,10 +64,10 @@ static inline bool ascii_isspace(unsigned char c) { return !!(kApb[c] & 0x08); }
 ///////////////////////////////////
 // scoped_array
 ///////////////////////////////////
-// scoped_array<C> is like scoped_ptr<C>, except that the caller must allocate
+// scoped_array<C> is like std::unique_ptr<C>, except that the caller must allocate
 // with new [] and the destructor deletes objects with delete [].
 //
-// As with scoped_ptr<C>, a scoped_array<C> either points to an object
+// As with std::unique_ptr<C>, a scoped_array<C> either points to an object
 // or is NULL.  A scoped_array<C> owns the object that it points to.
 // scoped_array<T> is thread-compatible, and once you index into it,
 // the returned objects have only the threadsafety guarantees of T.
@@ -75,7 +83,7 @@ class scoped_array {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized scoped_array.
   // The input parameter must be allocated with new [].
-  explicit scoped_array(C* p = NULL) : array_(p) { }
+  explicit scoped_array(C* p = nullptr) : array_(p) { }
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
@@ -87,7 +95,7 @@ class scoped_array {
   // Reset.  Deletes the current owned object, if any.
   // Then takes ownership of a new object, if given.
   // this->reset(this->get()) works.
-  void reset(C* p = NULL) {
+  void reset(C* p = nullptr) {
     if (p != array_) {
       enum { type_must_be_complete = sizeof(C) };
       delete[] array_;
@@ -99,7 +107,7 @@ class scoped_array {
   // Will assert() if there is no current object, or index i is negative.
   C& operator[](std::ptrdiff_t i) const {
     assert(i >= 0);
-    assert(array_ != NULL);
+    assert(array_ != nullptr);
     return array_[i];
   }
 
@@ -129,7 +137,7 @@ class scoped_array {
   // and will not own the object any more.
   C* release() {
     C* retVal = array_;
-    array_ = NULL;
+    array_ = nullptr;
     return retVal;
   }
 
@@ -166,7 +174,7 @@ namespace strings {
 // already work on all current implementations.
 inline char* string_as_array(string* str) {
   // DO NOT USE const_cast<char*>(str->data())! See the unittest for why.
-  return str->empty() ? NULL : &*str->begin();
+  return str->empty() ? nullptr : &*str->begin();
 }
 
 int CalculateBase64EscapedLen(int input_len, bool do_padding) {
@@ -485,7 +493,7 @@ int Base64Unescape(const char *src, int szsrc, char *dest, int szdest) {
   //   for (i = 0; i < 255; i += 8) {
   //     for (j = i; j < i + 8; j++) {
   //       pos = strchr(Base64, j);
-  //       if ((pos == NULL) || (j == 0))
+  //       if ((pos == nullptr) || (j == 0))
   //         idx = -1;
   //       else
   //         idx = pos - Base64;
@@ -680,7 +688,7 @@ int WebSafeBase64Unescape(const char *src, int szsrc, char *dest, int szdest) {
   //   for (i = 0; i < 255; i += 8) {
   //     for (j = i; j < i + 8; j++) {
   //       pos = strchr(Base64, j);
-  //       if ((pos == NULL) || (j == 0))
+  //       if ((pos == nullptr) || (j == 0))
   //         idx = -1;
   //       else
   //         idx = pos - Base64;

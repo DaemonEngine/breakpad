@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -31,6 +30,10 @@
 
 // macho_reader.cc: Implementation of google_breakpad::Mach_O::FatReader and
 // google_breakpad::Mach_O::Reader. See macho_reader.h for details.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "common/mac/macho_reader.h"
 
@@ -365,7 +368,7 @@ bool Reader::WalkLoadCommands(Reader::LoadCommandHandler* handler) const {
         // out. To help us handle this special case properly, give such
         // segments' contents NULL starting and ending pointers.
         if (segment.fileoff == 0 && segment.filesize == 0) {
-          segment.contents.start = segment.contents.end = NULL;
+          segment.contents.start = segment.contents.end = nullptr;
         } else {
           segment.contents.start = buffer_.start + segment.fileoff;
           segment.contents.end = segment.contents.start + segment.filesize;
@@ -504,26 +507,35 @@ bool Reader::WalkSegmentSections(const Segment& segment,
     if (section_type == S_ZEROFILL || section_type == S_THREAD_LOCAL_ZEROFILL ||
             section_type == S_GB_ZEROFILL) {
       // Zero-fill sections have a size, but no contents.
-      section.contents.start = section.contents.end = NULL;
-    } else if (segment.contents.start == NULL &&
-               segment.contents.end == NULL) {
+      section.contents.start = section.contents.end = nullptr;
+    } else if (segment.contents.start == nullptr &&
+               segment.contents.end == nullptr) {
       // Mach-O files in .dSYM bundles have the contents of the loaded
       // segments removed, and their file offsets and file sizes zeroed
       // out.  However, the sections within those segments still have
       // non-zero sizes.  There's no reason to call MisplacedSectionData in
       // this case; the caller may just need the section's load
       // address. But do set the contents' limits to NULL, for safety.
-      section.contents.start = section.contents.end = NULL;
+      section.contents.start = section.contents.end = nullptr;
     } else {
       if (offset < size_t(segment.contents.start - buffer_.start) ||
           offset > size_t(segment.contents.end - buffer_.start) ||
           size > size_t(segment.contents.end - buffer_.start - offset)) {
-        reporter_->MisplacedSectionData(section.section_name,
-                                        section.segment_name);
-        return false;
+        if (offset > 0) {
+          reporter_->MisplacedSectionData(section.section_name,
+                                          section.segment_name);
+          return false;
+        } else {
+          // Mach-O files in .dSYM bundles have the contents of the loaded
+          // segments partially removed. The removed sections will have zero as
+          // their offset. MisplacedSectionData should not be called in this
+          // case.
+          section.contents.start = section.contents.end = nullptr;
+        }
+      } else {
+        section.contents.start = buffer_.start + offset;
+        section.contents.end = section.contents.start + size;
       }
-      section.contents.start = buffer_.start + offset;
-      section.contents.end = section.contents.start + size;
     }
     if (!handler->HandleSection(section))
       return false;

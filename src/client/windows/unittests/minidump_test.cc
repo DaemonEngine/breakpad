@@ -1,5 +1,4 @@
-// Copyright (c) 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,6 +25,10 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include <windows.h>
 #include <objbase.h>
@@ -72,12 +75,12 @@ class MinidumpTest: public testing::Test {
 
   virtual void SetUp() {
     // Make sure URLMon isn't loaded into our process.
-    ASSERT_EQ(NULL, ::GetModuleHandle(L"urlmon.dll"));
+    ASSERT_EQ(nullptr, ::GetModuleHandle(L"urlmon.dll"));
 
     // Then load and unload it to ensure we have something to
     // stock the unloaded module list with.
     HMODULE urlmon = ::LoadLibrary(L"urlmon.dll");
-    ASSERT_TRUE(urlmon != NULL);
+    ASSERT_TRUE(urlmon != nullptr);
     ASSERT_TRUE(::FreeLibrary(urlmon));
   }
 
@@ -99,7 +102,7 @@ class MinidumpTest: public testing::Test {
     EXCEPTION_RECORD ex_record = {
         STATUS_ACCESS_VIOLATION,  // ExceptionCode
         0,  // ExceptionFlags
-        NULL,  // ExceptionRecord;
+        nullptr,  // ExceptionRecord;
         reinterpret_cast<void*>(static_cast<uintptr_t>(0xCAFEBABE)),  // ExceptionAddress;
         2,  // NumberParameters;
         { EXCEPTION_WRITE_FAULT, reinterpret_cast<ULONG_PTR>(this) }
@@ -116,7 +119,7 @@ class MinidumpTest: public testing::Test {
                                 ::GetCurrentThreadId(),
                                 ::GetCurrentThreadId(),
                                 &ex_ptrs,
-                                NULL,
+                                nullptr,
                                 static_cast<MINIDUMP_TYPE>(flags),
                                 TRUE);
     generator.GenerateDumpFile(&dump_file_);
@@ -139,7 +142,7 @@ bool HasFileInfo(const std::wstring& file_path) {
   const wchar_t* path = file_path.c_str();
   DWORD length = ::GetFileVersionInfoSize(path, &dummy);
   if (length == 0)
-    return NULL;
+    return nullptr;
 
   void* data = calloc(length, 1);
   if (!data)
@@ -150,7 +153,7 @@ bool HasFileInfo(const std::wstring& file_path) {
     return false;
   }
 
-  void* translate = NULL;
+  void* translate = nullptr;
   UINT page_count;
   BOOL query_result = VerQueryValue(
       data,
@@ -171,14 +174,14 @@ TEST_F(MinidumpTest, Version) {
   ImagehlpApiVersion();
 
   HMODULE dbg_help = ::GetModuleHandle(L"dbghelp.dll");
-  ASSERT_TRUE(dbg_help != NULL);
+  ASSERT_TRUE(dbg_help != nullptr);
 
   wchar_t dbg_help_file[1024] = {};
   ASSERT_TRUE(::GetModuleFileName(dbg_help,
                                   dbg_help_file,
                                   sizeof(dbg_help_file) /
                                       sizeof(*dbg_help_file)));
-  ASSERT_TRUE(HasFileInfo(std::wstring(dbg_help_file)) != NULL);
+  ASSERT_TRUE(HasFileInfo(std::wstring(dbg_help_file)) != nullptr);
 
 //  LOG(INFO) << "DbgHelp.dll version: " << file_info->file_version();
 }

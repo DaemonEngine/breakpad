@@ -1,5 +1,4 @@
-// Copyright 2010, Google Inc.
-// All rights reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,6 +26,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
 
 #include "breakpad_googletest_includes.h"
 #include "client/windows/crash_generation/crash_generation_server.h"
@@ -58,15 +61,15 @@ class CrashGenerationServerTest : public ::testing::Test {
  public:
   CrashGenerationServerTest()
       : crash_generation_server_(kPipeName,
-                                 NULL,
+                                 nullptr,
                                  CallOnClientConnected, &mock_callbacks_,
                                  CallOnClientDumpRequested, &mock_callbacks_,
                                  CallOnClientExited, &mock_callbacks_,
                                  CallOnClientUploadRequested, &mock_callbacks_,
                                  false,
-                                 NULL),
+                                 nullptr),
         thread_id_(0),
-        exception_pointers_(NULL) {
+        exception_pointers_(nullptr) {
     memset(&assert_info_, 0, sizeof(assert_info_));
   }
 
@@ -103,10 +106,10 @@ class CrashGenerationServerTest : public ::testing::Test {
     HANDLE pipe = CreateFile(kPipeName,
                              kPipeDesiredAccess,
                              0,
-                             NULL,
+                             nullptr,
                              OPEN_EXISTING,
                              kPipeFlagsAndAttributes,
-                             NULL);
+                             nullptr);
 
     if (pipe == INVALID_HANDLE_VALUE) {
       ASSERT_EQ(static_cast<DWORD>(ERROR_PIPE_BUSY), GetLastError());
@@ -117,16 +120,16 @@ class CrashGenerationServerTest : public ::testing::Test {
       pipe = CreateFile(kPipeName,
                         kPipeDesiredAccess,
                         0,
-                        NULL,
+                        nullptr,
                         OPEN_EXISTING,
                         kPipeFlagsAndAttributes,
-                        NULL);
+                        nullptr);
     }
 
     ASSERT_NE(pipe, INVALID_HANDLE_VALUE);
 
     DWORD mode = kPipeMode;
-    ASSERT_TRUE(SetNamedPipeHandleState(pipe, &mode, NULL, NULL));
+    ASSERT_TRUE(SetNamedPipeHandleState(pipe, &mode, nullptr, nullptr));
 
     DoFaultyClient(fault_type, pipe);
 
@@ -174,9 +177,9 @@ class CrashGenerationServerTest : public ::testing::Test {
       &exception_pointers_,
       &assert_info_,
       custom_info,
-      NULL,
-      NULL,
-      NULL);
+      nullptr,
+      nullptr,
+      nullptr);
 
     DWORD bytes_count = 0;
 
@@ -185,7 +188,7 @@ class CrashGenerationServerTest : public ::testing::Test {
                           fault_type == TRUNCATE_REGISTRATION ?
                             sizeof(msg) / 2 : sizeof(msg),
                           &bytes_count,
-                          NULL));
+                          nullptr));
 
     if (fault_type == CLOSE_AFTER_REGISTRATION) {
       return;
@@ -199,7 +202,7 @@ class CrashGenerationServerTest : public ::testing::Test {
                     sizeof(google_breakpad::ProtocolMessage) / 2 :
                     sizeof(google_breakpad::ProtocolMessage),
                   &bytes_count,
-                  NULL)) {
+                  nullptr)) {
       switch (fault_type) {
         case TRUNCATE_REGISTRATION:
         case RESPONSE_BUFFER_TOO_SMALL:
@@ -223,7 +226,7 @@ class CrashGenerationServerTest : public ::testing::Test {
                           SEND_INVALID_ACK ?
                             sizeof(ack_msg) : sizeof(ack_msg) / 2,
                           &bytes_count,
-                          NULL));
+                          nullptr));
 
     return;
   }

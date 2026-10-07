@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -32,11 +31,15 @@
 //
 // Author: Mark Mentovai
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "common/scoped_ptr.h"
+#include "common/path_helper.h"
 #include "google_breakpad/processor/minidump.h"
 #include "processor/logging.h"
 
@@ -44,6 +47,7 @@ namespace {
 
 using google_breakpad::Minidump;
 using google_breakpad::MinidumpThreadList;
+using google_breakpad::MinidumpThreadNameList;
 using google_breakpad::MinidumpModuleList;
 using google_breakpad::MinidumpMemoryInfoList;
 using google_breakpad::MinidumpMemoryList;
@@ -58,7 +62,7 @@ struct Options {
   Options()
       : minidumpPath(), hexdump(false), hexdump_width(16) {}
 
-  string minidumpPath;
+  std::string minidumpPath;
   bool hexdump;
   unsigned int hexdump_width;
 };
@@ -93,7 +97,7 @@ static void DumpRawStream(Minidump *minidump,
     printf("%.*s", int_remaining, &contents[current_offset]);
     char *next_null = reinterpret_cast<char*>(
         memchr(&contents[current_offset], 0, remaining));
-    if (next_null == NULL)
+    if (next_null == nullptr)
       break;
     printf("\\0\n");
     size_t null_offset = next_null - &contents[0];
@@ -119,6 +123,11 @@ static bool PrintMinidumpDump(const Options& options) {
     BPLOG(ERROR) << "minidump.GetThreadList() failed";
   } else {
     thread_list->Print();
+  }
+
+  MinidumpThreadNameList *thread_name_list = minidump.GetThreadNameList();
+  if (thread_name_list) {
+    thread_name_list->Print();
   }
 
   // It's useful to be able to see the full list of modules here even if it
@@ -233,7 +242,7 @@ Usage(int argc, char *argv[], bool error) {
           "  <minidump> should be a minidump.\n"
           "  -x:\t Display memory in a hexdump like format\n"
           "  -h:\t Usage\n",
-          argv[0]);
+          google_breakpad::BaseName(argv[0]).c_str());
 }
 
 //=============================================================================

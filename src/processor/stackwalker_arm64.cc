@@ -1,5 +1,4 @@
-// Copyright (c) 2013 Google Inc.
-// All rights reserved.
+// Copyright 2013 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -33,16 +32,23 @@
 //
 // Author: Mark Mentovai, Ted Mielczarek, Jim Blandy, Colin Blundell
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
+#include "processor/stackwalker_arm64.h"
+
+#include <stdint.h>
+
+#include <memory>
 #include <vector>
 
-#include "common/scoped_ptr.h"
 #include "google_breakpad/processor/call_stack.h"
 #include "google_breakpad/processor/memory_region.h"
 #include "google_breakpad/processor/source_line_resolver_interface.h"
 #include "google_breakpad/processor/stack_frame_cpu.h"
 #include "processor/cfi_frame_info.h"
 #include "processor/logging.h"
-#include "processor/stackwalker_arm64.h"
 
 namespace google_breakpad {
 
@@ -81,7 +87,7 @@ uint64_t StackwalkerARM64::PtrauthStrip(uint64_t ptr) {
 StackFrame* StackwalkerARM64::GetContextFrame() {
   if (!context_) {
     BPLOG(ERROR) << "Can't get context frame without context";
-    return NULL;
+    return nullptr;
   }
 
   StackFrameARM64* frame = new StackFrameARM64();
@@ -108,7 +114,7 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
     "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
     "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
     "x24", "x25", "x26", "x27", "x28", "x29", "x30", "sp",
-    "pc",  NULL
+    "pc",  nullptr
   };
 
   // Populate a dictionary with the valid register values in last_frame.
@@ -122,10 +128,10 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
   CFIFrameInfo::RegisterValueMap<uint64_t> caller_registers;
   if (!cfi_frame_info->FindCallerRegs(callee_registers, *memory_,
                                       &caller_registers)) {
-    return NULL;
+    return nullptr;
   }
   // Construct a new stack frame given the values the CFI recovered.
-  scoped_ptr<StackFrameARM64> frame(new StackFrameARM64());
+  std::unique_ptr<StackFrameARM64> frame(new StackFrameARM64());
   for (int i = 0; register_names[i]; i++) {
     CFIFrameInfo::RegisterValueMap<uint64_t>::iterator entry =
       caller_registers.find(register_names[i]);
@@ -168,8 +174,10 @@ StackFrameARM64* StackwalkerARM64::GetCallerByCFIFrameInfo(
   static const uint64_t essentials = (StackFrameARM64::CONTEXT_VALID_SP
                                      | StackFrameARM64::CONTEXT_VALID_PC);
   if ((frame->context_validity & essentials) != essentials)
-    return NULL;
+    return nullptr;
 
+  frame->context.iregs[MD_CONTEXT_ARM64_REG_PC] =
+      PtrauthStrip(frame->context.iregs[MD_CONTEXT_ARM64_REG_PC]);
   frame->trust = StackFrame::FRAME_TRUST_CFI;
   return frame.release();
 }
@@ -181,9 +189,10 @@ StackFrameARM64* StackwalkerARM64::GetCallerByStackScan(
   uint64_t caller_sp, caller_pc;
 
   if (!ScanForReturnAddress(last_sp, &caller_sp, &caller_pc,
-                            frames.size() == 1 /* is_context_frame */)) {
+                            /*is_context_frame=*/last_frame->trust ==
+                                StackFrame::FRAME_TRUST_CONTEXT)) {
     // No plausible return address was found.
-    return NULL;
+    return nullptr;
   }
 
   // ScanForReturnAddress found a reasonable return address. Advance
@@ -218,14 +227,14 @@ StackFrameARM64* StackwalkerARM64::GetCallerByFramePointer(
   if (last_fp && !memory_->GetMemoryAtAddress(last_fp, &caller_fp)) {
     BPLOG(ERROR) << "Unable to read caller_fp from last_fp: 0x"
                  << std::hex << last_fp;
-    return NULL;
+    return nullptr;
   }
 
   uint64_t caller_lr = 0;
   if (last_fp && !memory_->GetMemoryAtAddress(last_fp + 8, &caller_lr)) {
     BPLOG(ERROR) << "Unable to read caller_lr from last_fp + 8: 0x"
                  << std::hex << (last_fp + 8);
-    return NULL;
+    return nullptr;
   }
 
   caller_lr = PtrauthStrip(caller_lr);
@@ -261,15 +270,27 @@ void StackwalkerARM64::CorrectRegLRByFramePointer(
           last_frame->context.iregs[MD_CONTEXT_ARM64_REG_SP])
     return;
 
-  StackFrameARM64* last_last_frame =
-      static_cast<StackFrameARM64*>(*(frames.end() - 2));
-  uint64_t last_last_fp =
-      last_last_frame->context.iregs[MD_CONTEXT_ARM64_REG_FP];
+  // Searching for a real callee frame. Skipping inline frames since they
+  // don't contain context (and cannot be downcasted to StackFrameARM64).
+  int64_t last_frame_callee_id = frames.size() - 2;
+  while (last_frame_callee_id >= 0 && frames[last_frame_callee_id]->trust ==
+                                          StackFrame::FRAME_TRUST_INLINE) {
+    last_frame_callee_id--;
+  }
+  // last_frame_callee_id should not become negative because at the top of the
+  // stack trace we always have a context frame (FRAME_TRUST_CONTEXT) so the
+  // above loop should end before last_frame_callee_id gets negative. But we are
+  // being extra defensive here and bail if it ever becomes negative.
+  if (last_frame_callee_id < 0) return;
+  StackFrameARM64* last_frame_callee =
+      static_cast<StackFrameARM64*>(frames[last_frame_callee_id]);
+
+  uint64_t last_frame_callee_fp =
+      last_frame_callee->context.iregs[MD_CONTEXT_ARM64_REG_FP];
 
   uint64_t last_fp = 0;
-  if (last_last_fp && !memory_->GetMemoryAtAddress(last_last_fp, &last_fp)) {
-    BPLOG(ERROR) << "Unable to read last_fp from last_last_fp: 0x"
-                 << std::hex << last_last_fp;
+  if (last_frame_callee_fp &&
+      !memory_->GetMemoryAtAddress(last_frame_callee_fp, &last_fp)) {
     return;
   }
   // Give up if STACK CFI doesn't agree with frame pointer.
@@ -277,9 +298,10 @@ void StackwalkerARM64::CorrectRegLRByFramePointer(
     return;
 
   uint64_t last_lr = 0;
-  if (last_last_fp && !memory_->GetMemoryAtAddress(last_last_fp + 8, &last_lr)) {
+  if (last_frame_callee_fp &&
+      !memory_->GetMemoryAtAddress(last_frame_callee_fp + 8, &last_lr)) {
     BPLOG(ERROR) << "Unable to read last_lr from (last_last_fp + 8): 0x"
-                 << std::hex << (last_last_fp + 8);
+                 << std::hex << (last_frame_callee_fp + 8);
     return;
   }
   last_lr = PtrauthStrip(last_lr);
@@ -291,15 +313,15 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
                                              bool stack_scan_allowed) {
   if (!memory_ || !stack) {
     BPLOG(ERROR) << "Can't get caller frame without memory or stack";
-    return NULL;
+    return nullptr;
   }
 
   const vector<StackFrame*>& frames = *stack->frames();
   StackFrameARM64* last_frame = static_cast<StackFrameARM64*>(frames.back());
-  scoped_ptr<StackFrameARM64> frame;
+  std::unique_ptr<StackFrameARM64> frame;
 
   // See if there is DWARF call frame information covering this address.
-  scoped_ptr<CFIFrameInfo> cfi_frame_info(
+  std::unique_ptr<CFIFrameInfo> cfi_frame_info(
       frame_symbolizer_->FindCFIFrameInfo(last_frame));
   if (cfi_frame_info.get())
     frame.reset(GetCallerByCFIFrameInfo(frames, cfi_frame_info.get()));
@@ -314,14 +336,15 @@ StackFrame* StackwalkerARM64::GetCallerFrame(const CallStack* stack,
 
   // If nothing worked, tell the caller.
   if (!frame.get())
-    return NULL;
+    return nullptr;
 
   // Should we terminate the stack walk? (end-of-stack or broken invariant)
   if (TerminateWalk(frame->context.iregs[MD_CONTEXT_ARM64_REG_PC],
                     frame->context.iregs[MD_CONTEXT_ARM64_REG_SP],
                     last_frame->context.iregs[MD_CONTEXT_ARM64_REG_SP],
-                    frames.size() == 1)) {
-    return NULL;
+                    /*first_unwind=*/last_frame->trust ==
+                        StackFrame::FRAME_TRUST_CONTEXT)) {
+    return nullptr;
   }
 
   // The new frame's context's PC is the return address, which is one

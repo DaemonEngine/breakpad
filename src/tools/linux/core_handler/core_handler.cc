@@ -1,5 +1,4 @@
-// Copyright (c) 2020, Google Inc.
-// All rights reserved.
+// Copyright 2020 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -29,6 +28,10 @@
 
 // core_handler.cc: A tool to handle coredumps on Linux
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +43,7 @@
 
 #include "client/linux/minidump_writer/linux_core_dumper.h"
 #include "client/linux/minidump_writer/minidump_writer.h"
+#include "common/path_helper.h"
 #include "common/scoped_ptr.h"
 
 namespace {
@@ -58,7 +62,8 @@ using google_breakpad::scoped_array;
 const int core_read_size = 1024 * 1024;
 
 void ShowUsage(const char* argv0) {
-  fprintf(stderr, "Usage: %s <process id> <minidump file>\n\n", argv0);
+  fprintf(stderr, "Usage: %s <process id> <minidump file>\n\n",
+          google_breakpad::BaseName(argv0).c_str());
   fprintf(stderr,
           "A tool which serves as a core dump handler and produces "
           "minidump files.\n");

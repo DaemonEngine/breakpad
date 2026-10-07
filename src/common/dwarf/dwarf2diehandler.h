@@ -1,6 +1,6 @@
 // -*- mode: c++ -*-
 
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -12,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -164,9 +164,8 @@
 #include "common/dwarf/types.h"
 #include "common/dwarf/dwarf2enums.h"
 #include "common/dwarf/dwarf2reader.h"
-#include "common/using_std_string.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 
 // A base class for handlers for specific DIE types.  The series of
 // calls made on a DIE handler is as follows:
@@ -212,7 +211,7 @@ class DIEHandler {
                                       uint64_t len) { }
   virtual void ProcessAttributeString(enum DwarfAttribute attr,
                                       enum DwarfForm form,
-                                      const string& data) { }
+                                      const std::string& data) {}
   virtual void ProcessAttributeSignature(enum DwarfAttribute attr,
                                          enum DwarfForm form,
                                          uint64_t signture) { }
@@ -245,7 +244,7 @@ class DIEHandler {
   //
   // The default definition skips all children.
   virtual DIEHandler* FindChildHandler(uint64_t offset, enum DwarfTag tag) {
-    return NULL;
+    return nullptr;
   }
 
   // When we are done processing a DIE, we call this member function.
@@ -258,10 +257,13 @@ class DIEHandler {
 
 // A subclass of DIEHandler, with additional kludges for handling the
 // compilation unit's root die.
-class RootDIEHandler: public DIEHandler {
+class RootDIEHandler : public DIEHandler {
  public:
-  RootDIEHandler() { }
-  virtual ~RootDIEHandler() { }
+  bool handle_inline;
+
+  explicit RootDIEHandler(bool handle_inline = false)
+      : handle_inline(handle_inline) {}
+  virtual ~RootDIEHandler() {}
 
   // We pass the values reported via Dwarf2Handler::StartCompilationUnit
   // to this member function, and skip the entire compilation unit if it
@@ -313,10 +315,8 @@ class DIEDispatcher: public Dwarf2Handler {
                               enum DwarfForm form,
                               const uint8_t* data,
                               uint64_t len);
-  void ProcessAttributeString(uint64_t offset,
-                              enum DwarfAttribute attr,
-                              enum DwarfForm form,
-                              const string& data);
+  void ProcessAttributeString(uint64_t offset, enum DwarfAttribute attr,
+                              enum DwarfForm form, const std::string& data);
   void ProcessAttributeSignature(uint64_t offset,
                                  enum DwarfAttribute attr,
                                  enum DwarfForm form,
@@ -361,5 +361,5 @@ class DIEDispatcher: public Dwarf2Handler {
   RootDIEHandler* root_handler_;
 };
 
-} // namespace dwarf2reader
+} // namespace google_breakpad
 #endif  // COMMON_DWARF_DWARF2DIEHANDLER_H__

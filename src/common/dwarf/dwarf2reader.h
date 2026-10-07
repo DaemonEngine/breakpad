@@ -1,6 +1,6 @@
 // -*- mode: C++ -*-
 
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -12,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -53,18 +53,16 @@
 #include "common/dwarf/bytereader.h"
 #include "common/dwarf/dwarf2enums.h"
 #include "common/dwarf/types.h"
-#include "common/using_std_string.h"
 #include "common/dwarf/elf_reader.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 struct LineStateMachine;
 class Dwarf2Handler;
 class LineInfoHandler;
-class DwpReader;
 
 // This maps from a string naming a section to a pair containing a
 // the data for the section, and the size of the section.
-typedef std::map<string, std::pair<const uint8_t*, uint64_t> > SectionMap;
+typedef std::map<std::string, std::pair<const uint8_t*, uint64_t> > SectionMap;
 
 // Abstract away the difference between elf and mach-o section names.
 // Elf-names use ".section_name, mach-o uses "__section_name".  Pass "name" in
@@ -213,7 +211,7 @@ class LineInfoHandler {
 
   // Called when we define a directory.  NAME is the directory name,
   // DIR_NUM is the directory number
-  virtual void DefineDir(const string& name, uint32_t dir_num) { }
+  virtual void DefineDir(const std::string& name, uint32_t dir_num) {}
 
   // Called when we define a filename. NAME is the filename, FILE_NUM
   // is the file number which is -1 if the file index is the next
@@ -222,9 +220,9 @@ class LineInfoHandler {
   // directory index for the directory name of this file, MOD_TIME is
   // the modification time of the file, and LENGTH is the length of
   // the file
-  virtual void DefineFile(const string& name, int32_t file_num,
+  virtual void DefineFile(const std::string& name, int32_t file_num,
                           uint32_t dir_num, uint64_t mod_time,
-                          uint64_t length) { }
+                          uint64_t length) {}
 
   // Called when the line info reader has a new line, address pair
   // ready for us. ADDRESS is the address of the code, LENGTH is the
@@ -277,14 +275,12 @@ class RangeListReader {
   RangeListReader(ByteReader* reader, CURangesInfo* cu_info,
                   RangeListHandler* handler) :
       reader_(reader), cu_info_(cu_info), handler_(handler),
-      offset_array_(0), offset_entry_count_(0) { }
+      offset_array_(0) { }
 
   // Read ranges from cu_info as specified by form and data.
   bool ReadRanges(enum DwarfForm form, uint64_t data);
 
  private:
-  bool SetRangesBase(uint64_t base);
-
   // Read dwarf4 .debug_ranges at offset.
   bool ReadDebugRanges(uint64_t offset);
   // Read dwarf5 .debug_rngslist at offset.
@@ -316,7 +312,6 @@ class RangeListReader {
   CURangesInfo* cu_info_;
   RangeListHandler* handler_;
   uint64_t offset_array_;
-  uint64_t offset_entry_count_;
 };
 
 // This class is the main interface between the reader and the
@@ -397,10 +392,9 @@ class Dwarf2Handler {
   // The attribute is for the DIE at OFFSET from the beginning of the
   // .debug_info section. Its name is ATTR, its form is FORM, and its value is
   // DATA.
-  virtual void ProcessAttributeString(uint64_t offset,
-                                      enum DwarfAttribute attr,
+  virtual void ProcessAttributeString(uint64_t offset, enum DwarfAttribute attr,
                                       enum DwarfForm form,
-                                      const string& data) { }
+                                      const std::string& data) {}
 
   // Called when we have an attribute whose value is the 64-bit signature
   // of a type unit in the .debug_types section. OFFSET is the offset of
@@ -419,328 +413,6 @@ class Dwarf2Handler {
 
 };
 
-// The base of DWARF2/3 debug info is a DIE (Debugging Information
-// Entry.
-// DWARF groups DIE's into a tree and calls the root of this tree a
-// "compilation unit".  Most of the time, there is one compilation
-// unit in the .debug_info section for each file that had debug info
-// generated.
-// Each DIE consists of
-
-// 1. a tag specifying a thing that is being described (ie
-// DW_TAG_subprogram for functions, DW_TAG_variable for variables, etc
-// 2. attributes (such as DW_AT_location for location in memory,
-// DW_AT_name for name), and data for each attribute.
-// 3. A flag saying whether the DIE has children or not
-
-// In order to gain some amount of compression, the format of
-// each DIE (tag name, attributes and data forms for the attributes)
-// are stored in a separate table called the "abbreviation table".
-// This is done because a large number of DIEs have the exact same tag
-// and list of attributes, but different data for those attributes.
-// As a result, the .debug_info section is just a stream of data, and
-// requires reading of the .debug_abbrev section to say what the data
-// means.
-
-// As a warning to the user, it should be noted that the reason for
-// using absolute offsets from the beginning of .debug_info is that
-// DWARF2/3 supports referencing DIE's from other DIE's by their offset
-// from either the current compilation unit start, *or* the beginning
-// of the .debug_info section.  This means it is possible to reference
-// a DIE in one compilation unit from a DIE in another compilation
-// unit.  This style of reference is usually used to eliminate
-// duplicated information that occurs across compilation
-// units, such as base types, etc.  GCC 3.4+ support this with
-// -feliminate-dwarf2-dups.  Other toolchains will sometimes do
-// duplicate elimination in the linker.
-
-class CompilationUnit {
- public:
-
-  // Initialize a compilation unit.  This requires a map of sections,
-  // the offset of this compilation unit in the .debug_info section, a
-  // ByteReader, and a Dwarf2Handler class to call callbacks in.
-  CompilationUnit(const string& path, const SectionMap& sections,
-                  uint64_t offset, ByteReader* reader, Dwarf2Handler* handler);
-  virtual ~CompilationUnit() {
-    if (abbrevs_) delete abbrevs_;
-  }
-
-  // Initialize a compilation unit from a .dwo or .dwp file.
-  // In this case, we need the .debug_addr section from the
-  // executable file that contains the corresponding skeleton
-  // compilation unit.  We also inherit the Dwarf2Handler from
-  // the executable file, and call it as if we were still
-  // processing the original compilation unit.
-  void SetSplitDwarf(const uint8_t* addr_buffer, uint64_t addr_buffer_length,
-                     uint64_t addr_base, uint64_t ranges_base, uint64_t dwo_id);
-
-  // Begin reading a Dwarf2 compilation unit, and calling the
-  // callbacks in the Dwarf2Handler
-
-  // Return the full length of the compilation unit, including
-  // headers. This plus the starting offset passed to the constructor
-  // is the offset of the end of the compilation unit --- and the
-  // start of the next compilation unit, if there is one.
-  uint64_t Start();
-
- private:
-
-  // This struct represents a single DWARF2/3 abbreviation
-  // The abbreviation tells how to read a DWARF2/3 DIE, and consist of a
-  // tag and a list of attributes, as well as the data form of each attribute.
-  struct Abbrev {
-    uint64_t number;
-    enum DwarfTag tag;
-    bool has_children;
-    AttributeList attributes;
-  };
-
-  // A DWARF2/3 compilation unit header.  This is not the same size as
-  // in the actual file, as the one in the file may have a 32 bit or
-  // 64 bit length.
-  struct CompilationUnitHeader {
-    uint64_t length;
-    uint16_t version;
-    uint64_t abbrev_offset;
-    uint8_t address_size;
-  } header_;
-
-  // Reads the DWARF2/3 header for this compilation unit.
-  void ReadHeader();
-
-  // Reads the DWARF2/3 abbreviations for this compilation unit
-  void ReadAbbrevs();
-
-  // Read the abbreviation offset for this compilation unit
-  size_t ReadAbbrevOffset(const uint8_t* headerptr);
-
-  // Read the address size for this compilation unit
-  size_t ReadAddressSize(const uint8_t* headerptr);
-
-  // Read the DWO id from a split or skeleton compilation unit header
-  size_t ReadDwoId(const uint8_t* headerptr);
-
-  // Read the type signature from a type or split type compilation unit header
-  size_t ReadTypeSignature(const uint8_t* headerptr);
-
-  // Read the DWO id from a split or skeleton compilation unit header
-  size_t ReadTypeOffset(const uint8_t* headerptr);
-
-  // Processes a single DIE for this compilation unit and return a new
-  // pointer just past the end of it
-  const uint8_t* ProcessDIE(uint64_t dieoffset,
-                            const uint8_t* start,
-                            const Abbrev& abbrev);
-
-  // Processes a single attribute and return a new pointer just past the
-  // end of it
-  const uint8_t* ProcessAttribute(uint64_t dieoffset,
-                                  const uint8_t* start,
-                                  enum DwarfAttribute attr,
-                                  enum DwarfForm form,
-                                  uint64_t implicit_const);
-
-  // Called when we have an attribute with unsigned data to give to
-  // our handler.  The attribute is for the DIE at OFFSET from the
-  // beginning of compilation unit, has a name of ATTR, a form of
-  // FORM, and the actual data of the attribute is in DATA.
-  // If we see a DW_AT_GNU_dwo_id attribute, save the value so that
-  // we can find the debug info in a .dwo or .dwp file.
-  void ProcessAttributeUnsigned(uint64_t offset,
-                                enum DwarfAttribute attr,
-                                enum DwarfForm form,
-                                uint64_t data) {
-    if (attr == DW_AT_GNU_dwo_id) {
-      dwo_id_ = data;
-    }
-    else if (attr == DW_AT_GNU_addr_base) {
-      addr_base_ = data;
-    }
-    else if (attr == DW_AT_GNU_ranges_base || attr == DW_AT_rnglists_base) {
-      ranges_base_ = data;
-    }
-    // TODO(yunlian): When we add DW_AT_ranges_base from DWARF-5,
-    // that base will apply to DW_AT_ranges attributes in the
-    // skeleton CU as well as in the .dwo/.dwp files.
-    else if (attr == DW_AT_ranges && is_split_dwarf_) {
-      data += ranges_base_;
-    }
-    handler_->ProcessAttributeUnsigned(offset, attr, form, data);
-  }
-
-  // Called when we have an attribute with signed data to give to
-  // our handler.  The attribute is for the DIE at OFFSET from the
-  // beginning of compilation unit, has a name of ATTR, a form of
-  // FORM, and the actual data of the attribute is in DATA.
-  void ProcessAttributeSigned(uint64_t offset,
-                              enum DwarfAttribute attr,
-                              enum DwarfForm form,
-                              int64_t data) {
-    handler_->ProcessAttributeSigned(offset, attr, form, data);
-  }
-
-  // Called when we have an attribute with a buffer of data to give to
-  // our handler.  The attribute is for the DIE at OFFSET from the
-  // beginning of compilation unit, has a name of ATTR, a form of
-  // FORM, and the actual data of the attribute is in DATA, and the
-  // length of the buffer is LENGTH.
-  void ProcessAttributeBuffer(uint64_t offset,
-                              enum DwarfAttribute attr,
-                              enum DwarfForm form,
-                              const uint8_t* data,
-                              uint64_t len) {
-    handler_->ProcessAttributeBuffer(offset, attr, form, data, len);
-  }
-
-  // Handles the common parts of DW_FORM_GNU_str_index, DW_FORM_strx,
-  // DW_FORM_strx1, DW_FORM_strx2, DW_FORM_strx3, and DW_FORM_strx4.
-  // Retrieves the data and calls through to ProcessAttributeString.
-  void ProcessFormStringIndex(uint64_t offset,
-                              enum DwarfAttribute attr,
-                              enum DwarfForm form,
-                              uint64_t str_index);
-
-  // Called when we have an attribute with string data to give to
-  // our handler.  The attribute is for the DIE at OFFSET from the
-  // beginning of compilation unit, has a name of ATTR, a form of
-  // FORM, and the actual data of the attribute is in DATA.
-  // If we see a DW_AT_GNU_dwo_name attribute, save the value so
-  // that we can find the debug info in a .dwo or .dwp file.
-  void ProcessAttributeString(uint64_t offset,
-                              enum DwarfAttribute attr,
-                              enum DwarfForm form,
-                              const char* data) {
-    if (attr == DW_AT_GNU_dwo_name)
-      dwo_name_ = data;
-    handler_->ProcessAttributeString(offset, attr, form, data);
-  }
-
-  // Called to handle common portions of DW_FORM_addrx and variations, as well
-  // as DW_FORM_GNU_addr_index.
-  void ProcessAttributeAddrIndex(uint64_t offset,
-                                 enum DwarfAttribute attr,
-                                 enum DwarfForm form,
-                                 uint64_t addr_index) {
-    const uint8_t* addr_ptr =
-        addr_buffer_ + addr_base_ + addr_index * reader_->AddressSize();
-    ProcessAttributeUnsigned(
-        offset, attr, form, reader_->ReadAddress(addr_ptr));
-  }
-
-  // Processes all DIEs for this compilation unit
-  void ProcessDIEs();
-
-  // Skips the die with attributes specified in ABBREV starting at
-  // START, and return the new place to position the stream to.
-  const uint8_t* SkipDIE(const uint8_t* start, const Abbrev& abbrev);
-
-  // Skips the attribute starting at START, with FORM, and return the
-  // new place to position the stream to.
-  const uint8_t* SkipAttribute(const uint8_t* start, enum DwarfForm form);
-
-  // Process the actual debug information in a split DWARF file.
-  void ProcessSplitDwarf();
-
-  // Read the debug sections from a .dwo file.
-  void ReadDebugSectionsFromDwo(ElfReader* elf_reader,
-                                SectionMap* sections);
-
-  // Path of the file containing the debug information.
-  const string path_;
-
-  // Offset from section start is the offset of this compilation unit
-  // from the beginning of the .debug_info section.
-  uint64_t offset_from_section_start_;
-
-  // buffer is the buffer for our CU, starting at .debug_info + offset
-  // passed in from constructor.
-  // after_header points to right after the compilation unit header.
-  const uint8_t* buffer_;
-  uint64_t buffer_length_;
-  const uint8_t* after_header_;
-
-  // The associated ByteReader that handles endianness issues for us
-  ByteReader* reader_;
-
-  // The map of sections in our file to buffers containing their data
-  const SectionMap& sections_;
-
-  // The associated handler to call processing functions in
-  Dwarf2Handler* handler_;
-
-  // Set of DWARF2/3 abbreviations for this compilation unit.  Indexed
-  // by abbreviation number, which means that abbrevs_[0] is not
-  // valid.
-  std::vector<Abbrev>* abbrevs_;
-
-  // String section buffer and length, if we have a string section.
-  // This is here to avoid doing a section lookup for strings in
-  // ProcessAttribute, which is in the hot path for DWARF2 reading.
-  const uint8_t* string_buffer_;
-  uint64_t string_buffer_length_;
-
-  // Similarly for .debug_line_string.
-  const uint8_t* line_string_buffer_;
-  uint64_t line_string_buffer_length_;
-
-  // String offsets section buffer and length, if we have a string offsets
-  // section (.debug_str_offsets or .debug_str_offsets.dwo).
-  const uint8_t* str_offsets_buffer_;
-  uint64_t str_offsets_buffer_length_;
-
-  // Address section buffer and length, if we have an address section
-  // (.debug_addr).
-  const uint8_t* addr_buffer_;
-  uint64_t addr_buffer_length_;
-
-  // Flag indicating whether this compilation unit is part of a .dwo
-  // or .dwp file.  If true, we are reading this unit because a
-  // skeleton compilation unit in an executable file had a
-  // DW_AT_GNU_dwo_name or DW_AT_GNU_dwo_id attribute.
-  // In a .dwo file, we expect the string offsets section to
-  // have a ".dwo" suffix, and we will use the ".debug_addr" section
-  // associated with the skeleton compilation unit.
-  bool is_split_dwarf_;
-
-  // The value of the DW_AT_GNU_dwo_id attribute, if any.
-  uint64_t dwo_id_;
-
-  // The value of the DW_AT_GNU_type_signature attribute, if any.
-  uint64_t type_signature_;
-
-  // The value of the DW_AT_GNU_type_offset attribute, if any.
-  size_t type_offset_;
-
-  // The value of the DW_AT_GNU_dwo_name attribute, if any.
-  const char* dwo_name_;
-
-  // If this is a split DWARF CU, the value of the DW_AT_GNU_dwo_id attribute
-  // from the skeleton CU.
-  uint64_t skeleton_dwo_id_;
-
-  // The value of the DW_AT_GNU_ranges_base or DW_AT_rnglists_base attribute,
-  // if any.
-  uint64_t ranges_base_;
-
-  // The value of the DW_AT_GNU_addr_base attribute, if any.
-  uint64_t addr_base_;
-
-  // True if we have already looked for a .dwp file.
-  bool have_checked_for_dwp_;
-
-  // Path to the .dwp file.
-  string dwp_path_;
-
-  // ByteReader for the DWP file.
-  std::unique_ptr<ByteReader> dwp_byte_reader_;
-
-#ifdef DWPREADER_WANTED
-  // DWP reader.
-   std::unique_ptr<DwpReader> dwp_reader_;
-#endif
-};
-
 // A Reader for a .dwp file.  Supports the fetching of DWARF debug
 // info for a given dwo_id.
 //
@@ -757,8 +429,6 @@ class CompilationUnit {
 class DwpReader {
  public:
   DwpReader(const ByteReader& byte_reader, ElfReader* elf_reader);
-
-  ~DwpReader();
 
   // Read the CU index and initialize data members.
   void Initialize();
@@ -827,6 +497,381 @@ class DwpReader {
   size_t info_size_;
   const char* str_offsets_data_;
   size_t str_offsets_size_;
+  const char* rnglist_data_;
+  size_t rnglist_size_;
+};
+
+// The base of DWARF2/3 debug info is a DIE (Debugging Information
+// Entry.
+// DWARF groups DIE's into a tree and calls the root of this tree a
+// "compilation unit".  Most of the time, there is one compilation
+// unit in the .debug_info section for each file that had debug info
+// generated.
+// Each DIE consists of
+
+// 1. a tag specifying a thing that is being described (ie
+// DW_TAG_subprogram for functions, DW_TAG_variable for variables, etc
+// 2. attributes (such as DW_AT_location for location in memory,
+// DW_AT_name for name), and data for each attribute.
+// 3. A flag saying whether the DIE has children or not
+
+// In order to gain some amount of compression, the format of
+// each DIE (tag name, attributes and data forms for the attributes)
+// are stored in a separate table called the "abbreviation table".
+// This is done because a large number of DIEs have the exact same tag
+// and list of attributes, but different data for those attributes.
+// As a result, the .debug_info section is just a stream of data, and
+// requires reading of the .debug_abbrev section to say what the data
+// means.
+
+// As a warning to the user, it should be noted that the reason for
+// using absolute offsets from the beginning of .debug_info is that
+// DWARF2/3 supports referencing DIE's from other DIE's by their offset
+// from either the current compilation unit start, *or* the beginning
+// of the .debug_info section.  This means it is possible to reference
+// a DIE in one compilation unit from a DIE in another compilation
+// unit.  This style of reference is usually used to eliminate
+// duplicated information that occurs across compilation
+// units, such as base types, etc.  GCC 3.4+ support this with
+// -feliminate-dwarf2-dups.  Other toolchains will sometimes do
+// duplicate elimination in the linker.
+
+class CompilationUnit {
+ public:
+
+  // Initialize a compilation unit.  This requires a map of sections,
+  // the offset of this compilation unit in the .debug_info section, a
+  // ByteReader, and a Dwarf2Handler class to call callbacks in.
+  CompilationUnit(const std::string& path, const SectionMap& sections,
+                  uint64_t offset, ByteReader* reader, Dwarf2Handler* handler);
+  virtual ~CompilationUnit() {
+    if (abbrevs_) delete abbrevs_;
+  }
+
+  // Initialize a compilation unit from a .dwo or .dwp file.
+  // In this case, we need the .debug_addr section from the
+  // executable file that contains the corresponding skeleton
+  // compilation unit.  We also inherit the Dwarf2Handler from
+  // the executable file, and call it as if we were still
+  // processing the original compilation unit.
+  void SetSplitDwarf(uint64_t addr_base, uint64_t dwo_id,
+                     std::string skeleton_path);
+
+  // Begin reading a Dwarf2 compilation unit, and calling the
+  // callbacks in the Dwarf2Handler
+
+  // Return the full length of the compilation unit, including
+  // headers. This plus the starting offset passed to the constructor
+  // is the offset of the end of the compilation unit --- and the
+  // start of the next compilation unit, if there is one.
+  uint64_t Start();
+
+  // Process the actual debug information in a split DWARF file.
+  bool ProcessSplitDwarf(std::string& split_file,
+                         SectionMap& sections,
+                         ByteReader& split_byte_reader,
+                         uint64_t& cu_offset);
+
+  const uint8_t* GetAddrBuffer() { return addr_buffer_; }
+
+  uint64_t GetAddrBufferLen() { return addr_buffer_length_; }
+
+  uint64_t GetAddrBase() { return addr_base_; }
+
+  uint64_t GetLowPC() { return low_pc_; }
+
+  uint64_t GetDWOID() { return dwo_id_; }
+
+  const uint8_t* GetLineBuffer() { return line_buffer_; }
+
+  uint64_t GetLineBufferLen() { return line_buffer_length_; }
+
+  const uint8_t* GetLineStrBuffer() { return line_string_buffer_; }
+
+  uint64_t GetLineStrBufferLen() { return line_string_buffer_length_; }
+
+  bool HasSourceLineInfo() { return has_source_line_info_; }
+
+  uint64_t GetSourceLineOffset() { return source_line_offset_; }
+
+  bool ShouldProcessSplitDwarf() { return should_process_split_dwarf_; }
+
+  const std::string& path() const { return path_; }
+
+ private:
+
+  // This struct represents a single DWARF2/3 abbreviation
+  // The abbreviation tells how to read a DWARF2/3 DIE, and consist of a
+  // tag and a list of attributes, as well as the data form of each attribute.
+  struct Abbrev {
+    uint64_t number;
+    enum DwarfTag tag;
+    bool has_children;
+    AttributeList attributes;
+  };
+
+  // A DWARF2/3 compilation unit header.  This is not the same size as
+  // in the actual file, as the one in the file may have a 32 bit or
+  // 64 bit length.
+  struct CompilationUnitHeader {
+    uint64_t length;
+    uint16_t version;
+    uint64_t abbrev_offset;
+    uint8_t address_size;
+  } header_;
+
+  // Reads the DWARF2/3 header for this compilation unit.
+  void ReadHeader();
+
+  // Reads the DWARF2/3 abbreviations for this compilation unit
+  void ReadAbbrevs();
+
+  // Read the abbreviation offset for this compilation unit
+  size_t ReadAbbrevOffset(const uint8_t* headerptr);
+
+  // Read the address size for this compilation unit
+  size_t ReadAddressSize(const uint8_t* headerptr);
+
+  // Read the DWO id from a split or skeleton compilation unit header
+  size_t ReadDwoId(const uint8_t* headerptr);
+
+  // Read the type signature from a type or split type compilation unit header
+  size_t ReadTypeSignature(const uint8_t* headerptr);
+
+  // Read the DWO id from a split or skeleton compilation unit header
+  size_t ReadTypeOffset(const uint8_t* headerptr);
+
+  // Processes a single DIE for this compilation unit and return a new
+  // pointer just past the end of it
+  const uint8_t* ProcessDIE(uint64_t dieoffset,
+                            const uint8_t* start,
+                            const Abbrev& abbrev);
+
+  // Processes a single attribute and return a new pointer just past the
+  // end of it
+  const uint8_t* ProcessAttribute(uint64_t dieoffset,
+                                  const uint8_t* start,
+                                  enum DwarfAttribute attr,
+                                  enum DwarfForm form,
+                                  uint64_t implicit_const);
+
+  // Special version of ProcessAttribute, for finding str_offsets_base and
+  // DW_AT_addr_base in DW_TAG_compile_unit, for DWARF v5.
+  const uint8_t* ProcessOffsetBaseAttribute(uint64_t dieoffset,
+                                            const uint8_t* start,
+                                            enum DwarfAttribute attr,
+                                            enum DwarfForm form,
+                                            uint64_t implicit_const);
+
+  // Called when we have an attribute with unsigned data to give to
+  // our handler.  The attribute is for the DIE at OFFSET from the
+  // beginning of compilation unit, has a name of ATTR, a form of
+  // FORM, and the actual data of the attribute is in DATA.
+  // If we see a DW_AT_GNU_dwo_id attribute, save the value so that
+  // we can find the debug info in a .dwo or .dwp file.
+  void ProcessAttributeUnsigned(uint64_t offset,
+                                enum DwarfAttribute attr,
+                                enum DwarfForm form,
+                                uint64_t data) {
+    if (attr == DW_AT_GNU_dwo_id) {
+      dwo_id_ = data;
+    }
+    else if (attr == DW_AT_GNU_addr_base || attr == DW_AT_addr_base) {
+      addr_base_ = data;
+    }
+    else if (attr == DW_AT_str_offsets_base) {
+      str_offsets_base_ = data;
+    }
+    else if (attr == DW_AT_low_pc) {
+      low_pc_ = data;
+    }
+    else if (attr == DW_AT_stmt_list) {
+      has_source_line_info_ = true;
+      source_line_offset_ = data;
+    }
+    handler_->ProcessAttributeUnsigned(offset, attr, form, data);
+  }
+
+  // Called when we have an attribute with signed data to give to
+  // our handler.  The attribute is for the DIE at OFFSET from the
+  // beginning of compilation unit, has a name of ATTR, a form of
+  // FORM, and the actual data of the attribute is in DATA.
+  void ProcessAttributeSigned(uint64_t offset,
+                              enum DwarfAttribute attr,
+                              enum DwarfForm form,
+                              int64_t data) {
+    handler_->ProcessAttributeSigned(offset, attr, form, data);
+  }
+
+  // Called when we have an attribute with a buffer of data to give to
+  // our handler.  The attribute is for the DIE at OFFSET from the
+  // beginning of compilation unit, has a name of ATTR, a form of
+  // FORM, and the actual data of the attribute is in DATA, and the
+  // length of the buffer is LENGTH.
+  void ProcessAttributeBuffer(uint64_t offset,
+                              enum DwarfAttribute attr,
+                              enum DwarfForm form,
+                              const uint8_t* data,
+                              uint64_t len) {
+    handler_->ProcessAttributeBuffer(offset, attr, form, data, len);
+  }
+
+  // Handles the common parts of DW_FORM_GNU_str_index, DW_FORM_strx,
+  // DW_FORM_strx1, DW_FORM_strx2, DW_FORM_strx3, and DW_FORM_strx4.
+  // Retrieves the data and calls through to ProcessAttributeString.
+  void ProcessFormStringIndex(uint64_t offset,
+                              enum DwarfAttribute attr,
+                              enum DwarfForm form,
+                              uint64_t str_index);
+
+  // Called when we have an attribute with string data to give to
+  // our handler.  The attribute is for the DIE at OFFSET from the
+  // beginning of compilation unit, has a name of ATTR, a form of
+  // FORM, and the actual data of the attribute is in DATA.
+  // If we see a DW_AT_GNU_dwo_name attribute, save the value so
+  // that we can find the debug info in a .dwo or .dwp file.
+  void ProcessAttributeString(uint64_t offset,
+                              enum DwarfAttribute attr,
+                              enum DwarfForm form,
+                              const char* data) {
+    if (attr == DW_AT_GNU_dwo_name || attr == DW_AT_dwo_name)
+      dwo_name_ = data;
+    handler_->ProcessAttributeString(offset, attr, form, data);
+  }
+
+  // Called to handle common portions of DW_FORM_addrx and variations, as well
+  // as DW_FORM_GNU_addr_index.
+  void ProcessAttributeAddrIndex(uint64_t offset,
+                                 enum DwarfAttribute attr,
+                                 enum DwarfForm form,
+                                 uint64_t addr_index) {
+    const uint8_t* addr_ptr =
+        addr_buffer_ + addr_base_ + addr_index * reader_->AddressSize();
+    ProcessAttributeUnsigned(
+        offset, attr, form, reader_->ReadAddress(addr_ptr));
+  }
+
+  // Processes all DIEs for this compilation unit
+  bool ProcessDIEs();
+
+  // Skips the die with attributes specified in ABBREV starting at
+  // START, and return the new place to position the stream to.
+  const uint8_t* SkipDIE(const uint8_t* start, const Abbrev& abbrev);
+
+  // Skips the attribute starting at START, with FORM, and return the
+  // new place to position the stream to.
+  const uint8_t* SkipAttribute(const uint8_t* start, enum DwarfForm form);
+
+  // Read the debug sections from a .dwo file.
+  void ReadDebugSectionsFromDwo(ElfReader* elf_reader,
+                                SectionMap* sections);
+
+  // Path of the file containing the debug information.
+  const std::string path_;
+
+  // Offset from section start is the offset of this compilation unit
+  // from the beginning of the .debug_info/.debug_info.dwo section.
+  uint64_t offset_from_section_start_;
+
+  // buffer is the buffer for our CU, starting at .debug_info + offset
+  // passed in from constructor.
+  // after_header points to right after the compilation unit header.
+  const uint8_t* buffer_;
+  uint64_t buffer_length_;
+  const uint8_t* after_header_;
+
+  // The associated ByteReader that handles endianness issues for us
+  ByteReader* reader_;
+
+  // The map of sections in our file to buffers containing their data
+  const SectionMap& sections_;
+
+  // The associated handler to call processing functions in
+  Dwarf2Handler* handler_;
+
+  // Set of DWARF2/3 abbreviations for this compilation unit.  Indexed
+  // by abbreviation number, which means that abbrevs_[0] is not
+  // valid.
+  std::vector<Abbrev>* abbrevs_;
+
+  // String section buffer and length, if we have a string section.
+  // This is here to avoid doing a section lookup for strings in
+  // ProcessAttribute, which is in the hot path for DWARF2 reading.
+  const uint8_t* string_buffer_;
+  uint64_t string_buffer_length_;
+
+  // Similarly for .debug_line_str.
+  const uint8_t* line_string_buffer_;
+  uint64_t line_string_buffer_length_;
+
+  // String offsets section buffer and length, if we have a string offsets
+  // section (.debug_str_offsets or .debug_str_offsets.dwo).
+  const uint8_t* str_offsets_buffer_;
+  uint64_t str_offsets_buffer_length_;
+
+  // Address section buffer and length, if we have an address section
+  // (.debug_addr).
+  const uint8_t* addr_buffer_;
+  uint64_t addr_buffer_length_;
+
+  // .debug_line section buffer and length.
+  const uint8_t* line_buffer_;
+  uint64_t line_buffer_length_;
+
+  // Flag indicating whether this compilation unit is part of a .dwo
+  // or .dwp file.  If true, we are reading this unit because a
+  // skeleton compilation unit in an executable file had a
+  // DW_AT_GNU_dwo_name or DW_AT_GNU_dwo_id attribute.
+  // In a .dwo file, we expect the string offsets section to
+  // have a ".dwo" suffix, and we will use the ".debug_addr" section
+  // associated with the skeleton compilation unit.
+  bool is_split_dwarf_;
+
+  // Flag indicating if it's a Type Unit (only applicable to DWARF v5).
+  bool is_type_unit_;
+
+  // The value of the DW_AT_GNU_dwo_id attribute, if any.
+  uint64_t dwo_id_;
+
+  // The value of the DW_AT_GNU_type_signature attribute, if any.
+  uint64_t type_signature_;
+
+  // The value of the DW_AT_GNU_type_offset attribute, if any.
+  size_t type_offset_;
+
+  // The value of the DW_AT_GNU_dwo_name attribute, if any.
+  const char* dwo_name_;
+
+  // If this is a split DWARF CU, the value of the DW_AT_GNU_dwo_id attribute
+  // from the skeleton CU.
+  uint64_t skeleton_dwo_id_;
+
+  // The value of the DW_AT_GNU_addr_base attribute, if any.
+  uint64_t addr_base_;
+
+  // The value of DW_AT_str_offsets_base attribute, if any.
+  uint64_t str_offsets_base_;
+
+  // True if we have already looked for a .dwp file.
+  bool have_checked_for_dwp_;
+
+  // ElfReader for the dwo/dwo file.
+  std::unique_ptr<ElfReader> split_elf_reader_;
+
+  // DWP reader.
+  std::unique_ptr<DwpReader> dwp_reader_;
+
+  // Path of the file containing the skeleton compilation unit.
+  std::string skeleton_path_;
+
+  bool should_process_split_dwarf_;
+
+  // The value of the DW_AT_low_pc attribute, if any.
+  uint64_t low_pc_;
+
+  // The value of DW_AT_stmt_list attribute if any.
+  bool has_source_line_info_;
+  uint64_t source_line_offset_;
 };
 
 // This class is a reader for DWARF's Call Frame Information.  CFI
@@ -867,11 +912,11 @@ class DwpReader {
 //
 // For example, here is a complete (uncompressed) table describing the
 // function above:
-// 
+//
 //     insn      cfa    r0      r1 ...  ra
 //     =======================================
 //     func+0:   sp                     cfa[0]
-//     func+1:   sp+16                  cfa[0] 
+//     func+1:   sp+16                  cfa[0]
 //     func+2:   sp+16  cfa[-4]         cfa[0]
 //     func+11:  sp+20  cfa[-4]         cfa[0]
 //     func+21:  sp+20                  cfa[0]
@@ -905,7 +950,7 @@ class DwpReader {
 //   save them, caller-saves registers are probably dead in the caller
 //   anyway, so compilers usually don't generate CFA for caller-saves
 //   registers.)
-// 
+//
 // - Exactly where the CFA points is a matter of convention that
 //   depends on the architecture and ABI in use. In the example, the
 //   CFA is the value the stack pointer had upon entry to the
@@ -926,7 +971,7 @@ class DwpReader {
 // reduces the size of the data by mentioning only the addresses and
 // columns at which changes take place. So for the above, DWARF CFI
 // data would only actually mention the following:
-// 
+//
 //     insn      cfa    r0      r1 ...  ra
 //     =======================================
 //     func+0:   sp                     cfa[0]
@@ -934,7 +979,7 @@ class DwpReader {
 //     func+2:          cfa[-4]
 //     func+11:  sp+20
 //     func+21:         r0
-//     func+22:  sp            
+//     func+22:  sp
 //
 // In fact, this is the way the parser reports CFI to the consumer: as
 // a series of statements of the form, "At address X, column Y changed
@@ -1052,7 +1097,7 @@ class CallFrameInfo {
   // handling are described here, rather poorly:
   // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
   // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
-  // 
+  //
   // The mechanics of C++ exception handling, personality routines,
   // and language-specific data areas are described here, rather nicely:
   // http://www.codesourcery.com/public/cxx-abi/abi-eh.html
@@ -1085,7 +1130,7 @@ class CallFrameInfo {
 
     // The start of this entry in the buffer.
     const uint8_t* start;
-    
+
     // Which kind of entry this is.
     //
     // We want to be able to use this for error reporting even while we're
@@ -1118,14 +1163,14 @@ class CallFrameInfo {
   // A common information entry (CIE).
   struct CIE: public Entry {
     uint8_t version;                      // CFI data version number
-    string augmentation;                // vendor format extension markers
-    uint64_t code_alignment_factor;       // scale for code address adjustments 
+    std::string augmentation;             // vendor format extension markers
+    uint64_t code_alignment_factor;       // scale for code address adjustments
     int data_alignment_factor;          // scale for stack pointer adjustments
     unsigned return_address_register;   // which register holds the return addr
 
     // True if this CIE includes Linux C++ ABI 'z' augmentation data.
     bool has_z_augmentation;
- 
+
     // Parsed 'z' augmentation data. These are meaningful only if
     // has_z_augmentation is true.
     bool has_z_lsda;                    // The 'z' augmentation included 'L'.
@@ -1179,7 +1224,7 @@ class CallFrameInfo {
   class ValExpressionRule;
   class RuleMap;
   class State;
-  
+
   // Parse the initial length and id of a CFI entry, either a CIE, an FDE,
   // or a .eh_frame end-of-data mark. CURSOR points to the beginning of the
   // data to parse. On success, populate ENTRY as appropriate, and return
@@ -1261,7 +1306,7 @@ class CallFrameInfo::Handler {
   // process a given FDE, the parser reiterates the appropriate CIE's
   // contents at the beginning of the FDE's rules.
   virtual bool Entry(size_t offset, uint64_t address, uint64_t length,
-                     uint8_t version, const string& augmentation,
+                     uint8_t version, const std::string& augmentation,
                      unsigned return_address) = 0;
 
   // When the Entry function returns true, the parser calls these
@@ -1270,7 +1315,7 @@ class CallFrameInfo::Handler {
   // Immediately after a call to Entry, the handler should assume that
   // the rule for each callee-saves register is "unchanged" --- that
   // is, that the register still has the value it had in the caller.
-  // 
+  //
   // If a *Rule function returns true, we continue processing this entry's
   // instructions. If a *Rule function returns false, we stop evaluating
   // instructions, and skip to the next entry. Either way, we call End
@@ -1310,19 +1355,22 @@ class CallFrameInfo::Handler {
   // At ADDRESS, the DWARF expression EXPRESSION yields the address at
   // which REG was saved.
   virtual bool ExpressionRule(uint64_t address, int reg,
-                              const string& expression) = 0;
+                              const std::string& expression) = 0;
 
   // At ADDRESS, the DWARF expression EXPRESSION yields the caller's
   // value for REG. (This rule doesn't provide an address at which the
   // register's value is saved.)
   virtual bool ValExpressionRule(uint64_t address, int reg,
-                                 const string& expression) = 0;
+                                 const std::string& expression) = 0;
 
   // Indicate that the rules for the address range reported by the
   // last call to Entry are complete.  End should return true if
   // everything is okay, or false if an error has occurred and parsing
   // should stop.
   virtual bool End() = 0;
+
+  // The target architecture for the data.
+  virtual std::string Architecture() = 0;
 
   // Handler functions for Linux C++ exception handling data. These are
   // only called if the data includes 'z' augmentation strings.
@@ -1393,9 +1441,9 @@ class CallFrameInfo::Reporter {
   // in a Mach-O section named __debug_frame. If we support
   // Linux-style exception handling data, we could be reading an
   // .eh_frame section.
-  Reporter(const string& filename,
-           const string& section = ".debug_frame")
-      : filename_(filename), section_(section) { }
+  Reporter(const std::string& filename,
+           const std::string& section = ".debug_frame")
+      : filename_(filename), section_(section) {}
   virtual ~Reporter() { }
 
   // The CFI entry at OFFSET ends too early to be well-formed. KIND
@@ -1434,7 +1482,7 @@ class CallFrameInfo::Reporter {
   // which we don't recognize. We cannot parse DWARF CFI if it uses
   // augmentations we don't recognize.
   virtual void UnrecognizedAugmentation(uint64_t offset,
-                                        const string& augmentation);
+                                        const std::string& augmentation);
 
   // The pointer encoding ENCODING, specified by the CIE at OFFSET, is not
   // a valid encoding.
@@ -1456,13 +1504,13 @@ class CallFrameInfo::Reporter {
   // The instruction at INSN_OFFSET in the entry at OFFSET, of kind
   // KIND, establishes a rule that cites the CFA, but we have not
   // established a CFA rule yet.
-  virtual void NoCFARule(uint64_t offset, CallFrameInfo::EntryKind kind, 
+  virtual void NoCFARule(uint64_t offset, CallFrameInfo::EntryKind kind,
                          uint64_t insn_offset);
 
   // The instruction at INSN_OFFSET in the entry at OFFSET, of kind
   // KIND, is a DW_CFA_restore_state instruction, but the stack of
   // saved states is empty.
-  virtual void EmptyStateStack(uint64_t offset, CallFrameInfo::EntryKind kind, 
+  virtual void EmptyStateStack(uint64_t offset, CallFrameInfo::EntryKind kind,
                                uint64_t insn_offset);
 
   // The DW_CFA_remember_state instruction at INSN_OFFSET in the entry
@@ -1470,17 +1518,17 @@ class CallFrameInfo::Reporter {
   // rule, whereas the current state does have a CFA rule. This is
   // bogus input, which the CallFrameInfo::Handler interface doesn't
   // (and shouldn't) have any way to report.
-  virtual void ClearingCFARule(uint64_t offset, CallFrameInfo::EntryKind kind, 
+  virtual void ClearingCFARule(uint64_t offset, CallFrameInfo::EntryKind kind,
                                uint64_t insn_offset);
 
  protected:
   // The name of the file whose CFI we're reading.
-  string filename_;
+  std::string filename_;
 
   // The name of the CFI section in that file.
-  string section_;
+  std::string section_;
 };
 
-}  // namespace dwarf2reader
+}  // namespace google_breakpad
 
 #endif  // UTIL_DEBUGINFO_DWARF2READER_H__

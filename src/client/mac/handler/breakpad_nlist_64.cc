@@ -65,6 +65,10 @@
  * I've modified it to be compatible with 64-bit images.
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "breakpad_nlist_64.h"
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -217,7 +221,7 @@ int __breakpad_fdnlist(int fd, nlist_type* list, const char** symbolNames,
     /* Read in the fat archs */
     struct fat_arch* fat_archs =
         (struct fat_arch*)malloc(fh.nfat_arch * sizeof(struct fat_arch));
-    if (fat_archs == NULL) {
+    if (fat_archs == nullptr) {
       return -1;
     }
     if (read(fd, (char*)fat_archs,
@@ -244,7 +248,7 @@ int __breakpad_fdnlist(int fd, nlist_type* list, const char** symbolNames,
         CFSwapInt32BigToHost(fat_archs[i].align);
     }
 
-    struct fat_arch* fap = NULL;
+    struct fat_arch* fap = nullptr;
     for (unsigned i = 0; i < fh.nfat_arch; i++) {
       if (fat_archs[i].cputype == cpu_type) {
         fap = &fat_archs[i];
@@ -282,7 +286,7 @@ int __breakpad_fdnlist(int fd, nlist_type* list, const char** symbolNames,
 
     struct load_command* load_commands =
         (struct load_command*)malloc(mh.sizeofcmds);
-    if (load_commands == NULL) {
+    if (load_commands == nullptr) {
       return -1;
     }
     if (read(fd, (char*)load_commands, mh.sizeofcmds) !=
@@ -290,7 +294,7 @@ int __breakpad_fdnlist(int fd, nlist_type* list, const char** symbolNames,
       free(load_commands);
       return -1;
     }
-    struct symtab_command* stp = NULL;
+    struct symtab_command* stp = nullptr;
     struct load_command* lcp = load_commands;
     // iterate through all load commands, looking for
     // LC_SYMTAB load command
@@ -311,7 +315,7 @@ int __breakpad_fdnlist(int fd, nlist_type* list, const char** symbolNames,
       }
       lcp = (struct load_command*)((char*)lcp + lcp->cmdsize);
     }
-    if (stp == NULL) {
+    if (stp == nullptr) {
       free(load_commands);
       return -1;
     }

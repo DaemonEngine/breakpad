@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,16 +29,26 @@
 // linux_core_dumper_unittest.cc:
 // Unit tests for google_breakpad::LinuxCoreDumoer.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <string>
 
 #include "breakpad_googletest_includes.h"
 #include "client/linux/minidump_writer/linux_core_dumper.h"
 #include "common/linux/tests/crash_generator.h"
-#include "common/using_std_string.h"
+#include "common/tests/auto_tempdir.h"
+#include "common/tests/file_utils.h"
 
-using namespace google_breakpad;
+namespace google_breakpad {
 
-TEST(LinuxCoreDumperTest, GetMappingAbsolutePath) {
+class LinuxCoreDumperTest : public testing::Test {
+ protected:
+  AutoTempDir temp_dir;
+};
+
+TEST_F(LinuxCoreDumperTest, GetMappingAbsolutePath) {
   const LinuxCoreDumper dumper(getpid(), "core", "/tmp", "/mnt/root");
   const MappingInfo mapping = {0, 0, {0, 0}, 0, false, "/usr/lib/libc.so"};
 
@@ -49,7 +58,7 @@ TEST(LinuxCoreDumperTest, GetMappingAbsolutePath) {
   EXPECT_STREQ("/mnt/root/usr/lib/libc.so", path);
 }
 
-TEST(LinuxCoreDumperTest, BuildProcPath) {
+TEST_F(LinuxCoreDumperTest, BuildProcPath) {
   const pid_t pid = getpid();
   const char procfs_path[] = "/procfs_copy";
   LinuxCoreDumper dumper(getpid(), "core_file", procfs_path);
@@ -61,9 +70,9 @@ TEST(LinuxCoreDumperTest, BuildProcPath) {
   EXPECT_TRUE(dumper.BuildProcPath(maps_path, pid, "maps"));
   EXPECT_STREQ(maps_path_expected, maps_path);
 
-  EXPECT_FALSE(dumper.BuildProcPath(NULL, pid, "maps"));
+  EXPECT_FALSE(dumper.BuildProcPath(nullptr, pid, "maps"));
   EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, ""));
-  EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, NULL));
+  EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, nullptr));
 
   char long_node[NAME_MAX];
   size_t long_node_len = NAME_MAX - strlen(procfs_path) - 1;
@@ -72,7 +81,7 @@ TEST(LinuxCoreDumperTest, BuildProcPath) {
   EXPECT_FALSE(dumper.BuildProcPath(maps_path, pid, long_node));
 }
 
-TEST(LinuxCoreDumperTest, VerifyDumpWithMultipleThreads) {
+TEST_F(LinuxCoreDumperTest, VerifyDumpWithMultipleThreads) {
   CrashGenerator crash_generator;
   if (!crash_generator.HasDefaultCorePattern()) {
     fprintf(stderr, "LinuxCoreDumperTest.VerifyDumpWithMultipleThreads test "
@@ -87,8 +96,8 @@ TEST(LinuxCoreDumperTest, VerifyDumpWithMultipleThreads) {
   ASSERT_TRUE(crash_generator.CreateChildCrash(kNumOfThreads, kCrashThread,
                                                kCrashSignal, &child_pid));
 
-  const string core_file = crash_generator.GetCoreFilePath();
-  const string procfs_path = crash_generator.GetDirectoryOfProcFilesCopy();
+  const std::string core_file = crash_generator.GetCoreFilePath();
+  const std::string procfs_path = crash_generator.GetDirectoryOfProcFilesCopy();
 
 #if defined(__ANDROID__)
   struct stat st;
@@ -131,7 +140,7 @@ TEST(LinuxCoreDumperTest, VerifyDumpWithMultipleThreads) {
   }
 }
 
-TEST(LinuxCoreDumperTest, VerifyExceptionDetails) {
+TEST_F(LinuxCoreDumperTest, VerifyExceptionDetails) {
   CrashGenerator crash_generator;
   if (!crash_generator.HasDefaultCorePattern()) {
     fprintf(stderr, "LinuxCoreDumperTest.VerifyDumpWithMultipleThreads test "
@@ -152,8 +161,8 @@ TEST(LinuxCoreDumperTest, VerifyExceptionDetails) {
   ASSERT_TRUE(crash_generator.CreateChildCrash(kNumOfThreads, kCrashThread,
                                                kCrashSignal, &child_pid));
 
-  const string core_file = crash_generator.GetCoreFilePath();
-  const string procfs_path = crash_generator.GetDirectoryOfProcFilesCopy();
+  const std::string core_file = crash_generator.GetCoreFilePath();
+  const std::string procfs_path = crash_generator.GetDirectoryOfProcFilesCopy();
 
 #if defined(__ANDROID__)
   struct stat st;
@@ -190,3 +199,97 @@ TEST(LinuxCoreDumperTest, VerifyExceptionDetails) {
   const std::vector<uint64_t> info(dumper.crash_exception_info());
   EXPECT_EQ(2U, info.size());
 }
+
+TEST_F(LinuxCoreDumperTest, EnumerateMappings) {
+  const char proc_maps_content[] =
+      "00000000-00000001 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000002-00000004 r-xp 00000000 00:00 0    /app/libfoo.so\n"
+      "00000004-00000005 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000005-00000006 rw-p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000006-00000007 rw-p 00000000 00:00 0    [anno]\n";
+
+  std::string test_file = temp_dir.path() + "/maps";
+  ASSERT_TRUE(WriteFile(test_file.c_str(), proc_maps_content,
+                        sizeof(proc_maps_content)));
+
+  LinuxCoreDumper dumper(0, "core_file", temp_dir.path().c_str());
+
+  EXPECT_TRUE(dumper.EnumerateMappings());
+  // no merge due to the address is not continuous
+  EXPECT_EQ(4U, dumper.mappings().size());
+  EXPECT_FALSE(dumper.mappings()[0]->exec);
+  EXPECT_EQ(1U, dumper.mappings()[0]->size);
+}
+
+TEST_F(LinuxCoreDumperTest, EnumerateMappings_diffname) {
+  const char proc_maps_content[] =
+      "00000000-00000001 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000001-00000002 r-xp 00000000 00:00 0    /app/libbar.so\n"
+      "00000002-00000003 r--p 00000000 00:00 0    /app/libbar.so\n"
+      "00000003-00000004 rw-p 00000000 00:00 0    /app/libbar.so\n"
+      "00000004-00000005 rw-p 00000000 00:00 0    [anno]\n";
+
+  std::string test_file = temp_dir.path() + "/maps";
+  ASSERT_TRUE(WriteFile(test_file.c_str(), proc_maps_content,
+                        sizeof(proc_maps_content)));
+
+  LinuxCoreDumper dumper(0, "core_file", temp_dir.path().c_str());
+
+  EXPECT_TRUE(dumper.EnumerateMappings());
+  // no merge due to the lib names are different
+  EXPECT_EQ(4U, dumper.mappings().size());
+  EXPECT_FALSE(dumper.mappings()[0]->exec);
+  EXPECT_EQ(1U, dumper.mappings()[0]->size);
+  EXPECT_STREQ("/app/libfoo.so", dumper.mappings()[0]->name);
+  EXPECT_STREQ("/app/libbar.so", dumper.mappings()[1]->name);
+}
+
+TEST_F(LinuxCoreDumperTest, EnumerateMappings_merge) {
+  const char proc_maps_content[] =
+      "00000000-00000001 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000001-00000002 r-xp 00000000 00:00 0    /app/libfoo.so\n"
+      "00000002-00000003 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000003-00000004 rw-p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000004-00000005 rw-p 00000000 00:00 0    [anno]\n";
+
+  std::string test_file = temp_dir.path() + "/maps";
+  ASSERT_TRUE(WriteFile(test_file.c_str(), proc_maps_content,
+                        sizeof(proc_maps_content)));
+
+  LinuxCoreDumper dumper(0, "core_file", temp_dir.path().c_str());
+
+  EXPECT_TRUE(dumper.EnumerateMappings());
+  EXPECT_EQ(3U, dumper.mappings().size());
+  EXPECT_TRUE(dumper.mappings()[0]->exec);
+  // merged #1 and #2 in proc_maps_content
+  EXPECT_EQ(2U, dumper.mappings()[0]->size);
+}
+
+TEST_F(LinuxCoreDumperTest, EnumerateMappings_16K_padding) {
+  const char proc_maps_content[] =
+      "00000000-00000001 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000001-00000002 ---p 00000000 00:00 0    \n"
+      "00000002-00000003 r-xp 00000000 00:00 0    /app/libfoo.so\n"
+      "00000003-00000004 ---p 00000000 00:00 0    \n"
+      "00000004-00000005 r--p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000005-00000006 ---p 00000000 00:00 0    \n"
+      "00000006-00000007 rw-p 00000000 00:00 0    /app/libfoo.so\n"
+      "00000007-00000008 rw-p 00000000 00:00 0    [anno]\n";
+
+  std::string test_file = temp_dir.path() + "/maps";
+  ASSERT_TRUE(WriteFile(test_file.c_str(), proc_maps_content,
+                        sizeof(proc_maps_content)));
+
+  LinuxCoreDumper dumper(0, "core_file", temp_dir.path().c_str());
+
+  EXPECT_TRUE(dumper.EnumerateMappings());
+  EXPECT_EQ(3U, dumper.mappings().size());
+
+  EXPECT_STREQ("/app/libfoo.so", dumper.mappings()[0]->name);
+  EXPECT_TRUE(dumper.mappings()[0]->exec);
+  EXPECT_FALSE(dumper.mappings()[2]->exec);
+  // merged #[1-4] in proc_maps_content
+  EXPECT_EQ(4U, dumper.mappings()[0]->size);
+}
+
+}  // namespace google_breakpad

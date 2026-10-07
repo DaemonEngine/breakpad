@@ -1,7 +1,6 @@
 // -*- mode: c++ -*-
 
-// Copyright (c) 2011, Google Inc.
-// All rights reserved.
+// Copyright 2011 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,7 +12,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -39,11 +38,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include "common/byte_cursor.h"
+#include "common/dwarf/dwarf2reader.h"
+#include "common/mac/arch_utilities.h"
 #include "common/mac/macho_reader.h"
 #include "common/mac/super_fat_arch.h"
 #include "common/module.h"
@@ -54,44 +56,57 @@ namespace google_breakpad {
 
 class DumpSymbols {
  public:
-  DumpSymbols(SymbolData symbol_data, bool handle_inter_cu_refs)
+  DumpSymbols(SymbolData symbol_data,
+              bool handle_inter_cu_refs,
+              bool enable_multiple = false,
+              const std::string& module_name = "",
+              bool prefer_extern_name = false)
       : symbol_data_(symbol_data),
         handle_inter_cu_refs_(handle_inter_cu_refs),
-        input_pathname_(),
         object_filename_(),
         contents_(),
+        size_(0),
+        from_disk_(false),
         object_files_(),
         selected_object_file_(),
-        selected_object_name_() { }
-  ~DumpSymbols() {
-  }
+        selected_object_name_(),
+        enable_multiple_(enable_multiple),
+        module_name_(module_name),
+        prefer_extern_name_(prefer_extern_name),
+        report_warnings_(true) {}
+  ~DumpSymbols() = default;
 
   // Prepare to read debugging information from |filename|. |filename| may be
-  // the name of a universal binary, a Mach-O file, or a dSYM bundle
-  // containing either of the above. On success, return true; if there is a
-  // problem reading |filename|, report it and return false.
+  // the name of a fat file, a Mach-O file, or a dSYM bundle containing either
+  // of the above.
+  //
+  // If |module_name_| is empty, uses the basename of |filename| as the module
+  // name. Otherwise, uses |module_name_| as the module name.
+  //
+  // On success, return true; if there is a problem reading
+  // |filename|, report it and return false.
   bool Read(const std::string& filename);
 
-  // If this dumper's file includes an object file for |cpu_type| and
-  // |cpu_subtype|, then select that object file for dumping, and return
-  // true. Otherwise, return false, and leave this dumper's selected
-  // architecture unchanged.
-  //
-  // By default, if this dumper's file contains only one object file, then
-  // the dumper will dump those symbols; and if it contains more than one
-  // object file, then the dumper will dump the object file whose
-  // architecture matches that of this dumper program.
-  bool SetArchitecture(cpu_type_t cpu_type, cpu_subtype_t cpu_subtype);
+  // Prepare to read debugging information from |contents|. |contents| is
+  // expected to be the data obtained from reading a fat file, or a Mach-O file.
+  // |filename| is used to determine the object filename in the generated
+  // output; there will not be an attempt to open this file as the data
+  // is already expected to be in memory. On success, return true; if there is a
+  // problem reading |contents|, report it and return false.
+  bool ReadData(uint8_t* contents, size_t size, const std::string& filename);
 
-  // If this dumper's file includes an object file for |arch_name|, then select
-  // that object file for dumping, and return true. Otherwise, return false,
-  // and leave this dumper's selected architecture unchanged.
+  // If this dumper's file includes an object file for `info`, then select that
+  // object file for dumping, and return true. Otherwise, return false, and
+  // leave this dumper's selected architecture unchanged.
   //
   // By default, if this dumper's file contains only one object file, then
   // the dumper will dump those symbols; and if it contains more than one
   // object file, then the dumper will dump the object file whose
   // architecture matches that of this dumper program.
-  bool SetArchitecture(const std::string& arch_name);
+  bool SetArchitecture(const ArchInfo& info);
+
+  // Set whether or not to report DWARF warnings
+  void SetReportWarnings(bool report_warnings);
 
   // Return a pointer to an array of SuperFatArch structures describing the
   // object files contained in this dumper's file. Set *|count| to the number
@@ -104,23 +119,21 @@ class DumpSymbols {
     *count = object_files_.size();
     if (object_files_.size() > 0)
       return &object_files_[0];
-    return NULL;
+    return nullptr;
   }
-
-  // Read the selected object file's debugging information, and write it out to
-  // |stream|. Return true on success; if an error occurs, report it and
-  // return false.
-  bool WriteSymbolFile(std::ostream& stream);
 
   // Read the selected object file's debugging information, and write out the
   // header only to |stream|. Return true on success; if an error occurs, report
   // it and return false.
   bool WriteSymbolFileHeader(std::ostream& stream);
 
-  // As above, but simply return the debugging information in module
-  // instead of writing it to a stream. The caller owns the resulting
-  // module object and must delete it when finished.
+  // Read the selected object file's debugging information and store it in
+  // `module`. The caller owns the resulting module object and must delete
+  // it when finished.
   bool ReadSymbolData(Module** module);
+
+  // Return an identifier string for the file this DumpSymbols is dumping.
+  std::string Identifier();
 
  private:
   // Used internally.
@@ -133,12 +146,15 @@ class DumpSymbols {
   SuperFatArch* FindBestMatchForArchitecture(
       cpu_type_t cpu_type, cpu_subtype_t cpu_subtype);
 
-  // Return an identifier string for the file this DumpSymbols is dumping.
-  std::string Identifier();
-
-
   // Creates an empty module object.
-  bool CreateEmptyModule(scoped_ptr<Module>& module);
+  bool CreateEmptyModule(std::unique_ptr<Module>& module);
+
+  // Process the split dwarf file referenced by reader.
+  void StartProcessSplitDwarf(google_breakpad::CompilationUnit* reader,
+                              Module* module,
+                              google_breakpad::Endianness endianness,
+                              bool handle_inter_cu_refs,
+                              bool handle_inline) const;
 
   // Read debugging information from |dwarf_sections|, which was taken from
   // |macho_reader|, and add it to |module|.
@@ -163,18 +179,21 @@ class DumpSymbols {
   // Whether to handle references between compilation units.
   const bool handle_inter_cu_refs_;
 
-  // The name of the file or bundle whose symbols this will dump.
-  // This is the path given to Read, for use in error messages.
-  std::string input_pathname_;
-
   // The name of the file this DumpSymbols will actually read debugging
-  // information from. Normally, this is the same as input_pathname_, but if
-  // filename refers to a dSYM bundle, then this is the resource file
-  // within that bundle.
+  // information from. If the filename passed to Read refers to a dSYM bundle,
+  // then this is the resource file within that bundle.
   std::string object_filename_;
 
   // The complete contents of object_filename_, mapped into memory.
   scoped_array<uint8_t> contents_;
+
+  // The size of contents_.
+  size_t size_;
+
+  // Indicates which entry point to DumpSymbols was used, i.e. Read vs ReadData.
+  // This is used to indicate that downstream code paths can/should also read
+  // from disk or not.
+  bool from_disk_;
 
   // A vector of SuperFatArch structures describing the object files
   // object_filename_ contains. If object_filename_ refers to a fat binary,
@@ -190,7 +209,29 @@ class DumpSymbols {
   // messages.  This is usually object_filename_, but if that refers to a
   // fat binary, it includes an indication of the particular architecture
   // within that binary.
-  string selected_object_name_;
+  std::string selected_object_name_;
+
+  // Whether symbols sharing an address should be collapsed into a single entry
+  // and marked with an `m` in the output. 
+  // See: https://crbug.com/google-breakpad/751 and docs at 
+  // docs/symbol_files.md#records-3
+  bool enable_multiple_;
+
+  // If non-empty, used as the module name. Otherwise, the basename of
+  // |object_filename_| is used as the module name.
+  const std::string module_name_;
+
+  // If a Function and an Extern share the same address but have a different
+  // name, prefer the name of the Extern.
+  //
+  // Use this when dumping Mach-O .dSYMs built with -gmlt (Minimum Line Tables),
+  // as the Function's fully-qualified name will only be present in the STABS
+  // (which are placed in the Extern), not in the DWARF symbols (which are
+  // placed in the Function).
+  bool prefer_extern_name_;
+
+  // Whether or not to report warnings
+  bool report_warnings_;
 };
 
 }  // namespace google_breakpad

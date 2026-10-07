@@ -1,5 +1,4 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2006 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -27,11 +26,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include "common/linux/http_upload.h"
 
 #include <assert.h>
 #include <dlfcn.h>
 #include "third_party/curl/curl.h"
+
+#include <string>
 
 namespace {
 
@@ -41,7 +46,7 @@ static size_t WriteCallback(void* ptr, size_t size,
   if (!userp)
     return 0;
 
-  string* response = reinterpret_cast<string*>(userp);
+  std::string* response = reinterpret_cast<std::string*>(userp);
   size_t real_size = size * nmemb;
   response->append(reinterpret_cast<char*>(ptr), real_size);
   return real_size;
@@ -54,16 +59,16 @@ namespace google_breakpad {
 static const char kUserAgent[] = "Breakpad/1.0 (Linux)";
 
 // static
-bool HTTPUpload::SendRequest(const string& url,
-                             const map<string, string>& parameters,
-                             const map<string, string>& files,
-                             const string& proxy,
-                             const string& proxy_user_pwd,
-                             const string& ca_certificate_file,
-                             string* response_body,
+bool HTTPUpload::SendRequest(const std::string& url,
+                             const map<std::string, std::string>& parameters,
+                             const map<std::string, std::string>& files,
+                             const std::string& proxy,
+                             const std::string& proxy_user_pwd,
+                             const std::string& ca_certificate_file,
+                             std::string* response_body,
                              long* response_code,
-                             string* error_description) {
-  if (response_code != NULL)
+                             std::string* error_description) {
+  if (response_code != nullptr)
     *response_code = 0;
 
   if (!CheckParameters(parameters))
@@ -71,19 +76,19 @@ bool HTTPUpload::SendRequest(const string& url,
 
   // We may have been linked statically; if curl_easy_init is in the
   // current binary, no need to search for a dynamic version.
-  void* curl_lib = dlopen(NULL, RTLD_NOW);
+  void* curl_lib = dlopen(nullptr, RTLD_NOW);
   if (!CheckCurlLib(curl_lib)) {
     fprintf(stderr,
             "Failed to open curl lib from binary, use libcurl.so instead\n");
     dlerror();  // Clear dlerror before attempting to open libraries.
     dlclose(curl_lib);
-    curl_lib = NULL;
+    curl_lib = nullptr;
   }
   if (!curl_lib) {
     curl_lib = dlopen("libcurl.so", RTLD_NOW);
   }
   if (!curl_lib) {
-    if (error_description != NULL)
+    if (error_description != nullptr)
       *error_description = dlerror();
     curl_lib = dlopen("libcurl.so.4", RTLD_NOW);
   }
@@ -102,7 +107,7 @@ bool HTTPUpload::SendRequest(const string& url,
   CURL* (*curl_easy_init)(void);
   *(void**) (&curl_easy_init) = dlsym(curl_lib, "curl_easy_init");
   CURL* curl = (*curl_easy_init)();
-  if (error_description != NULL)
+  if (error_description != nullptr)
     *error_description = "No Error";
 
   if (!curl) {
@@ -128,12 +133,12 @@ bool HTTPUpload::SendRequest(const string& url,
   if (!ca_certificate_file.empty())
     (*curl_easy_setopt)(curl, CURLOPT_CAINFO, ca_certificate_file.c_str());
 
-  struct curl_httppost* formpost = NULL;
-  struct curl_httppost* lastptr = NULL;
+  struct curl_httppost* formpost = nullptr;
+  struct curl_httppost* lastptr = nullptr;
   // Add form data.
   CURLFORMcode (*curl_formadd)(struct curl_httppost**, struct curl_httppost**, ...);
   *(void**) (&curl_formadd) = dlsym(curl_lib, "curl_formadd");
-  map<string, string>::const_iterator iter = parameters.begin();
+  map<std::string, std::string>::const_iterator iter = parameters.begin();
   for (; iter != parameters.end(); ++iter)
     (*curl_formadd)(&formpost, &lastptr,
                  CURLFORM_COPYNAME, iter->first.c_str(),
@@ -151,14 +156,14 @@ bool HTTPUpload::SendRequest(const string& url,
   (*curl_easy_setopt)(curl, CURLOPT_HTTPPOST, formpost);
 
   // Disable 100-continue header.
-  struct curl_slist* headerlist = NULL;
+  struct curl_slist* headerlist = nullptr;
   char buf[] = "Expect:";
   struct curl_slist* (*curl_slist_append)(struct curl_slist*, const char*);
   *(void**) (&curl_slist_append) = dlsym(curl_lib, "curl_slist_append");
   headerlist = (*curl_slist_append)(headerlist, buf);
   (*curl_easy_setopt)(curl, CURLOPT_HTTPHEADER, headerlist);
 
-  if (response_body != NULL) {
+  if (response_body != nullptr) {
     (*curl_easy_setopt)(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     (*curl_easy_setopt)(curl, CURLOPT_WRITEDATA,
                      reinterpret_cast<void*>(response_body));
@@ -170,7 +175,7 @@ bool HTTPUpload::SendRequest(const string& url,
   CURLcode (*curl_easy_perform)(CURL*);
   *(void**) (&curl_easy_perform) = dlsym(curl_lib, "curl_easy_perform");
   err_code = (*curl_easy_perform)(curl);
-  if (response_code != NULL) {
+  if (response_code != nullptr) {
     CURLcode (*curl_easy_getinfo)(CURL*, CURLINFO, ...);
     *(void**) (&curl_easy_getinfo) = dlsym(curl_lib, "curl_easy_getinfo");
     (*curl_easy_getinfo)(curl, CURLINFO_RESPONSE_CODE, response_code);
@@ -183,18 +188,18 @@ bool HTTPUpload::SendRequest(const string& url,
             url.c_str(),
             (*curl_easy_strerror)(err_code));
 #endif
-  if (error_description != NULL)
+  if (error_description != nullptr)
     *error_description = (*curl_easy_strerror)(err_code);
 
   void (*curl_easy_cleanup)(CURL*);
   *(void**) (&curl_easy_cleanup) = dlsym(curl_lib, "curl_easy_cleanup");
   (*curl_easy_cleanup)(curl);
-  if (formpost != NULL) {
+  if (formpost != nullptr) {
     void (*curl_formfree)(struct curl_httppost*);
     *(void**) (&curl_formfree) = dlsym(curl_lib, "curl_formfree");
     (*curl_formfree)(formpost);
   }
-  if (headerlist != NULL) {
+  if (headerlist != nullptr) {
     void (*curl_slist_free_all)(struct curl_slist*);
     *(void**) (&curl_slist_free_all) = dlsym(curl_lib, "curl_slist_free_all");
     (*curl_slist_free_all)(headerlist);
@@ -211,12 +216,12 @@ bool HTTPUpload::CheckCurlLib(void* curl_lib) {
 }
 
 // static
-bool HTTPUpload::CheckParameters(const map<string, string>& parameters) {
-  for (map<string, string>::const_iterator pos = parameters.begin();
+bool HTTPUpload::CheckParameters(
+    const map<std::string, std::string>& parameters) {
+  for (map<std::string, std::string>::const_iterator pos = parameters.begin();
        pos != parameters.end(); ++pos) {
-    const string& str = pos->first;
-    if (str.size() == 0)
-      return false;  // disallow empty parameter names
+    const std::string& str = pos->first;
+    if (str.size() == 0) return false;  // disallow empty parameter names
     for (unsigned int i = 0; i < str.size(); ++i) {
       int c = str[i];
       if (c < 32 || c == '"' || c > 127) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2010 Google Inc. All Rights Reserved.
+// Copyright 2010 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -10,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,17 +26,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "common/dwarf/bytereader-inl.h"
 #include "common/dwarf/bytereader.h"
+#include "common/memory_allocator.h"
 
-namespace dwarf2reader {
+namespace google_breakpad {
 
 ByteReader::ByteReader(enum Endianness endian)
-    :offset_reader_(NULL), address_reader_(NULL), endian_(endian),
+    :offset_reader_(nullptr), address_reader_(nullptr), endian_(endian),
      address_size_(0), offset_size_(0),
      have_section_base_(), have_text_base_(), have_data_base_(),
      have_function_base_() { }
@@ -128,7 +133,7 @@ uint64_t ByteReader::ReadEncodedPointer(const uint8_t* buffer,
     // Now find the offset from that aligned address to buffer.
     uint64_t offset = skew + (buffer - buffer_base_);
     // Round up to the next boundary.
-    uint64_t aligned = (offset + AddressSize() - 1) & -AddressSize();
+    uint64_t aligned = PageAllocator::AlignUp(offset, AddressSize());
     // Convert back to a pointer.
     const uint8_t* aligned_buffer = buffer_base_ + (aligned - skew);
     // Finally, store the length and actually fetch the pointer.
@@ -247,4 +252,4 @@ Endianness ByteReader::GetEndianness() const {
   return endian_;
 }
 
-}  // namespace dwarf2reader
+}  // namespace google_breakpad

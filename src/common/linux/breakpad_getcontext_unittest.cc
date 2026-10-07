@@ -1,5 +1,4 @@
-// Copyright (c) 2012, Google Inc.
-// All rights reserved.
+// Copyright 2012 Google LLC
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -11,7 +10,7 @@
 // copyright notice, this list of conditions and the following disclaimer
 // in the documentation and/or other materials provided with the
 // distribution.
-//     * Neither the name of Google Inc. nor the names of its
+//     * Neither the name of Google LLC nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -30,6 +29,10 @@
 // asm/sigcontext.h can't be included with signal.h on glibc or
 // musl, so only compare _libc_fpstate and _fpstate on Android.
 #if defined(__ANDROID__) && defined(__x86_64__)
+#ifdef HAVE_CONFIG_H
+#include <config.h>  // Must come first
+#endif
+
 #include <asm/sigcontext.h>
 #endif
 
@@ -114,6 +117,25 @@ TEST(AndroidUContext, GRegsOffset) {
 
   ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPC_CSR),
             offsetof(ucontext_t,uc_mcontext.fpc_csr));
+#elif defined(__riscv)
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_GREGS_OFFSET),
+            offsetof(ucontext_t,uc_mcontext.__gregs[0]));
+
+#define CHECK_REG(x) \
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_##x##_OFFSET),         \
+            offsetof(ucontext_t,uc_mcontext.__gregs[REG_##x]))
+  CHECK_REG(PC)
+  CHECK_REG(RA)
+  CHECK_REG(SP)
+  CHECK_REG(S0)
+  CHECK_REG(S1)
+  CHECK_REG(S2)
+
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPREGS_OFFSET),
+            offsetof(ucontext_t,uc_mcontext.__fpregs));
+
+  ASSERT_EQ(static_cast<size_t>(MCONTEXT_FPC_CSR),
+            offsetof(ucontext_t,uc_mcontext.__fpregs.__fcsr));
 #elif defined(__x86_64__)
 
   COMPILE_ASSERT_EQ(static_cast<size_t>(MCONTEXT_GREGS_OFFSET),
