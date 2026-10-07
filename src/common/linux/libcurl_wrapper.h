@@ -62,7 +62,7 @@ class LibcurlWrapper {
                       std::string* http_response_data);
   bool SendSimplePostRequest(const std::string& url, const std::string& body,
                              const std::string& content_type,
-                      long* http_status_code,
+                             long* http_status_code,
                              std::string* http_header_data,
                              std::string* http_response_data);
 
