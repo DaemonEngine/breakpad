@@ -34,6 +34,8 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <stab.h>
