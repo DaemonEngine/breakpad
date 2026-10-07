@@ -281,10 +281,10 @@ void BasicSourceLineResolver::Module::ConstructInlineFrames(
     new_frame->source_line = in->get()->call_site_line;
     if (in->get()->has_call_site_file_id) {
       auto file = files_.find(in->get()->call_site_file_id);
-    if (file != files_.end()) {
+      if (file != files_.end()) {
         new_frame->source_file_name = file->second;
+      }
     }
-  }
 
     // Use the starting address of the inlined range as inlined function base.
     new_frame->function_base = new_frame->module->base_address();
@@ -292,7 +292,7 @@ void BasicSourceLineResolver::Module::ConstructInlineFrames(
       if (address >= range.first && address < range.first + range.second) {
         new_frame->function_base += range.first;
         break;
-  }
+      }
     }
     new_frame->trust = StackFrame::FRAME_TRUST_INLINE;
 

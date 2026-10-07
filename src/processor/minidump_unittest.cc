@@ -85,7 +85,7 @@ class MinidumpTest : public ::testing::Test {
 public:
   void SetUp() {
     minidump_file_ = std::string(getenv("srcdir") ? getenv("srcdir") : ".") +
-      "/src/processor/testdata/minidump2.dmp";
+                     "/src/processor/testdata/minidump2.dmp";
   }
   std::string minidump_file_;
 };
@@ -197,7 +197,7 @@ TEST(Dump, OneStream) {
   stream.Append("stream contents");
   dump.Add(&stream);
   dump.Finish();
-  
+
   std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
@@ -803,7 +803,7 @@ TEST(Dump, OneSystemInfo) {
   dump.Add(&system_info);
   dump.Add(&csd_version);
   dump.Finish();
-                         
+
   std::string contents;
   ASSERT_TRUE(dump.GetContents(&contents));
   istringstream minidump_stream(contents);
