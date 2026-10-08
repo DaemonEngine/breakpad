@@ -1287,16 +1287,18 @@ AugmentMappings(const Options& options, CrashedProcess* crashinfo,
       }
     }
 
+    const size_t aligned_filename_size =
+        PageAllocator::AlignUp(filename.size(), 8);
     if (std::distance(iter, crashinfo->link_map.end()) == 1) {
       link_map.l_next = 0;
     } else {
       link_map.l_next =
           (struct link_map*)(start_addr + data.size() + sizeof(link_map) +
-                             PageAllocator::AlignUp(filename.size(), 8));
+                             aligned_filename_size);
     }
     data.append((char*)&link_map, sizeof(link_map));
     data.append(filename);
-    data.append(8 - (filename.size() & 7), 0);
+    data.append(aligned_filename_size - filename.size(), 0);
   }
   AddDataToMapping(crashinfo, data, start_addr);
 

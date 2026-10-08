@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
