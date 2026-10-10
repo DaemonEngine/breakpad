@@ -1,0 +1,103 @@
+# Documentation: https://wiki.unvanquished.net/wiki/Continuous_integration
+
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+      - 'for-*.*.*/sync' # Next-release branch
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - .github/workflows/build_test.yml
+      - .gitmodules
+      - configure.ac
+      - Makefile.am
+      - DEPS
+      - fetch-externals
+      - 'm4/**'
+      - 'autotools/**'
+      # 'android/**'
+      - 'wine/**'
+      - 'compat/**'
+      - 'src/**'
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.vm_image }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux amd64 GCC
+            vm_image: ubuntu-22.04
+            apt_packages: g++-12
+            env_commands: export CC=gcc-12 CXX=g++-12
+          - name: Linux amd64 Clang
+            vm_image: ubuntu-22.04
+            env_commands: export CC=clang CXX=clang++
+          - name: Windows amd64 MinGW
+            vm_image: ubuntu-26.04
+            apt_packages: g++-mingw-w64-x86-64 mingw-w64-x86-64-dev gcc-mingw-w64-x86-64-posix-runtime wine64 libz-mingw-w64-dev
+            setup_commands: sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+            env_commands: export TESTDRIVER_SHARED_TEMP_WINEPREFIX=true
+            configure_options: --host=x86_64-w64-mingw32 --enable-static-mingw
+          - name: macOS amd64 AppleClang
+            vm_image: macos-15-intel
+            brew_packages: autoconf automake libtool
+            nproc_command: sysctl -n hw.logicalcpu
+
+    env:
+      APT_PACKAGES: ${{ matrix.apt_packages }}
+      BREW_PACKAGES: ${{ matrix.brew_packages }}
+      SETUP_COMMANDS: ${{ matrix.setup_commands }}
+      ENV_COMMANDS: ${{ matrix.env_commands }}
+      NPROC_COMMAND: ${{ matrix.nproc_command }}
+      CONFIGURE_OPTIONS: ${{ matrix.configure_options }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout dependencies
+        run: |
+          # To fetch googletest.
+          ./fetch-externals
+
+      - name: Setup
+        run: |
+          set -xue
+          if [ -n "${APT_PACKAGES:-}" ]; then
+            sudo apt-get update && sudo apt-get -y -q --no-install-recommends install ${APT_PACKAGES}
+          fi
+          if [ -n "${BREW_PACKAGES:-}" ]; then
+            brew update && brew install ${BREW_PACKAGES}
+          fi
+          if [ -n "${SETUP_COMMANDS:-}" ]; then
+             ${SETUP_COMMANDS}
+          fi
+
+      - name: Build
+        run: |
+          set -xue
+          ${ENV_COMMANDS}
+          parallelism="$(${NPROC_COMMAND:-nproc})"
+          echo "Build parallelism: ${parallelism}"
+          autoreconf -fvi
+          ./configure ${CONFIGURE_OPTIONS}
+          make -j${parallelism}
+
+      - name: Test
+        if: success() && matrix.scons_tests != ''
+        run: |
+          set -xue
+          ${ENV_COMMANDS}
+          parallelism="$(${NPROC_COMMAND:-nproc})"
+          make -j${parallelism} check
