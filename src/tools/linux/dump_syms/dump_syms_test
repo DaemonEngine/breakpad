@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -eu
+
+list_targets()
+{
+cat <<\EOF
+freebsd15-amd64-clang17
+linuxdebian12-amd64-gcc12
+linuxdebian12-arm64-gcc12
+linuxdebian12-armhf-gcc12
+linuxdebian12-ppc64el-gcc12
+linuxdebian13-riscv64-gcc14
+nacl-amd64-saigoclang21
+nacl-armhf-saigoclang21
+nacl-i686-saigoclang21
+EOF
+}
+
+tests/dump_syms_test 'src/tools/linux/dump_syms/dump_syms' $(list_targets)
