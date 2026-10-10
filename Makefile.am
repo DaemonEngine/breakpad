@@ -294,7 +294,7 @@ endif LINUX_HOST
 if !DISABLE_TOOLS
 
 bin_PROGRAMS += \
-	src/tools/linux/dump_syms/dump_syms
+	src/tools/linux/dump_syms/dump_syms \
 	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
 
 check_PROGRAMS += \
