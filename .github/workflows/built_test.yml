@@ -1,0 +1,156 @@
+# Documentation: https://wiki.unvanquished.net/wiki/Continuous_integration
+
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+      - 'for-*.*.*/sync' # Next-release branch
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/build_test.yml'
+      - '.gitmodules'
+      # 'android/**'
+      - 'autotools/**'
+      - 'compat/**'
+      - configure.ac
+      - DEPS
+      - fetch-externals
+      - 'm4/**'
+      - Makefile.am
+      - 'src/**'
+      - 'test/**'
+      - 'wine/**'
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.vm_image }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux amd64 GCC
+            vm_image: ubuntu-22.04
+            apt_packages: g++-12 libcurl4-openssl-dev
+            env_commands: export CC=gcc-12 CXX=g++-12
+          - name: Linux i686 GCC
+            # This platform reliably caught in CI the random thread-related
+			# bug src/client/linux/linux_client_unittest, making it possible
+			# to track down and debug it. It also catches more pointer type
+			# mismatches, thanks to the different sizes. In the end it helps
+			# improving robustness.
+            vm_image: ubuntu-22.04
+            apt_architecture: i386
+            apt_packages: g++-i686-linux-gnu libcurl4-openssl-dev:i386 zlib1g-dev:i386
+            env_commands: export CC=i686-linux-gnu-gcc CXX=i686-linux-gnu-g++
+          - name: Linux arm64 GCC
+            vm_image: ubuntu-22.04-arm
+            apt_packages: g++-12 libcurl4-openssl-dev binutils-x86-64-linux-gnu
+            env_commands: export CC=gcc-12 CXX=g++-12
+          - name: Linux amd64 Clang
+            vm_image: ubuntu-22.04
+            apt_packages: clang libcurl4-openssl-dev
+            env_commands: export CC=clang CXX=clang++
+          - name: Windows amd64 MinGW
+            vm_image: ubuntu-26.04
+            apt_packages: g++-mingw-w64-x86-64 mingw-w64-x86-64-dev gcc-mingw-w64-x86-64-posix-runtime wine libcurl4-openssl-dev libz-mingw-w64-dev
+            setup_commands: sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+            env_commands: export TESTDRIVER_SHARED_TEMP_WINEPREFIX=true
+            configure_options: --host=x86_64-w64-mingw32 --enable-static-mingw
+          - name: Windows arm64 MinGW
+            vm_image: windows-11-arm
+            shell: msys2 {0}
+            msystem: CLANGARM64
+            pacman_packages: base-devel mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-gcc-compat autoconf automake libtool
+            env_commands: export CC=aarch64-w64-mingw32-gcc CXX=aarch64-w64-mingw32-g++
+            configure_options: --host=aarch64-w64-mingw32 --enable-static-mingw
+          - name: macOS amd64 AppleClang
+            vm_image: macos-15-intel
+            brew_packages: autoconf automake libtool
+            nproc_command: sysctl -n hw.logicalcpu
+          - name: macOS arm64 AppleClang
+            vm_image: macos-15
+            brew_packages: autoconf automake libtool
+            nproc_command: sysctl -n hw.logicalcpu
+
+    env:
+      APT_ARCHITECTURE: ${{ matrix.apt_architecture }}
+      APT_PACKAGES: ${{ matrix.apt_packages }}
+      BREW_PACKAGES: ${{ matrix.brew_packages }}
+      SETUP_COMMANDS: ${{ matrix.setup_commands }}
+      ENV_COMMANDS: ${{ matrix.env_commands }}
+      NPROC_COMMAND: ${{ matrix.nproc_command }}
+      CONFIGURE_OPTIONS: ${{ matrix.configure_options }}
+
+    defaults:
+      run:
+        shell: ${{ matrix.shell || 'bash' }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Checkout dependencies
+        # This doesn't require the MSYS2 shell, so we can run this before the MSYS2 setup,
+        # and we don't have to install fetch-externals' dependencies in MSYS2 environment
+        # like python and git which are already provided in the default Git bash environment.
+        shell: bash
+        run: |
+          # To fetch googletest.
+          ./fetch-externals
+
+      - name: Setup MSYS2 packages
+        if: ${{ matrix.pacman_packages != '' }}
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          install: ${{ matrix.pacman_packages }}
+          update: true
+
+      - name: Setup Apt architecture
+        if: ${{ matrix.apt_architecture != '' }}
+        run: |
+          set -xue
+          sudo dpkg --add-architecture "${APT_ARCHITECTURE}"
+
+      - name: Setup Apt packages
+        if: ${{ matrix.apt_packages != '' }}
+        run: |
+          set -xue
+          sudo apt-get update && sudo apt-get -y -q --no-install-recommends install ${APT_PACKAGES}
+
+      - name: Setup Brew packages
+        if: ${{ matrix.brew_packages != '' }}
+        run: |
+          set -xue
+          brew update && brew install ${BREW_PACKAGES}
+
+      - name: Setup commands
+        if: ${{ matrix.setup_commands != '' }}
+        run: |
+          set -xue
+          ${SETUP_COMMANDS}
+
+      - name: Build
+        run: |
+          set -xue
+          ${ENV_COMMANDS}
+          parallelism="$(${NPROC_COMMAND:-nproc})"
+          echo "Build parallelism: ${parallelism}"
+          autoreconf -fvi
+          ./configure ${CONFIGURE_OPTIONS}
+          make "-j${parallelism}"
+
+      - name: Test
+        run: |
+          set -xue
+          ${ENV_COMMANDS}
+          parallelism="$(${NPROC_COMMAND:-nproc})"
+          if ! make "-j${parallelism}" check; then
+            [ ! -f test-suite.log ] || cat test-suite.log
+            false
+          fi
