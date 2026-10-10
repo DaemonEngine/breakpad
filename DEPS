@@ -42,10 +42,10 @@ deps = {
   # matches the tag we want to track.
   "src/src/testing":
     "https://github.com/google/googletest.git" +
-      "@6910c9d9165801d8827d628cb72eb7ea9dd538c5",
+      "@988ea2c1798de7779f656df2281dd36d6039a17a",
 
   # Linux syscall support.
-  "src/src/third_party/lss":
-    "https://chromium.googlesource.com/linux-syscall-support/" +
-      "@29164a80da4d41134950d76d55199ea33fbb9613",
+  #"src/src/third_party/lss":
+  #  "https://chromium.googlesource.com/linux-syscall-support/" +
+  #    "@29164a80da4d41134950d76d55199ea33fbb9613",
 }
