@@ -311,10 +311,10 @@ bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
 	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/md2core/minidump-2-core
-if X86_HOST
+
 bin_PROGRAMS += \
 	src/tools/mac/dump_syms/dump_syms_mac
-endif
+
 if HAVE_MEMFD_CREATE
 libexec_PROGRAMS += \
 	src/tools/linux/core_handler/core_handler
@@ -322,10 +322,9 @@ endif
 
 check_PROGRAMS += \
 	src/tools/linux/md2core/minidump_2_core_unittest
-if X86_HOST
+
 check_PROGRAMS += \
 	src/common/mac/macho_reader_unittest
-endif
 
 endif LINUX_HOST
 
