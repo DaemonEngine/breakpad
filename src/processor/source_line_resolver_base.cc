@@ -121,7 +121,7 @@ bool SourceLineResolverBase::ReadSymbolFile(const std::string& map_file,
 
   BPLOG(INFO) << "Opening " << map_file;
 
-  FILE* f = fopen(map_file.c_str(), "rt");
+  FILE* f = fopen(map_file.c_str(), "rb");
   if (!f) {
     std::string error_string;
     error_code = ErrnoString(&error_string);
