@@ -52,6 +52,12 @@
 #include "common/linux/scoped_tmpfile.h"
 #include "processor/logging.h"
 
+#if defined(__linux__) && !defined(__i386__) && !defined(__x86_64__)
+#define OBJDUMP_PATH "x86_64-linux-gnu-objdump"
+#else
+#define OBJDUMP_PATH "objdump"
+#endif
+
 namespace google_breakpad {
 namespace {
 
@@ -269,7 +275,7 @@ bool DisassemblerObjdump::DisassembleInstruction(uint32_t cpu,
     // since objdump does not have a mode to read from stdin. This cannot be
     // used with a pipe, since objdump requires that the input is a standard
     // file.
-    execlp("objdump", "objdump", "-D", "--no-show-raw-insn", "-b", "binary",
+    execlp(OBJDUMP_PATH, OBJDUMP_PATH, "-D", "--no-show-raw-insn", "-b", "binary",
            "-M", "intel", "-m", architecture.c_str(), "/proc/self/fd/0",
            nullptr);
 
