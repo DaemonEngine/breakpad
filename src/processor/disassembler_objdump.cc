@@ -277,6 +277,7 @@ bool DisassemblerObjdump::DisassembleInstruction(uint32_t cpu,
     exit(-1);
   } else {
     // In the parent process, parse the objdump output.
+    disassembly_pipe.CloseWriteFd();
 
     // Match the instruction line, from:
     //    0:        lock cmpxchg DWORD PTR [esi+0x10],eax
