@@ -781,8 +781,12 @@ src_tools_mac_dump_syms_dump_syms_mac_SOURCES = \
 	src/common/mac/macho_walker.cc \
 	src/common/mac/macho_walker.h \
 	src/tools/mac/dump_syms/dump_syms_tool.cc
-src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS= \
-	-I$(top_srcdir)/src/third_party/mac_headers \
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS =
+if !MACOS_BUILD
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS += \
+	-I$(top_srcdir)/src/third_party/mac_headers
+endif
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS += \
 	$(RUSTC_DEMANGLE_CFLAGS) \
 	-DHAVE_MACH_O_NLIST_H
 src_tools_mac_dump_syms_dump_syms_mac_LDADD= \
@@ -905,8 +909,12 @@ src_common_mac_macho_reader_unittest_SOURCES = \
 	src/common/mac/macho_walker.cc \
 	src/common/tests/file_utils.cc
 src_common_mac_macho_reader_unittest_CPPFLAGS = \
-	$(AM_CPPFLAGS) $(TEST_CFLAGS) \
-	-I$(top_srcdir)/src/third_party/mac_headers \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+if !MACOS_BUILD
+src_common_mac_macho_reader_unittest_CPPFLAGS += \
+	-I$(top_srcdir)/src/third_party/mac_headers
+endif
+src_common_mac_macho_reader_unittest_CPPFLAGS += \
 	-DHAVE_MACH_O_NLIST_H \
 	$(PTHREAD_CFLAGS)
 src_common_mac_macho_reader_unittest_LDADD = \
