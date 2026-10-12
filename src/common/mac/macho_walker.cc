@@ -36,6 +36,8 @@
 #include <config.h>  // Must come first
 #endif
 
+#include "compat/linux.h"
+
 #include <assert.h>
 #include <fcntl.h>
 #include <mach-o/fat.h>
