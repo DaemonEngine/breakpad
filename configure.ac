@@ -142,10 +142,15 @@ esac
 AM_CONDITIONAL(ANDROID_HOST, test x$ANDROID_HOST = xtrue)
 
 case $build_os in
+  darwin*)
+    MACOS_BUILD=true
+    ;;
   mingw* | msys* | cygwin*)
     WINDOWS_BUILD=true
     ;;
 esac
+
+AM_CONDITIONAL(MACOS_BUILD, test x$MACOS_BUILD = xtrue)
 
 AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
 
