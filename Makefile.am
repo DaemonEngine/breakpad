@@ -258,6 +258,21 @@ check_SCRIPTS = \
 	src/processor/minidump_stackwalk_test \
 	src/processor/minidump_stackwalk_machine_readable_test
 
+## dump_syms tests
+check_DEPS = \
+	src/tools/linux/dump_syms/dump_syms \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
+
+check_SCRIPTS = \
+	src/tools/linux/dump_syms/dump_syms_test \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf_test
+
+check_DEPS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_SCRIPTS += \
+	src/tools/mac/dump_syms/dump_syms_mac_test
+
 endif !DISABLE_PROCESSOR
 
 
@@ -305,15 +320,18 @@ check_PROGRAMS += \
 #	src/tools/linux/symupload/minidump_upload \
 #	src/tools/linux/symupload/sym_upload
 
+bin_PROGRAMS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_PROGRAMS += \
+	src/common/mac/macho_reader_unittest
+
 if LINUX_HOST
 
 bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
 	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/md2core/minidump-2-core
-
-bin_PROGRAMS += \
-	src/tools/mac/dump_syms/dump_syms_mac
 
 if HAVE_MEMFD_CREATE
 libexec_PROGRAMS += \
@@ -322,9 +340,6 @@ endif
 
 check_PROGRAMS += \
 	src/tools/linux/md2core/minidump_2_core_unittest
-
-check_PROGRAMS += \
-	src/common/mac/macho_reader_unittest
 
 endif LINUX_HOST
 
