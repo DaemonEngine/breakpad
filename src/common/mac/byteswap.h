@@ -35,6 +35,8 @@
 #ifndef COMMON_MAC_BYTESWAP_H_
 #define COMMON_MAC_BYTESWAP_H_
 
+#include "compat/linux.h"
+
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
 
