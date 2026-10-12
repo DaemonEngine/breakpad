@@ -214,9 +214,15 @@ TEST(FunctionNames, Mangled) {
   Module::Function *function = functions[0];
   // This is GCC-specific, but we shouldn't be seeing STABS data anywhere
   // but Linux.
+#ifdef _WIN32
+#define WHITESPACE_REGEX "\\s"
+#else
+#define WHITESPACE_REGEX "[[:space:]]"
+#endif
   EXPECT_THAT(function->name.str(), ::testing::ContainsRegex(
-    "std::vector<unsigned long long, std::allocator<unsigned long long>\\s?>::"
+    "std::vector<unsigned long long, std::allocator<unsigned long long>" WHITESPACE_REGEX "?>::"
     "push_back\\(unsigned long long const&\\)"));
+#undef WHITESPACE_REGEX
   EXPECT_EQ(0xf2cfda63cef7f46dLL, function->address);
   EXPECT_LT(0U, function->ranges[0].size); // should have used dummy size
   EXPECT_EQ(0U, function->parameter_size);
