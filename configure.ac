@@ -149,14 +149,6 @@ esac
 
 AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
 
-# Some tools (like mac ones) only support x86 currently.
-case $host_cpu in
-  i?86|x86_64)
-    X86_HOST=true
-    ;;
-esac
-AM_CONDITIONAL(X86_HOST, test x$X86_HOST = xtrue)
-
 AC_ARG_ENABLE(processor,
               AS_HELP_STRING([--disable-processor],
                              [Don't build processor library]
