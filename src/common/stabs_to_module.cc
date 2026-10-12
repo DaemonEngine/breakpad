@@ -44,12 +44,16 @@
 #include <utility>
 
 #include "common/stabs_to_module.h"
+#include "common/language.h"
 
 namespace google_breakpad {
 
 // Demangle using abi call.
 // Older GCC may not support it.
 static std::string Demangle(const std::string& mangled) {
+  if (!Language::IsMangledName(mangled))
+    return mangled;
+
   int status = 0;
   char *demangled = abi::__cxa_demangle(
       mangled.c_str(), nullptr, nullptr, &status);
