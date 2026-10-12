@@ -302,6 +302,12 @@ bin_PROGRAMS += \
 check_PROGRAMS += \
 	src/common/dumper_unittest
 
+bin_PROGRAMS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_PROGRAMS += \
+	src/common/mac/macho_reader_unittest
+
 if LINUX_HOST
 
 if ENABLE_UPLOAD_TOOLS
@@ -315,9 +321,6 @@ bin_PROGRAMS += \
 	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/md2core/minidump-2-core
 
-bin_PROGRAMS += \
-	src/tools/mac/dump_syms/dump_syms_mac
-
 if HAVE_MEMFD_CREATE
 libexec_PROGRAMS += \
 	src/tools/linux/core_handler/core_handler
@@ -325,9 +328,6 @@ endif
 
 check_PROGRAMS += \
 	src/tools/linux/md2core/minidump_2_core_unittest
-
-check_PROGRAMS += \
-	src/common/mac/macho_reader_unittest
 
 endif LINUX_HOST
 
