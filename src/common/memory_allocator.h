@@ -159,7 +159,7 @@ class PageAllocator {
     }
   }
 
-  struct PageHeader {
+  struct alignas(std::max_align_t) PageHeader {
     PageHeader* next;  // pointer to the start of the next set of pages.
     size_t num_pages;  // the number of pages in this set.
   };
