@@ -270,12 +270,44 @@ TEST(MinidumpWriterTest, MinidumpStacksSkippedIfRequested) {
     // current executable). This thread should not be captured in the minidump.
     pthread_t thread;
     pthread_attr_t thread_attributes;
-    pthread_attr_init(&thread_attributes);
-    pthread_attr_setdetachstate(&thread_attributes, PTHREAD_CREATE_DETACHED);
+    if (pthread_attr_init(&thread_attributes) != 0) {
+      syscall(__NR_exit_group, 1);
+    }
+    if (pthread_attr_setdetachstate(
+            &thread_attributes, PTHREAD_CREATE_DETACHED) != 0) {
+      pthread_attr_destroy(&thread_attributes);
+      syscall(__NR_exit_group, 1);
+    }
+
+    const size_t stack_size = 1024 * 1024;
+    void* thread_stack = mmap(nullptr, stack_size,
+                              PROT_READ | PROT_WRITE,
+                              MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
+                              -1, 0);
+    if (thread_stack == MAP_FAILED) {
+      pthread_attr_destroy(&thread_attributes);
+      syscall(__NR_exit_group, 1);
+    }
+    memset(thread_stack, 0, stack_size);
+
+    if (pthread_attr_setstack(
+            &thread_attributes, thread_stack, stack_size) != 0) {
+      munmap(thread_stack, stack_size);
+      pthread_attr_destroy(&thread_attributes);
+      syscall(__NR_exit_group, 1);
+    }
+
     sigset_t sigset;
     sigemptyset(&sigset);
-    pthread_create(&thread, &thread_attributes,
-                   reinterpret_cast<void* (*)(void*)>(&sigsuspend), &sigset);
+    const int create_result =
+        pthread_create(&thread, &thread_attributes,
+                       reinterpret_cast<void* (*)(void*)>(&sigsuspend),
+                       &sigset);
+    pthread_attr_destroy(&thread_attributes);
+    if (create_result != 0) {
+      munmap(thread_stack, stack_size);
+      syscall(__NR_exit_group, 1);
+    }
 
     char b;
     IGNORE_RET(HANDLE_EINTR(read(fds[0], &b, sizeof(b))));
