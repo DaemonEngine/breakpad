@@ -436,7 +436,7 @@ static const MDRawSystemInfo* GetSystemInfo(Minidump* dump,
 }
 
 static uint64_t GetAddressForArchitecture(const MDCPUArchitecture architecture,
-                                          size_t raw_address)
+                                          uint64_t raw_address)
 {
   switch (architecture) {
     case MD_CPU_ARCHITECTURE_X86:
