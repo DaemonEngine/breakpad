@@ -1,0 +1,38 @@
+#!/bin/sh
+
+dump_syms="${1}${EXE_EXT:-}"; shift
+
+printf 'Print file type for: %s\n' "${dump_syms}"
+file "${dump_syms}"
+
+success='true'
+
+while [ -n "${1:-}" ]
+do
+	target="${1}"; shift
+
+	for source in test-math
+	do
+		sample="tests/${source}_${target}"
+
+		if [ -f "${sample}" ]
+		then
+			printf 'Let %s symbolize %s:' "${dump_syms}" "${sample}"
+
+			error_log="$(mktemp)"
+
+			if ${EXE_LAUNCHER:-} "${dump_syms}" "${sample}" >/dev/null 2>"${error_log}"
+			then
+				printf ' OK\n'
+			else
+				printf ' FAILED\n'
+				cat "${error_log}"
+				success='false'
+			fi
+
+			rm "${error_log}"
+		fi
+	done
+done
+
+"${success}"

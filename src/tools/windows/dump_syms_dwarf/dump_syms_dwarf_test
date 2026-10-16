@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eu
+
+list_targets()
+{
+cat <<\EOF
+windows7-amd64-mingwgcc14.exe
+windows7-i686-mingwgcc14.exe
+EOF
+}
+
+tests/dump_syms_test 'src/tools/windows/dump_syms_dwarf/dump_syms_dwarf' $(list_targets)
