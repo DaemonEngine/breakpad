@@ -723,12 +723,13 @@ src_tools_linux_dump_syms_dump_syms_SOURCES = \
 	src/tools/linux/dump_syms/dump_syms.cc
 src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 	$(RUSTC_DEMANGLE_CFLAGS) \
-	$(ZSTD_CFLAGS)
+	$(ZSTD_CFLAGS) \
+	$(ZLIB_CFLAGS)
 src_tools_linux_dump_syms_dump_syms_LDADD = \
 	$(RUSTC_DEMANGLE_LIBS) \
 	$(SOCKET_LIBS) \
 	$(ZSTD_LIBS) \
-	-lz
+	$(ZLIB_LIBS)
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
