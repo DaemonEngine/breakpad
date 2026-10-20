@@ -175,6 +175,13 @@ if test x$LINUX_HOST = xfalse -a "x$enable_processor" != xyes -a "x$enable_tools
    AC_MSG_ERROR([--disable-processor and --disable-tools were specified, and not building for Linux. Nothing to build!])
 fi
 
+AC_ARG_ENABLE([upload_tools],
+    [AS_HELP_STRING([--disable-upload-tools], [Do not build upload tools])],
+    [enable_upload_tools=$enableval],
+    [enable_upload_tools=yes])
+
+AM_CONDITIONAL([ENABLE_UPLOAD_TOOLS], [test "x$enable_upload_tools" = "xyes"])
+
 AC_ARG_ENABLE(system-test-libs,
               AS_HELP_STRING([--enable-system-test-libs],
                              [Use gtest/gmock/etc... from the system instead ]
