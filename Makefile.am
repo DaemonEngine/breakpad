@@ -272,9 +272,11 @@ if LINUX_HOST
 lib_LIBRARIES += src/client/linux/libbreakpad_client.a
 pkgconfig_DATA += breakpad-client.pc
 
+if ENABLE_UPLOAD_TOOLS
 check_PROGRAMS += \
 	src/client/linux/linux_client_unittest \
 	src/common/linux/google_crashdump_uploader_test
+endif
 
 EXTRA_PROGRAMS += \
 	src/client/linux/linux_dumper_unittest_helper \
@@ -300,12 +302,13 @@ bin_PROGRAMS += \
 check_PROGRAMS += \
 	src/common/dumper_unittest
 
-# slipher: disabling these to avoid curl dependency
-# bin_PROGRAMS += \
-#	src/tools/linux/symupload/minidump_upload \
-#	src/tools/linux/symupload/sym_upload
-
 if LINUX_HOST
+
+if ENABLE_UPLOAD_TOOLS
+bin_PROGRAMS += \
+	src/tools/linux/symupload/minidump_upload \
+	src/tools/linux/symupload/sym_upload
+endif
 
 bin_PROGRAMS += \
 	src/tools/linux/core2md/core2md \
@@ -733,6 +736,8 @@ src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/tools/linux/md2core/minidump-2-core.cc \
 	src/tools/linux/md2core/minidump_memory_range.h
 
+if LINUX_HOST
+if ENABLE_UPLOAD_TOOLS
 src_tools_linux_symupload_minidump_upload_SOURCES = \
 	src/common/linux/http_upload.cc \
 	src/common/path_helper.cc \
@@ -751,6 +756,8 @@ src_tools_linux_symupload_sym_upload_SOURCES = \
 	src/common/path_helper.cc \
 	src/tools/linux/symupload/sym_upload.cc
 src_tools_linux_symupload_sym_upload_LDADD = -ldl -lcurl
+endif
+endif
 
 src_tools_mac_dump_syms_dump_syms_mac_SOURCES = \
 	src/common/dwarf_cfi_to_module.cc \
@@ -913,6 +920,7 @@ src_common_mac_macho_reader_unittest_LDADD = \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
+if ENABLE_UPLOAD_TOOLS
 src_common_linux_google_crashdump_uploader_test_SOURCES = \
 	src/common/linux/google_crashdump_uploader.cc \
 	src/common/linux/google_crashdump_uploader_test.cc \
@@ -923,6 +931,7 @@ src_common_linux_google_crashdump_uploader_test_LDADD = \
 	$(TEST_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
 	-ldl
+endif
 
 src_tools_linux_md2core_minidump_2_core_unittest_SOURCES = \
 	src/tools/linux/md2core/minidump_memory_range_unittest.cc
