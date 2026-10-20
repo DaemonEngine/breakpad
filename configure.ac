@@ -256,16 +256,44 @@ fi
 AC_ARG_VAR([RUSTC_DEMANGLE_CFLAGS], [Compiler flags for rustc-demangle])
 AC_ARG_VAR([RUSTC_DEMANGLE_LIBS], [Linker flags for rustc-demangle])
 
-AC_ARG_ENABLE(zstd,
-              AS_HELP_STRING([--enable-zstd],
-                             [Enable decompression of ELF sections with zstd]),,
+PKG_PROG_PKG_CONFIG
+
+AC_ARG_ENABLE([zstd],
+              [AS_HELP_STRING([--enable-zstd],
+                              [Enable decompression of ELF sections with zstd])],
+              [enable_zstd=$enableval],
               [enable_zstd=no])
-if test "x${enable_zstd}" != xno; then
-  AC_CHECK_LIB(zstd, ZSTD_decompress, [],
-               [AC_MSG_ERROR([zstd library not found.])])
-  AC_CHECK_HEADER(zstd.h, [],
+
+if test "x${enable_zstd}" = "xyes"; then
+  have_zstd=no
+  ZSTD_CFLAGS=""
+  ZSTD_LIBS=""
+
+  AC_CHECK_LIB([zstd], [ZSTD_decompress],
+               [have_zstd=yes
+                ZSTD_LIBS="-lzstd"],
+               [have_zstd=no])
+
+  if test "x${have_zstd}" != "xyes"; then
+    PKG_CHECK_MODULES([ZSTD], [libzstd],
+                      [have_zstd=yes],
+                      [have_zstd=no])
+  fi
+
+  if test "x${have_zstd}" != "xyes"; then
+    AC_MSG_ERROR([zstd library not found.])
+  fi
+
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS $ZSTD_CFLAGS"
+  AC_CHECK_HEADER([zstd.h], [],
                   [AC_MSG_ERROR([zstd header not found.])])
+  CPPFLAGS="$save_CPPFLAGS"
 fi
+
+AC_SUBST([ZSTD_CFLAGS])
+AC_SUBST([ZSTD_LIBS])
+AM_CONDITIONAL([ENABLE_ZSTD], [test "x${enable_zstd}" = "xyes"])
 
 AC_ARG_WITH(tests-as-root,
             AS_HELP_STRING([--with-tests-as-root],

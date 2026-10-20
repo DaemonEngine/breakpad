@@ -726,8 +726,8 @@ src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 	$(ZSTD_CFLAGS)
 src_tools_linux_dump_syms_dump_syms_LDADD = \
 	$(RUSTC_DEMANGLE_LIBS) \
-	$(ZSTD_CFLAGS) \
-    $(SOCKET_LIBS) \
+	$(SOCKET_LIBS) \
+	$(ZSTD_LIBS) \
 	-lz
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
