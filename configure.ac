@@ -142,20 +142,17 @@ esac
 AM_CONDITIONAL(ANDROID_HOST, test x$ANDROID_HOST = xtrue)
 
 case $build_os in
+  darwin*)
+    MACOS_BUILD=true
+    ;;
   mingw* | msys* | cygwin*)
     WINDOWS_BUILD=true
     ;;
 esac
 
-AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
+AM_CONDITIONAL(MACOS_BUILD, test x$MACOS_BUILD = xtrue)
 
-# Some tools (like mac ones) only support x86 currently.
-case $host_cpu in
-  i?86|x86_64)
-    X86_HOST=true
-    ;;
-esac
-AM_CONDITIONAL(X86_HOST, test x$X86_HOST = xtrue)
+AM_CONDITIONAL(WINE_HOST, test x$WINDOWS_HOST = xtrue -a x$WINDOWS_BUILD != xtrue)
 
 AC_ARG_ENABLE(processor,
               AS_HELP_STRING([--disable-processor],
