@@ -52,7 +52,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef HAVE_LIBZ
 #include <zlib.h>
+#endif
 #ifdef HAVE_LIBZSTD
 #include <zstd.h>
 #endif
@@ -314,6 +316,7 @@ uint32_t GetCompressionHeader(
   return sizeof (*header);
 }
 
+#ifdef HAVE_LIBZ
 std::pair<uint8_t *, uint64_t> UncompressZlibSectionContents(
     const uint8_t* compressed_buffer, uint64_t compressed_size, uint64_t uncompressed_size) {
   google_breakpad::scoped_array<uint8_t> uncompressed_buffer(
@@ -328,6 +331,7 @@ std::pair<uint8_t *, uint64_t> UncompressZlibSectionContents(
       ? std::make_pair(nullptr, 0)
       : std::make_pair(uncompressed_buffer.release(), uncompressed_size);
 }
+#endif
 
 #ifdef HAVE_LIBZSTD
 std::pair<uint8_t *, uint64_t> UncompressZstdSectionContents(
@@ -347,9 +351,12 @@ std::pair<uint8_t *, uint64_t> UncompressZstdSectionContents(
 std::pair<uint8_t *, uint64_t> UncompressSectionContents(
     uint64_t compression_type, const uint8_t* compressed_buffer,
     uint64_t compressed_size, uint64_t uncompressed_size) {
+
+#ifdef HAVE_LIBZ
   if (compression_type == ELFCOMPRESS_ZLIB) {
     return UncompressZlibSectionContents(compressed_buffer, compressed_size, uncompressed_size);
   }
+#endif
 
 #ifdef HAVE_LIBZSTD
   if (compression_type == ELFCOMPRESS_ZSTD) {

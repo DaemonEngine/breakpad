@@ -45,12 +45,19 @@ static inline int16_t  ByteSwap(int16_t  v) { return OSSwapInt16(v); }
 static inline int32_t  ByteSwap(int32_t  v) { return OSSwapInt32(v); }
 static inline int64_t  ByteSwap(int64_t  v) { return OSSwapInt64(v); }
 
-#elif defined(__linux__)
+#else
 // For NXByteOrder
 #include <architecture/byte_order.h>
 #include <stdint.h>
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <stdlib.h>
+#define bswap_16(x) __builtin_bswap16(x)
+#define bswap_32(x) __builtin_bswap32(x)
+#define bswap_64(x) __builtin_bswap64(x)
+#else
 #include <endian.h>
 #include_next <byteswap.h>
+#endif
 
 static inline uint16_t ByteSwap(uint16_t v) { return bswap_16(v); }
 static inline uint32_t ByteSwap(uint32_t v) { return bswap_32(v); }

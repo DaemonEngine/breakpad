@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eu
+
+list_targets()
+{
+cat <<\EOF
+macos10.12-amd64-appleclang21
+macos11.7-arm64-appleclang21
+EOF
+}
+
+tests/dump_syms_test 'src/tools/mac/dump_syms/dump_syms_mac' $(list_targets)

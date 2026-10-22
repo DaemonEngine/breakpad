@@ -76,7 +76,8 @@ class PageAllocator {
   template <typename T>
   static T AlignUp(T offset, size_t alignment) {
     assert(alignment > 0 && ((alignment - 1) & alignment) == 0);
-    return (offset + (alignment - 1)) & ~(alignment - 1);
+    const T mask = static_cast<T>(alignment - 1);
+    return (offset + mask) & ~mask;
   }
 
   // Allocates an array with requested amount of `bytes` and at a location with

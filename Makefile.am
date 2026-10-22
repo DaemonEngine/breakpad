@@ -258,6 +258,21 @@ check_SCRIPTS = \
 	src/processor/minidump_stackwalk_test \
 	src/processor/minidump_stackwalk_machine_readable_test
 
+## dump_syms tests
+check_DEPS = \
+	src/tools/linux/dump_syms/dump_syms \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
+
+check_SCRIPTS += \
+	src/tools/linux/dump_syms/dump_syms_test \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf_test
+
+check_DEPS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_SCRIPTS += \
+	src/tools/mac/dump_syms/dump_syms_mac_test
+
 endif !DISABLE_PROCESSOR
 
 
@@ -302,6 +317,12 @@ bin_PROGRAMS += \
 check_PROGRAMS += \
 	src/common/dumper_unittest
 
+bin_PROGRAMS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_PROGRAMS += \
+	src/common/mac/macho_reader_unittest
+
 if LINUX_HOST
 
 if ENABLE_UPLOAD_TOOLS
@@ -315,9 +336,6 @@ bin_PROGRAMS += \
 	src/tools/linux/pid2md/pid2md \
 	src/tools/linux/md2core/minidump-2-core
 
-bin_PROGRAMS += \
-	src/tools/mac/dump_syms/dump_syms_mac
-
 if HAVE_MEMFD_CREATE
 libexec_PROGRAMS += \
 	src/tools/linux/core_handler/core_handler
@@ -325,9 +343,6 @@ endif
 
 check_PROGRAMS += \
 	src/tools/linux/md2core/minidump_2_core_unittest
-
-check_PROGRAMS += \
-	src/common/mac/macho_reader_unittest
 
 endif LINUX_HOST
 
@@ -723,12 +738,13 @@ src_tools_linux_dump_syms_dump_syms_SOURCES = \
 	src/tools/linux/dump_syms/dump_syms.cc
 src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 	$(RUSTC_DEMANGLE_CFLAGS) \
-	$(ZSTD_CFLAGS)
+	$(ZSTD_CFLAGS) \
+	$(ZLIB_CFLAGS)
 src_tools_linux_dump_syms_dump_syms_LDADD = \
 	$(RUSTC_DEMANGLE_LIBS) \
-	$(ZSTD_CFLAGS) \
-    $(SOCKET_LIBS) \
-	-lz
+	$(SOCKET_LIBS) \
+	$(ZSTD_LIBS) \
+	$(ZLIB_LIBS)
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
@@ -788,8 +804,12 @@ src_tools_mac_dump_syms_dump_syms_mac_SOURCES = \
 	src/common/mac/macho_walker.cc \
 	src/common/mac/macho_walker.h \
 	src/tools/mac/dump_syms/dump_syms_tool.cc
-src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS= \
-	-I$(top_srcdir)/src/third_party/mac_headers \
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS =
+if !MACOS_BUILD
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS += \
+	-I$(top_srcdir)/src/third_party/mac_headers
+endif
+src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS += \
 	$(RUSTC_DEMANGLE_CFLAGS) \
 	-DHAVE_MACH_O_NLIST_H
 src_tools_mac_dump_syms_dump_syms_mac_LDADD= \
@@ -912,8 +932,12 @@ src_common_mac_macho_reader_unittest_SOURCES = \
 	src/common/mac/macho_walker.cc \
 	src/common/tests/file_utils.cc
 src_common_mac_macho_reader_unittest_CPPFLAGS = \
-	$(AM_CPPFLAGS) $(TEST_CFLAGS) \
-	-I$(top_srcdir)/src/third_party/mac_headers \
+	$(AM_CPPFLAGS) $(TEST_CFLAGS)
+if !MACOS_BUILD
+src_common_mac_macho_reader_unittest_CPPFLAGS += \
+	-I$(top_srcdir)/src/third_party/mac_headers
+endif
+src_common_mac_macho_reader_unittest_CPPFLAGS += \
 	-DHAVE_MACH_O_NLIST_H \
 	$(PTHREAD_CFLAGS)
 src_common_mac_macho_reader_unittest_LDADD = \

@@ -41,7 +41,7 @@
 #include <wchar.h>
 #include <windows.h>
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_LIBZ)
 #include <zlib.h>
 #endif
 
@@ -67,7 +67,7 @@ namespace {
   // or in case of any error. The contents of `deflated` are undefined in the
   // latter case.
   bool Deflate(const string& data, string& deflated) {
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_LIBZ)
     z_stream stream{};
 
     // Start with an output buffer sufficient for 75% compression to avoid
@@ -109,7 +109,7 @@ namespace {
     return result == Z_STREAM_END;
 #else
     return false;
-#endif  // defined(HAVE_ZLIB)
+#endif  // defined(HAVE_LIBZ)
   }
 
 // Restore C4100 to its previous state.
