@@ -258,6 +258,21 @@ check_SCRIPTS = \
 	src/processor/minidump_stackwalk_test \
 	src/processor/minidump_stackwalk_machine_readable_test
 
+## dump_syms tests
+check_DEPS = \
+	src/tools/linux/dump_syms/dump_syms \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
+
+check_SCRIPTS = \
+	src/tools/linux/dump_syms/dump_syms_test \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf_test
+
+check_DEPS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_SCRIPTS += \
+	src/tools/mac/dump_syms/dump_syms_mac_test
+
 endif !DISABLE_PROCESSOR
 
 
