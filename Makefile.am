@@ -258,6 +258,21 @@ check_SCRIPTS = \
 	src/processor/minidump_stackwalk_test \
 	src/processor/minidump_stackwalk_machine_readable_test
 
+## dump_syms tests
+check_DEPS = \
+	src/tools/linux/dump_syms/dump_syms \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf
+
+check_SCRIPTS += \
+	src/tools/linux/dump_syms/dump_syms_test \
+	src/tools/windows/dump_syms_dwarf/dump_syms_dwarf_test
+
+check_DEPS += \
+	src/tools/mac/dump_syms/dump_syms_mac
+
+check_SCRIPTS += \
+	src/tools/mac/dump_syms/dump_syms_mac_test
+
 endif !DISABLE_PROCESSOR
 
 
@@ -723,12 +738,13 @@ src_tools_linux_dump_syms_dump_syms_SOURCES = \
 	src/tools/linux/dump_syms/dump_syms.cc
 src_tools_linux_dump_syms_dump_syms_CXXFLAGS = \
 	$(RUSTC_DEMANGLE_CFLAGS) \
-	$(ZSTD_CFLAGS)
+	$(ZSTD_CFLAGS) \
+	$(ZLIB_CFLAGS)
 src_tools_linux_dump_syms_dump_syms_LDADD = \
 	$(RUSTC_DEMANGLE_LIBS) \
-	$(ZSTD_CFLAGS) \
-    $(SOCKET_LIBS) \
-	-lz
+	$(SOCKET_LIBS) \
+	$(ZSTD_LIBS) \
+	$(ZLIB_LIBS)
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \

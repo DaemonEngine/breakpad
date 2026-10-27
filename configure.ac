@@ -253,16 +253,83 @@ fi
 AC_ARG_VAR([RUSTC_DEMANGLE_CFLAGS], [Compiler flags for rustc-demangle])
 AC_ARG_VAR([RUSTC_DEMANGLE_LIBS], [Linker flags for rustc-demangle])
 
-AC_ARG_ENABLE(zstd,
-              AS_HELP_STRING([--enable-zstd],
-                             [Enable decompression of ELF sections with zstd]),,
-              [enable_zstd=no])
-if test "x${enable_zstd}" != xno; then
-  AC_CHECK_LIB(zstd, ZSTD_decompress, [],
-               [AC_MSG_ERROR([zstd library not found.])])
-  AC_CHECK_HEADER(zstd.h, [],
-                  [AC_MSG_ERROR([zstd header not found.])])
+PKG_PROG_PKG_CONFIG
+
+AC_ARG_ENABLE([zlib],
+  [AS_HELP_STRING([--disable-zlib],
+                  [Disable decompression of ELF sections with zlib])],
+  [enable_zlib=$enableval],
+  [enable_zlib=yes])
+
+if test "x${enable_zlib}" = "xyes"; then
+  have_zlib=no
+  ZLIB_CFLAGS=""
+  ZLIB_LIBS=""
+
+  AC_CHECK_LIB([z], [uncompress],
+               [have_zlib=yes
+                ZLIB_LIBS="-lz"],
+               [have_zlib=no])
+
+  if test "x${have_zlib}" != "xyes"; then
+    PKG_CHECK_MODULES([ZLIB], [libz],
+                      [have_zlib=yes],
+                      [have_zlib=no])
+  fi
+
+  if test "x${have_zlib}" != "xyes"; then
+    AC_MSG_ERROR([zlib library not found.])
+  fi
+
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS $ZLIB_CFLAGS"
+  AC_CHECK_HEADER([zlib.h], [],
+                  [AC_MSG_ERROR([zlib header not found.])])
+  CPPFLAGS="$save_CPPFLAGS"
 fi
+
+AC_SUBST([ZLIB_CFLAGS])
+AC_SUBST([ZLIB_LIBS])
+AM_CONDITIONAL([ENABLE_ZLIB], [test "x${enable_zlib}" = "xyes"])
+
+PKG_PROG_PKG_CONFIG
+
+AC_ARG_ENABLE([zstd],
+              [AS_HELP_STRING([--enable-zstd],
+                              [Enable decompression of ELF sections with zstd])],
+              [enable_zstd=$enableval],
+              [enable_zstd=no])
+
+if test "x${enable_zstd}" = "xyes"; then
+  have_zstd=no
+  ZSTD_CFLAGS=""
+  ZSTD_LIBS=""
+
+  AC_CHECK_LIB([zstd], [ZSTD_decompress],
+               [have_zstd=yes
+                ZSTD_LIBS="-lzstd"],
+               [have_zstd=no])
+
+  if test "x${have_zstd}" != "xyes"; then
+    PKG_CHECK_MODULES([ZSTD], [libzstd],
+                      [have_zstd=yes],
+                      [have_zstd=no])
+  fi
+
+  if test "x${have_zstd}" != "xyes"; then
+    AC_MSG_ERROR([zstd library not found.])
+  fi
+
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS $ZSTD_CFLAGS"
+  AC_CHECK_HEADER([zstd.h], [],
+                  [AC_MSG_ERROR([zstd header not found.])])
+  CPPFLAGS="$save_CPPFLAGS"
+fi
+
+AC_SUBST([ZSTD_CFLAGS])
+AC_SUBST([ZSTD_LIBS])
+AM_CONDITIONAL([ENABLE_ZSTD], [test "x${enable_zstd}" = "xyes"])
 
 AC_ARG_WITH(tests-as-root,
             AS_HELP_STRING([--with-tests-as-root],
