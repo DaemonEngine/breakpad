@@ -57,6 +57,9 @@ struct MappingInfo {
   } system_mapping_info;
   size_t offset;  // offset into the backed file.
   bool exec;  // true if the mapping has the execute bit set.
+  // true if all of the mapping is readable. False if any part of it isn't,
+  // such as a PROT_NONE stack guard page.
+  bool readable;
   char name[NAME_MAX];
 };
 

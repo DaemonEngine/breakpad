@@ -32,6 +32,7 @@
 
 #include <fcntl.h>
 #include <poll.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -64,6 +65,24 @@ namespace {
 typedef testing::Test MinidumpWriterTest;
 
 const char kMDWriterUnitTestFileName[] = "/minidump-writer-unittest";
+
+void SetStackPointer(ucontext_t* context, uintptr_t stack_pointer) {
+#if defined(__i386)
+  context->uc_mcontext.gregs[REG_ESP] = stack_pointer;
+#elif defined(__x86_64)
+  context->uc_mcontext.gregs[REG_RSP] = stack_pointer;
+#elif defined(__ARM_EABI__)
+  context->uc_mcontext.arm_sp = stack_pointer;
+#elif defined(__aarch64__)
+  context->uc_mcontext.sp = stack_pointer;
+#elif defined(__mips__)
+  context->uc_mcontext.gregs[MD_CONTEXT_MIPS_REG_SP] = stack_pointer;
+#elif defined(__riscv)
+  context->uc_mcontext.__gregs[MD_CONTEXT_RISCV_REG_SP] = stack_pointer;
+#else
+# error "This code has not been ported to your platform yet."
+#endif
+}
 
 TEST(MinidumpWriterTest, SetupWithPath) {
   int fds[2];
@@ -709,23 +728,7 @@ TEST(MinidumpWriterTest, InvalidStackPointer) {
   // Try 1MB below the current stack.
   uintptr_t invalid_stack_pointer =
       reinterpret_cast<uintptr_t>(&context) - 1024*1024;
-#if defined(__i386)
-  context.context.uc_mcontext.gregs[REG_ESP] = invalid_stack_pointer;
-#elif defined(__x86_64)
-  context.context.uc_mcontext.gregs[REG_RSP] = invalid_stack_pointer;
-#elif defined(__ARM_EABI__)
-  context.context.uc_mcontext.arm_sp = invalid_stack_pointer;
-#elif defined(__aarch64__)
-  context.context.uc_mcontext.sp = invalid_stack_pointer;
-#elif defined(__mips__)
-  context.context.uc_mcontext.gregs[MD_CONTEXT_MIPS_REG_SP] =
-      invalid_stack_pointer;
-#elif defined(__riscv)
-  context.context.uc_mcontext.__gregs[MD_CONTEXT_RISCV_REG_SP] =
-      invalid_stack_pointer;
-#else
-# error "This code has not been ported to your platform yet."
-#endif
+  SetStackPointer(&context.context, invalid_stack_pointer);
 
   AutoTempDir temp_dir;
   std::string templ = temp_dir.path() + kMDWriterUnitTestFileName;
@@ -762,6 +765,62 @@ TEST(MinidumpWriterTest, InvalidStackPointer) {
 
   close(fds[1]);
   IGNORE_EINTR(waitpid(child, nullptr, 0));
+}
+
+// Test that a stack overflow, which leaves the stack pointer in the guard page
+// below a thread's stack, still dumps the stack above it, and that the stack
+// can be sanitized.
+TEST(MinidumpWriterTest, StackAboveGuardPage) {
+  // The most stack LinuxDumper::GetStackInfo returns.
+  const size_t kStackToCapture = 32 * 1024;
+  const size_t page_size = sysconf(_SC_PAGESIZE);
+  const size_t stack_size =
+      (2 * kStackToCapture + page_size - 1) & ~(page_size - 1);
+  char* guard = reinterpret_cast<char*>(
+      mmap(nullptr, page_size + stack_size, PROT_READ | PROT_WRITE,
+           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  ASSERT_NE(MAP_FAILED, guard);
+  ASSERT_EQ(0, mprotect(guard, page_size, PROT_NONE));
+  const char* stack = guard + page_size;
+
+  int fds[2];
+  ASSERT_NE(-1, pipe(fds));
+
+  const pid_t child = fork();
+  if (child == 0) {
+    close(fds[1]);
+    char b;
+    IGNORE_RET(HANDLE_EINTR(read(fds[0], &b, sizeof(b))));
+    close(fds[0]);
+    syscall(__NR_exit_group);
+  }
+  close(fds[0]);
+
+  ExceptionHandler::CrashContext context;
+  memset(&context, 0, sizeof(context));
+  ASSERT_EQ(0, getcontext(&context.context));
+  context.tid = child;
+  SetStackPointer(&context.context, reinterpret_cast<uintptr_t>(stack) - 64);
+
+  AutoTempDir temp_dir;
+  std::string templ = temp_dir.path() + kMDWriterUnitTestFileName;
+  ASSERT_TRUE(WriteMinidump(templ.c_str(), child, &context, sizeof(context),
+                            false, 0, true));
+
+  Minidump minidump(templ);
+  ASSERT_TRUE(minidump.Read());
+  MinidumpThreadList* threads = minidump.GetThreadList();
+  ASSERT_TRUE(threads != nullptr);
+  MinidumpThread* thread = threads->GetThreadByID(child);
+  ASSERT_TRUE(thread != nullptr);
+  MinidumpMemoryRegion* memory = thread->GetMemory();
+  ASSERT_TRUE(memory != nullptr);
+  EXPECT_EQ(reinterpret_cast<uint64_t>(stack), memory->GetBase());
+  EXPECT_EQ(kStackToCapture, memory->GetSize());
+
+  close(fds[1]);
+  IGNORE_EINTR(waitpid(child, nullptr, 0));
+  munmap(guard, page_size + stack_size);
 }
 
 // Test that limiting the size of the minidump works.

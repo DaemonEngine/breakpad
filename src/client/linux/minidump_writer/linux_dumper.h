@@ -122,6 +122,8 @@ class LinuxDumper {
   const wasteful_vector<elf_aux_val_t>& auxv() { return auxv_; }
 
   // Find a block of memory to take as the stack given the top of stack pointer.
+  // After a stack overflow the stack pointer can be in the guard area below
+  // the stack; the block then starts at the stack, above the stack pointer.
   //   stack: (output) the lowest address in the memory area
   //   stack_len: (output) the length of the memory area
   //   stack_top: the current top of the stack

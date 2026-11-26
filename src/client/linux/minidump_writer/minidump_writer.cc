@@ -218,8 +218,11 @@ class MinidumpWriter {
     stack_copy = reinterpret_cast<uint8_t*>(Alloc(stack_len));
     dumper_->CopyFromProcess(stack_copy, GetCrashThread(), stack, stack_len);
 
+    // The stack starts above the stack pointer after a stack overflow (see
+    // LinuxDumper::GetStackInfo).
+    const uintptr_t stack_start = reinterpret_cast<uintptr_t>(stack);
     uintptr_t stack_pointer_offset =
-        stack_pointer - reinterpret_cast<uintptr_t>(stack);
+        stack_pointer > stack_start ? stack_pointer - stack_start : 0;
 
     return dumper_->StackHasPointerToMapping(
         stack_copy, stack_len, stack_pointer_offset, *principal_mapping_);
@@ -351,8 +354,11 @@ class MinidumpWriter {
       dumper_->CopyFromProcess(*stack_copy, thread->thread_id, stack,
                                stack_len);
 
+      // The stack starts above the stack pointer after a stack overflow (see
+      // LinuxDumper::GetStackInfo).
+      const uintptr_t stack_start = reinterpret_cast<uintptr_t>(stack);
       uintptr_t stack_pointer_offset =
-          stack_pointer - reinterpret_cast<uintptr_t>(stack);
+          stack_pointer > stack_start ? stack_pointer - stack_start : 0;
       if (skip_stacks_if_mapping_unreferenced_) {
         if (!principal_mapping_) {
           return true;
