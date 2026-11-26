@@ -813,6 +813,7 @@ src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_SOURCES = \
 	src/common/pecoff/dump_symbols.cc \
 	src/common/pecoff/pecoffutils.cc \
 	src/common/pecoff/pecoff_file_id.cc \
+	src/common/pecoff/pecoff_unwind_to_module.cc \
 	src/tools/windows/dump_syms_dwarf/dump_syms.cc
 src_tools_windows_dump_syms_dwarf_dump_syms_dwarf_LDADD = \
 	$(SOCKET_LIBS)
@@ -854,6 +855,8 @@ src_common_dumper_unittest_SOURCES = \
 	src/common/dwarf/dwarf2reader_cfi_unittest.cc \
 	src/common/dwarf/dwarf2reader_die_unittest.cc \
 	src/common/dwarf/dwarf2reader_test_common.h \
+	src/common/pecoff/pecoff_unwind_to_module.cc \
+	src/common/pecoff/pecoff_unwind_to_module_unittest.cc \
 	src/common/testdata/func-line-pairing.h \
 	src/common/tests/file_utils.cc
 
