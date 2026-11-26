@@ -582,6 +582,7 @@ bool LinuxDumper::EnumerateMappings() {
       const char* i2 = my_read_hex_ptr(&end_addr, i1 + 1);
       if (*i2 == ' ') {
         bool exec = (*(i2 + 3) == 'x');
+        bool readable = (*(i2 + 1) == 'r');
         bool is_padding = (my_memcmp(i2, " ---p ", 6) == 0);
         const char* i3 = my_read_hex_ptr(&offset, i2 + 6 /* skip ' rwxp ' */);
         if (*i3 == ' ') {
@@ -610,6 +611,7 @@ bool LinuxDumper::EnumerateMappings() {
                 module->system_mapping_info.end_addr = end_addr;
                 module->size = end_addr - module->start_addr;
                 module->exec |= exec;
+                module->readable &= readable;
                 line_reader->PopLine(line_len);
                 continue;
               }
@@ -620,6 +622,7 @@ bool LinuxDumper::EnumerateMappings() {
                   module->name[0] != '\0') {
                 module->system_mapping_info.end_addr = end_addr;
                 module->size = end_addr - module->start_addr;
+                module->readable &= readable;
                 line_reader->PopLine(line_len);
                 continue;
               }
@@ -634,6 +637,7 @@ bool LinuxDumper::EnumerateMappings() {
           module->size = end_addr - start_addr;
           module->offset = offset;
           module->exec = exec;
+          module->readable = readable;
           if (name != nullptr) {
             const unsigned l = my_strlen(name);
             if (l < sizeof(module->name))
@@ -785,13 +789,37 @@ bool LinuxDumper::GetStackInfo(const void** stack, size_t* stack_len,
   // Move the stack pointer to the bottom of the page that it's in.
   const uintptr_t page_size = getpagesize();
 
-  uint8_t* const stack_pointer =
+  uint8_t* stack_pointer =
       reinterpret_cast<uint8_t*>(int_stack_pointer & ~(page_size - 1));
 
   // The number of bytes of stack which we try to capture.
   static const ptrdiff_t kStackToCapture = 32 * 1024;
 
   const MappingInfo* mapping = FindMapping(stack_pointer);
+  if (!mapping || !mapping->readable) {
+    // A stack overflow can leave the stack pointer below the stack, in its
+    // guard area: unmapped below the main thread's stack, or a PROT_NONE
+    // mapping below a thread's. The stack itself is then the nearest readable
+    // mapping above it, within the guard gap's size (1 MiB since Linux 4.12,
+    // a single page before that).
+    static const uintptr_t kMaxGuardGap = 1024 * 1024;
+    const uintptr_t guard_address = reinterpret_cast<uintptr_t>(stack_pointer);
+    const MappingInfo* stack_above_guard = nullptr;
+    for (size_t i = 0; i < mappings_.size(); ++i) {
+      const MappingInfo* candidate = mappings_[i];
+      if (candidate->readable &&
+          candidate->start_addr > guard_address &&
+          candidate->start_addr - guard_address <= kMaxGuardGap &&
+          (!stack_above_guard ||
+           candidate->start_addr < stack_above_guard->start_addr)) {
+        stack_above_guard = candidate;
+      }
+    }
+    if (stack_above_guard) {
+      mapping = stack_above_guard;
+      stack_pointer = reinterpret_cast<uint8_t*>(mapping->start_addr);
+    }
+  }
   if (!mapping)
     return false;
   const ptrdiff_t offset = stack_pointer -

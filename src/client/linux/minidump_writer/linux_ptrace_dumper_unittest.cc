@@ -305,10 +305,112 @@ TEST_F(LinuxPtraceDumperMappingsTest, MergedMappings) {
                 mapping.start_addr);
       EXPECT_EQ(this->helper_.size(), mapping.size);
       EXPECT_EQ(0U, mapping.offset);
+      // Its last page is PROT_NONE.
+      EXPECT_FALSE(mapping.readable);
       mapping_count++;
     }
   }
   EXPECT_EQ(1, mapping_count);
+}
+
+// The most stack LinuxDumper::GetStackInfo returns.
+const size_t kStackToCapture = 32 * 1024;
+
+// Fixture whose parent process has a 64 KiB stack-like mapping with a guard
+// area below it, as after a stack overflow. The child dumps the parent.
+class LinuxPtraceDumperStackGuardTest : public LinuxPtraceDumperChildTest {
+ protected:
+  LinuxPtraceDumperStackGuardTest()
+      : guard_(nullptr), guard_size_(0), stack_(nullptr), stack_size_(0) {}
+
+  // Maps the stack with |guard_size| bytes below it, which are made
+  // PROT_NONE (as below a thread's stack) or unmapped (as below the main
+  // thread's stack), then forks the child.
+  void SetUpStack(size_t guard_size, bool unmap_guard) {
+    const size_t page_size = sysconf(_SC_PAGESIZE);
+    guard_size_ = guard_size;
+    stack_size_ = (2 * kStackToCapture + page_size - 1) & ~(page_size - 1);
+    char* region = reinterpret_cast<char*>(
+        mmap(nullptr, guard_size_ + stack_size_, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+    ASSERT_NE(MAP_FAILED, region);
+    guard_ = region;
+    stack_ = region + guard_size_;
+    if (unmap_guard) {
+      ASSERT_EQ(0, munmap(guard_, guard_size_));
+    } else {
+      ASSERT_EQ(0, mprotect(guard_, guard_size_, PROT_NONE));
+    }
+    LinuxPtraceDumperChildTest::SetUp();
+  }
+
+  virtual void TearDown() {
+    if (guard_)
+      munmap(guard_, guard_size_ + stack_size_);
+  }
+
+  char* guard_;
+  size_t guard_size_;
+  char* stack_;
+  size_t stack_size_;
+};
+
+class LinuxPtraceDumperProtNoneGuardTest
+    : public LinuxPtraceDumperStackGuardTest {
+ protected:
+  virtual void SetUp() { SetUpStack(sysconf(_SC_PAGESIZE), false); }
+};
+
+class LinuxPtraceDumperUnmappedGuardTest
+    : public LinuxPtraceDumperStackGuardTest {
+ protected:
+  virtual void SetUp() { SetUpStack(sysconf(_SC_PAGESIZE), true); }
+};
+
+class LinuxPtraceDumperFarBelowStackTest
+    : public LinuxPtraceDumperStackGuardTest {
+ protected:
+  virtual void SetUp() { SetUpStack(2 * 1024 * 1024, true); }
+};
+
+// A stack pointer in a thread's PROT_NONE guard page gives the stack above it.
+TEST_F(LinuxPtraceDumperProtNoneGuardTest, GetStackInfoSkipsGuardPage) {
+  LinuxPtraceDumper dumper(getppid());
+  ASSERT_TRUE(dumper.Init());
+
+  const void* stack;
+  size_t stack_len;
+  ASSERT_TRUE(dumper.GetStackInfo(&stack, &stack_len,
+                                  reinterpret_cast<uintptr_t>(stack_) - 64));
+  EXPECT_EQ(static_cast<const void*>(stack_), stack);
+  EXPECT_EQ(kStackToCapture, stack_len);
+}
+
+// A stack pointer in the unmapped gap below the main thread's stack gives the
+// stack above it.
+TEST_F(LinuxPtraceDumperUnmappedGuardTest, GetStackInfoSkipsGuardGap) {
+  LinuxPtraceDumper dumper(getppid());
+  ASSERT_TRUE(dumper.Init());
+
+  const void* stack;
+  size_t stack_len;
+  ASSERT_TRUE(dumper.GetStackInfo(&stack, &stack_len,
+                                  reinterpret_cast<uintptr_t>(stack_) - 64));
+  EXPECT_EQ(static_cast<const void*>(stack_), stack);
+  EXPECT_EQ(kStackToCapture, stack_len);
+}
+
+// A stack pointer further below a mapping than any guard gap isn't treated as
+// an overflow of it.
+TEST_F(LinuxPtraceDumperFarBelowStackTest, GetStackInfoIgnoresFarMappings) {
+  LinuxPtraceDumper dumper(getppid());
+  ASSERT_TRUE(dumper.Init());
+
+  const void* stack;
+  size_t stack_len;
+  const uintptr_t stack_pointer = reinterpret_cast<uintptr_t>(stack_) -
+                                  1024 * 1024 - sysconf(_SC_PAGESIZE);
+  EXPECT_FALSE(dumper.GetStackInfo(&stack, &stack_len, stack_pointer));
 }
 
 TEST_F(LinuxPtraceDumperChildTest, BuildProcPath) {

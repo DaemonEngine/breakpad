@@ -278,7 +278,7 @@ class MicrodumpWriter {
     if (low_addr <= pc && pc <= high_addr) return CAPTURE_OK;
 
     if (dumper_->StackHasPointerToMapping(stack_copy_, stack_len_,
-                                          stack_pointer_ - stack_lower_bound_,
+                                          StackPointerOffset(),
                                           *principal_mapping)) {
       return CAPTURE_OK;
     }
@@ -394,10 +394,19 @@ class MicrodumpWriter {
     LogCommitLine();
   }
 
+  // The offset of the stack pointer into the stack copy. The stack starts
+  // above the stack pointer after a stack overflow (see
+  // LinuxDumper::GetStackInfo), and the offset is then 0.
+  uintptr_t StackPointerOffset() const {
+    return stack_pointer_ > stack_lower_bound_
+               ? stack_pointer_ - stack_lower_bound_
+               : 0;
+  }
+
   void DumpThreadStack() {
     if (sanitize_stack_) {
       dumper_->SanitizeStackCopy(stack_copy_, stack_len_, stack_pointer_,
-                                 stack_pointer_ - stack_lower_bound_);
+                                 StackPointerOffset());
     }
 
     LogAppend("S 0 ");
@@ -643,7 +652,7 @@ class MicrodumpWriter {
   size_t stack_len_;
 
   // The address of the page containing the stack pointer in the
-  // crashed process. |stack_lower_bound_| <= |stack_pointer_|
+  // crashed process, or of the stack above it after a stack overflow.
   uintptr_t stack_lower_bound_;
 
   // The stack pointer of the crashed thread.
