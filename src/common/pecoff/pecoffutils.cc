@@ -36,6 +36,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
+#include "common/pecoff/pecoff_unwind_to_module.h"
+
 #ifndef _WIN32
 #include <arpa/inet.h>
 #else
@@ -290,6 +296,62 @@ bool PeCoffObjectFileReader<PeCoffClassTraits>::ExportedSymbolsToModule(
   }
 
   return false;
+}
+
+template<class PeCoffClassTraits>
+bool PeCoffObjectFileReader<PeCoffClassTraits>::UnwindInfoToModule(
+    ObjectFileBase obj_base, Module* module) {
+  // Only x86-64 files have unwind information in this format.
+  if (GetHeader(obj_base)->mMachine != IMAGE_FILE_MACHINE_AMD64)
+    return false;
+
+  // The exception table (.pdata): a RUNTIME_FUNCTION (BeginAddress,
+  // EndAddress, UnwindInfoAddress, all RVAs) for each function.
+  const PeDataDirectory* exception_table_entry =
+      GetDataDirectoryEntry(obj_base, PE_EXCEPTION_TABLE);
+  if (!exception_table_entry || exception_table_entry->mSize == 0)
+    return false;
+  const uint8_t* functions =
+      ConvertRVAToPointer(obj_base, exception_table_entry->mVirtualAddress);
+  if (!functions)
+    return false;
+
+  // The address ranges that already have CFI, sorted by start address.
+  std::vector<Module::StackFrameEntry*> existing_entries;
+  module->GetStackFrameEntries(&existing_entries);
+  std::vector<std::pair<Module::Address, Module::Address>> covered;
+  for (const Module::StackFrameEntry* entry : existing_entries)
+    covered.emplace_back(entry->address, entry->address + entry->size);
+  std::sort(covered.begin(), covered.end());
+  auto is_covered = [&covered](Module::Address address) {
+    auto after = std::upper_bound(
+        covered.begin(), covered.end(),
+        std::make_pair(address, ~static_cast<Module::Address>(0)));
+    return after != covered.begin() && address < (after - 1)->second;
+  };
+
+  const Module::Address loading_address = GetLoadingAddress(obj_base);
+  const RVAToPointer rva_to_pointer = [obj_base](uint32_t rva) {
+    return ConvertRVAToPointer(obj_base, rva);
+  };
+  bool added = false;
+  const uint32_t function_count = exception_table_entry->mSize / 12;
+  for (uint32_t i = 0; i < function_count; i++) {
+    uint32_t begin, end, unwind_info;
+    memcpy(&begin, functions + i * 12, 4);
+    memcpy(&end, functions + i * 12 + 4, 4);
+    memcpy(&unwind_info, functions + i * 12 + 8, 4);
+    if (begin >= end || is_covered(loading_address + begin))
+      continue;
+    std::unique_ptr<Module::StackFrameEntry> entry =
+        X86_64UnwindInfoToStackFrameEntry(loading_address + begin, end - begin,
+                                          unwind_info, rva_to_pointer);
+    if (entry) {
+      module->AddStackFrameEntry(std::move(entry));
+      added = true;
+    }
+  }
+  return added;
 }
 
 template<class PeCoffClassTraits>

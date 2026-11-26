@@ -128,6 +128,12 @@ class PeCoffObjectFileReader {
   // Load symbols from the object file's exported symbol table
   static bool ExportedSymbolsToModule(ObjectFileBase obj_base, Module* module);
 
+  // Load STACK CFI from an x86-64 file's Windows unwind information (.pdata
+  // and .xdata) for the functions |module| has no CFI for yet: code built
+  // without DWARF, such as MinGW's runtime libraries. Load DWARF CFI first,
+  // which also covers epilogues. Returns true if any was added.
+  static bool UnwindInfoToModule(ObjectFileBase obj_base, Module* module);
+
   // Return the identifier for the file mapped into memory.
   // Return an empty string if the identifier could not be created
   // for the file.

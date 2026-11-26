@@ -618,6 +618,12 @@ bool LoadSymbols(const std::string& obj_file,
                                  got_section, text_section, big_endian, module);
       found_usable_info = found_usable_info || result;
     }
+
+    // Windows' own unwind information covers the functions built without
+    // DWARF, such as MinGW's runtime libraries. After DWARF CFI, which is
+    // preferred where both exist.
+    bool result = ObjectFileReader::UnwindInfoToModule(header, module);
+    found_usable_info = found_usable_info || result;
   }
 
   if (!found_debug_info_section) {
